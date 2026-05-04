@@ -105,10 +105,23 @@ Installer가 Codex Desktop을 자동으로 찾아 실행을 시도합니다. 그
 다른 AI/Codex agent에게 별도 검색 없이 이 프로그램을 설치하게 하려면, 이 GitHub
 repo 링크와 아래 지시문을 그대로 전달하세요:
 
+Repository:
+
 ```text
-이 repository만 기준으로 사용하세요. 다른 installer, 다른 pet package, 다른
-구현을 찾기 위해 웹 검색하지 마세요. 이것은 Codex Pet Limit Rings의 Windows
-버전입니다.
+https://github.com/himomohi/Codexy-pet-usages-ring
+```
+
+```text
+아래 repository URL만 기준으로 사용하세요:
+https://github.com/himomohi/Codexy-pet-usages-ring
+
+다른 installer, 다른 pet package, 다른 구현을 찾기 위해 웹 검색하지 마세요.
+이것은 Codex Pet Limit Rings의 Windows 버전입니다.
+
+이 repository가 로컬에 없으면 먼저 clone하세요:
+
+git clone https://github.com/himomohi/Codexy-pet-usages-ring.git
+cd Codexy-pet-usages-ring
 
 이 Windows PC에서 repository root 기준으로 설치하세요. 우선 아래 명령을
 사용하세요:

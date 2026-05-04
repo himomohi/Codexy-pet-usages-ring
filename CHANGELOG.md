@@ -6,6 +6,7 @@
 - Added README badges, version presentation, and clearer project navigation.
 - Clarified first-install behavior: immediate helper start, Windows startup registration, Codex Desktop auto-start, and `/pet` waiting.
 - Added copy-paste AI agent instructions for installing from this repo without separate web search.
+- Made the AI agent instructions self-contained by including the canonical repository URL and clone step.
 - Preserved upstream MIT license attribution in `LICENSE` and `NOTICE.md`.
 - Included `NOTICE.md` in installer copies and release zip packages.
 

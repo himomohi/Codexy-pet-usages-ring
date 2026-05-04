@@ -108,10 +108,23 @@ Uninstall everything the installer adds:
 If you want another AI/Codex agent to install this without doing separate web
 searches, give it this repository link and paste this instruction:
 
+Repository:
+
 ```text
-Use only this repository as the source of truth. Do not search the web for
-another installer or another pet package. This is the Windows version of Codex
-Pet Limit Rings.
+https://github.com/himomohi/Codexy-pet-usages-ring
+```
+
+```text
+Use only this repository URL as the source of truth:
+https://github.com/himomohi/Codexy-pet-usages-ring
+
+Do not search the web for another installer or another pet package. This is the
+Windows version of Codex Pet Limit Rings.
+
+If this repository is not already available locally, clone it first:
+
+git clone https://github.com/himomohi/Codexy-pet-usages-ring.git
+cd Codexy-pet-usages-ring
 
 Install it on this Windows PC from the repository root. Prefer:
 
