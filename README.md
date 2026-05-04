@@ -186,3 +186,9 @@ Build a release zip:
 ```powershell
 .\tools\New-ReleaseZip.ps1
 ```
+
+Run smoke checks:
+
+```powershell
+.\tools\Test-Smoke.ps1
+```

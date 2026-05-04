@@ -14,6 +14,7 @@
 - Replaced broad stop/status process matching with exact project-script path checks and PID file tracking.
 - Required an install marker before `Uninstall.ps1 -RemoveFiles` recursively removes files.
 - Made uninstall remove shortcuts only when they point at the selected install directory.
+- Prevented repository-local ignored files such as `.gitignore`, `settings.json`, `dist/`, `logs/`, and QA captures from being copied into fresh installs or release zips.
 
 ## 0.1.0
 

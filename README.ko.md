@@ -185,3 +185,9 @@ Release zip 만들기:
 ```powershell
 .\tools\New-ReleaseZip.ps1
 ```
+
+Smoke check 실행:
+
+```powershell
+.\tools\Test-Smoke.ps1
+```

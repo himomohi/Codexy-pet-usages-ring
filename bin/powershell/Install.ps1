@@ -26,18 +26,58 @@ function Copy-ProjectFile {
   param([string]$Name)
   $source = Join-Path $sourceRoot $Name
   if (-not (Test-Path -LiteralPath $source)) { return }
+  if (Test-ProjectPathExcluded -Path $source) { return }
   $destination = Join-Path $targetRoot $Name
   if ((Get-Item -LiteralPath $source).PSIsContainer) {
-    New-Item -ItemType Directory -Force -Path $destination | Out-Null
-    Copy-Item -Path (Join-Path $source "*") -Destination $destination -Recurse -Force
+    Get-ChildItem -LiteralPath $source -Recurse -File -Force |
+      Where-Object { -not (Test-ProjectPathExcluded -Path $_.FullName) } |
+      ForEach-Object {
+        $relativePath = Get-ProjectRelativePath -Path $_.FullName
+        $fileDestination = Join-Path $targetRoot ($relativePath -replace '/', '\')
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $fileDestination) | Out-Null
+        Copy-Item -LiteralPath $_.FullName -Destination $fileDestination -Force
+      }
   } else {
     Copy-Item -LiteralPath $source -Destination $destination -Force
   }
 }
 
+function Get-ProjectRelativePath {
+  param([string]$Path)
+  $fullPath = [System.IO.Path]::GetFullPath($Path)
+  $rootWithSeparator = $sourceRoot.TrimEnd("\") + "\"
+  if ($fullPath.StartsWith($rootWithSeparator, [StringComparison]::OrdinalIgnoreCase)) {
+    return (($fullPath.Substring($rootWithSeparator.Length)) -replace '\\', '/')
+  }
+  return ((Split-Path -Leaf $fullPath) -replace '\\', '/')
+}
+
+function Test-ProjectPathExcluded {
+  param([string]$Path)
+  $relativePath = Get-ProjectRelativePath -Path $Path
+  $leaf = Split-Path -Leaf $relativePath
+  if ($relativePath -in @(
+    ".gitignore",
+    "settings.json",
+    "docs/assets/current-pet-usage-capture.png",
+    "docs/assets/imagegen-hero-background.png"
+  )) { return $true }
+  if ($relativePath -like "dist/*" -or $relativePath -eq "dist") { return $true }
+  if ($relativePath -like "logs/*" -or $relativePath -eq "logs") { return $true }
+  if ($relativePath -like "qa/*" -or $relativePath -eq "qa") { return $true }
+  if ($relativePath -like "*.log" -or $relativePath -like "*.tmp" -or $relativePath -like "*.bak" -or $relativePath -like "*.zip") { return $true }
+  if ($leaf -eq ".DS_Store" -or $leaf -eq "Thumbs.db") { return $true }
+  return $false
+}
+
 function Remove-ObsoleteEntryPoints {
   foreach ($name in @(
     "scripts",
+    ".gitignore",
+    "docs\assets\current-pet-usage-capture.png",
+    "docs\assets\imagegen-hero-background.png",
+    "dist",
+    "qa",
     "install.cmd", "start.cmd", "stop.cmd", "status.cmd", "diagnose.cmd", "uninstall.cmd", "settings.cmd",
     "install.sh", "start.sh", "stop.sh", "status.sh", "diagnose.sh", "uninstall.sh", "settings.sh"
   )) {
@@ -89,13 +129,15 @@ if ((Test-Path -LiteralPath $targetRoot) -and -not $Force) {
 
 if ($sourceRoot -ne $targetRoot) {
   New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
-  foreach ($name in @("Install.bat", "Start.bat", "Stop.bat", "Status.bat", "Settings.bat", "Uninstall.bat", "bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
+  foreach ($name in @("Install.bat", "Start.bat", "Stop.bat", "Status.bat", "Settings.bat", "Uninstall.bat", "bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION")) {
     Copy-ProjectFile -Name $name
   }
 } else {
   Write-Output "Source and install directory are the same; skipping file copy."
 }
-Remove-ObsoleteEntryPoints
+if ($sourceRoot -ne $targetRoot) {
+  Remove-ObsoleteEntryPoints
+}
 Write-CodexPetInstallMarker -ProjectRoot $targetRoot -SourceRoot $sourceRoot -Version $version
 
 $powerShell = Get-WindowsPowerShell
