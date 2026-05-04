@@ -1,6 +1,9 @@
 dist/
 logs/
 settings.json
+qa/
+docs/assets/current-pet-usage-capture.png
+docs/assets/imagegen-hero-background.png
 *.log
 *.tmp
 *.bak
