@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- Prevented repository-local ignored files such as `.gitignore`, `settings.json`, `dist/`, `logs/`, and QA captures from being copied into fresh installs or release zips.
+- Fixed release and install packaging so local development artifacts are not copied into fresh installs or release zips.
 
 ## 0.1.1
 
