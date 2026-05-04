@@ -4,6 +4,7 @@ This project is a Windows-focused derivative/fork of:
 
 - `codex-pet-limit-rings`
 - Original repository: https://github.com/petergpt/codex-pet-limit-rings
+- Original author / repository owner: petergpt (Peter)
 - Original license: MIT
 - Original copyright notice: Copyright (c) 2026 Codex Pet Limit Rings Contributors
 
