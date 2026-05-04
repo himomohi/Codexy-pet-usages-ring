@@ -86,6 +86,11 @@ The installer tries to find and start Codex Desktop automatically. Then use
 `/pet` normally. No pet setup step is required. If the ring app starts before
 `/pet` is open, it simply waits and appears automatically when `/pet` opens.
 
+After the first install, the ring helper starts immediately. The installer also
+adds a Windows Startup shortcut, so on the next Windows login it starts again
+automatically, detects Codex Desktop, launches Codex if needed, and waits until
+`/pet` is visible.
+
 Run without installing:
 
 ```powershell
@@ -131,6 +136,13 @@ It also creates:
 - a Windows Startup shortcut
 - a Start Menu shortcut
 - a hidden background ring process
+
+Default first-install behavior:
+
+- starts the ring helper immediately
+- registers the helper for Windows startup
+- auto-detects and starts Codex Desktop when possible
+- waits quietly until the Codex `/pet` overlay opens
 
 During install and every later helper start, the app searches for Codex Desktop
 in this order: an already-running `Codex.exe`, the `OpenAI.Codex` AppX package,

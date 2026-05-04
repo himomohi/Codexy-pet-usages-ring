@@ -83,6 +83,11 @@ Installer가 Codex Desktop을 자동으로 찾아 실행을 시도합니다. 그
 평소처럼 사용하면 됩니다. pet별 추가 설정은 필요 없습니다. ring 앱이 `/pet`보다
 먼저 켜져 있어도 그냥 기다리다가 `/pet`가 열리는 순간 자동으로 표시됩니다.
 
+첫 설치 후에는 ring helper가 즉시 실행됩니다. 또한 installer가 Windows
+시작프로그램 shortcut을 등록하므로, 다음 Windows 로그인부터는 자동으로 다시
+시작되고 Codex Desktop을 감지한 뒤 필요하면 Codex를 실행하고 `/pet`가 보일 때까지
+기다립니다.
+
 설치 없이 실행:
 
 ```powershell
@@ -128,6 +133,13 @@ sh ./bin/bash/install.sh
 - Windows 시작프로그램 shortcut
 - 시작 메뉴 shortcut
 - 숨겨진 background ring process
+
+기본 첫 설치 동작:
+
+- ring helper를 즉시 실행합니다
+- Windows 시작프로그램에 helper를 등록합니다
+- 가능한 경우 Codex Desktop을 자동 감지하고 실행합니다
+- Codex `/pet` 오버레이가 열릴 때까지 조용히 기다립니다
 
 설치 시와 이후 helper 시작 시마다 Codex Desktop을 자동 탐색합니다. 탐색 순서는
 실행 중인 `Codex.exe`, `OpenAI.Codex` AppX package, 시작 메뉴 AppID,
