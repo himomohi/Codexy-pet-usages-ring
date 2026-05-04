@@ -30,6 +30,16 @@ but is built for Windows with PowerShell, WPF, and Win32 window positioning.
 - It does not clip or cut the ring to avoid messages. The ring remains a full circle.
 - It is not an official OpenAI or Codex feature.
 
+## License And Attribution
+
+This Windows project is a derivative/fork of
+[petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings),
+which is distributed under the MIT License.
+
+The original MIT copyright notice is preserved in [LICENSE](LICENSE), together
+with the Windows project notice. Additional attribution is kept in
+[NOTICE.md](NOTICE.md).
+
 ## Requirements
 
 - Windows 10 or Windows 11.
@@ -290,6 +300,7 @@ codex-pet-limit-rings-Win/
   README.ko.md
   CHANGELOG.md
   LICENSE
+  NOTICE.md
   VERSION
   settings.defaults.json
   settings/

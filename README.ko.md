@@ -29,6 +29,15 @@ Codex `/pet` 아바타 주변에 반투명 사용량 링을 표시하는 Windows
 - 메시지를 피하려고 링을 잘라내지 않습니다. 링은 항상 완전한 원형입니다.
 - OpenAI 또는 Codex의 공식 기능은 아닙니다.
 
+## 라이선스와 출처 / License And Attribution
+
+이 Windows 프로젝트는 MIT License로 배포된
+[petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings)
+의 derivative/fork입니다.
+
+원본 MIT 저작권 고지는 [LICENSE](LICENSE)에 Windows 프로젝트 고지와 함께
+보존했습니다. 추가 출처 표기는 [NOTICE.md](NOTICE.md)에 남겨두었습니다.
+
 ## 요구 사항
 
 - Windows 10 또는 Windows 11.
@@ -281,6 +290,7 @@ codex-pet-limit-rings-Win/
   README.ko.md
   CHANGELOG.md
   LICENSE
+  NOTICE.md
   VERSION
   settings.defaults.json
   settings/

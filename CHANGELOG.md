@@ -11,3 +11,4 @@
 - HTML settings page for ring colors, opacity, and hover text sizing.
 - Live settings reload from local `settings.json`.
 - Codex Desktop auto-discovery and auto-start from install/start shortcuts.
+- Preserved upstream MIT license attribution and source notice for the fork.

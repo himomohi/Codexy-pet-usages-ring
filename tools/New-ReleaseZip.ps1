@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $staging) {
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 
-foreach ($item in @("bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
+foreach ($item in @("bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
   $source = Join-Path $root $item
   if (Test-Path -LiteralPath $source) {
     Copy-Item -LiteralPath $source -Destination (Join-Path $staging $item) -Recurse -Force

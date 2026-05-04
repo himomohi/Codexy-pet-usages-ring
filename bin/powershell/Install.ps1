@@ -81,7 +81,7 @@ if ((Test-Path -LiteralPath $targetRoot) -and -not $Force) {
 
 if ($sourceRoot -ne $targetRoot) {
   New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
-  foreach ($name in @("bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
+  foreach ($name in @("bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
     Copy-ProjectFile -Name $name
   }
 } else {
