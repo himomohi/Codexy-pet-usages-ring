@@ -1,0 +1,369 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Codex Pet Limit Rings Settings</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101318;
+      --panel: #171c22;
+      --panel-2: #1d242c;
+      --text: #f4f7fb;
+      --muted: #9ba8b7;
+      --line: #303946;
+      --accent: #3cebbd;
+      --danger: #ff4238;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(1040px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+    .status {
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    section {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+    .field {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr) 72px;
+      gap: 10px;
+      align-items: center;
+      min-height: 38px;
+      border-top: 1px solid rgba(255,255,255,0.055);
+    }
+    .field:first-of-type { border-top: 0; }
+    label {
+      color: #dbe5ef;
+      font-size: 13px;
+    }
+    input[type="color"] {
+      inline-size: 44px;
+      block-size: 28px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      height: 30px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 4px 8px;
+      font: inherit;
+      font-size: 13px;
+    }
+    output {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
+    button {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 14px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    button.primary {
+      border-color: rgba(60, 235, 189, 0.7);
+      background: #15342f;
+    }
+    button:hover { border-color: var(--accent); }
+    .preview-wrap {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .preview {
+      position: relative;
+      width: 220px;
+      aspect-ratio: 1;
+      background: #0d1117;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .ring {
+      position: absolute;
+      border-radius: 50%;
+      border-style: solid;
+      inset: 31px;
+      transform: rotate(-18deg);
+    }
+    .ring.inner { inset: 45px; }
+    .pet {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 78px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: #151a20;
+      font-size: 32px;
+    }
+    .tooltip {
+      position: absolute;
+      left: 124px;
+      top: 88px;
+      padding: 5px 7px;
+      font-size: 11px;
+      line-height: 13px;
+      white-space: nowrap;
+    }
+    .path {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 760px) {
+      header, .preview-wrap { display: block; }
+      .grid { grid-template-columns: 1fr; }
+      .status { margin-top: 12px; text-align: left; }
+      .field { grid-template-columns: 126px minmax(0, 1fr) 58px; }
+      .preview { margin-bottom: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>Codex Pet Limit Rings Settings</h1>
+        <p>Customize ring colors, opacity, and hover text size. Changes are saved to settings.json and picked up by the running helper.</p>
+      </div>
+      <div class="status" id="status">Loading...</div>
+    </header>
+
+    <div class="preview-wrap">
+      <div class="preview" aria-label="Ring preview">
+        <div class="ring outer" id="previewOuter"></div>
+        <div class="ring inner" id="previewInner"></div>
+        <div class="pet">PET</div>
+        <div class="tooltip" id="previewTip">5h limit  90% left<br>Reset 4h 12m (22:27)</div>
+      </div>
+      <div>
+        <p>Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.</p>
+        <div class="path" id="path">settings.json</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section>
+        <h2>Ring Colors</h2>
+        <div class="field"><label for="primary">Outer 5h</label><input id="primary" type="color" data-path="colors.primary"><output></output></div>
+        <div class="field"><label for="secondary">Inner Weekly</label><input id="secondary" type="color" data-path="colors.secondary"><output></output></div>
+        <div class="field"><label for="warning">Warning</label><input id="warning" type="color" data-path="colors.warning"><output></output></div>
+        <div class="field"><label for="caution">Caution</label><input id="caution" type="color" data-path="colors.caution"><output></output></div>
+        <div class="field"><label for="track">Track</label><input id="track" type="color" data-path="colors.track"><output></output></div>
+      </section>
+
+      <section>
+        <h2>Readout Colors</h2>
+        <div class="field"><label for="readoutText">Text</label><input id="readoutText" type="color" data-path="colors.readoutText"><output></output></div>
+        <div class="field"><label for="outerBg">Outer Background</label><input id="outerBg" type="color" data-path="colors.outerReadoutBackground"><output></output></div>
+        <div class="field"><label for="innerBg">Inner Background</label><input id="innerBg" type="color" data-path="colors.innerReadoutBackground"><output></output></div>
+      </section>
+
+      <section>
+        <h2>Opacity</h2>
+        <div class="field"><label for="opPrimary">Outer</label><input id="opPrimary" type="range" min="0" max="1" step="0.01" data-path="opacity.primary"><output></output></div>
+        <div class="field"><label for="opSecondary">Inner</label><input id="opSecondary" type="range" min="0" max="1" step="0.01" data-path="opacity.secondary"><output></output></div>
+        <div class="field"><label for="opWarning">Warning</label><input id="opWarning" type="range" min="0" max="1" step="0.01" data-path="opacity.warning"><output></output></div>
+        <div class="field"><label for="opTrack">Track</label><input id="opTrack" type="range" min="0" max="1" step="0.01" data-path="opacity.track"><output></output></div>
+        <div class="field"><label for="opReadout">Readout Background</label><input id="opReadout" type="range" min="0" max="1" step="0.01" data-path="opacity.readout"><output></output></div>
+        <div class="field"><label for="opReadoutText">Readout Text</label><input id="opReadoutText" type="range" min="0" max="1" step="0.01" data-path="opacity.readoutText"><output></output></div>
+      </section>
+
+      <section>
+        <h2>Text</h2>
+        <div class="field"><label for="fontSize">Font Size</label><input id="fontSize" type="range" min="8" max="24" step="0.5" data-path="text.fontSize"><output></output></div>
+        <div class="field"><label for="lineHeight">Line Height</label><input id="lineHeight" type="range" min="10" max="32" step="0.5" data-path="text.lineHeight"><output></output></div>
+      </section>
+    </div>
+
+    <div class="actions">
+      <button id="reload">Reload</button>
+      <button id="reset">Reset Defaults</button>
+      <button class="primary" id="save">Save</button>
+    </div>
+  </main>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const pathEl = document.getElementById('path');
+    const inputs = Array.from(document.querySelectorAll('[data-path]'));
+    let settings = null;
+    let defaults = null;
+
+    const get = (obj, path) => path.split('.').reduce((node, key) => node && node[key], obj);
+    const set = (obj, path, value) => {
+      const parts = path.split('.');
+      let node = obj;
+      for (const part of parts.slice(0, -1)) node = node[part] ||= {};
+      node[parts.at(-1)] = value;
+    };
+    const clone = (value) => JSON.parse(JSON.stringify(value));
+    const percent = (value) => `${Math.round(Number(value) * 100)}%`;
+    const rgba = (hex, opacity) => {
+      const value = hex.replace('#', '');
+      const r = parseInt(value.slice(0, 2), 16);
+      const g = parseInt(value.slice(2, 4), 16);
+      const b = parseInt(value.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    };
+    const showStatus = (text) => { statusEl.textContent = text; };
+
+    function bind() {
+      for (const input of inputs) {
+        const value = get(settings, input.dataset.path);
+        input.value = value;
+        input.nextElementSibling.textContent = input.type === 'range' && input.max === '1' ? percent(value) : value;
+      }
+      updatePreview();
+    }
+
+    function collect() {
+      for (const input of inputs) {
+        const value = input.type === 'range' ? Number(input.value) : input.value;
+        set(settings, input.dataset.path, value);
+        input.nextElementSibling.textContent = input.type === 'range' && input.max === '1' ? percent(value) : value;
+      }
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const outer = document.getElementById('previewOuter');
+      const inner = document.getElementById('previewInner');
+      const tip = document.getElementById('previewTip');
+      outer.style.borderColor = rgba(settings.colors.primary, settings.opacity.primary);
+      outer.style.borderWidth = '7px';
+      inner.style.borderColor = rgba(settings.colors.secondary, settings.opacity.secondary);
+      inner.style.borderWidth = '5px';
+      tip.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
+      tip.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
+      tip.style.fontSize = `${settings.text.fontSize}px`;
+      tip.style.lineHeight = `${settings.text.lineHeight}px`;
+    }
+
+    async function load() {
+      showStatus('Loading...');
+      const [settingsResponse, defaultsResponse] = await Promise.all([
+        fetch('/api/settings'),
+        fetch('/api/defaults')
+      ]);
+      if (!settingsResponse.ok) throw new Error(await settingsResponse.text());
+      if (!defaultsResponse.ok) throw new Error(await defaultsResponse.text());
+      const payload = await settingsResponse.json();
+      defaults = await defaultsResponse.json();
+      settings = payload.settings;
+      pathEl.textContent = payload.settingsPath;
+      bind();
+      showStatus('Ready');
+    }
+
+    async function save() {
+      collect();
+      showStatus('Saving...');
+      const response = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings, null, 2)
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const payload = await response.json();
+      settings = payload.settings;
+      bind();
+      showStatus('Saved. Running rings will update automatically.');
+    }
+
+    for (const input of inputs) input.addEventListener('input', collect);
+    document.getElementById('save').addEventListener('click', () => save().catch((error) => showStatus(error.message)));
+    document.getElementById('reload').addEventListener('click', () => load().catch((error) => showStatus(error.message)));
+    document.getElementById('reset').addEventListener('click', () => {
+      settings = clone(defaults);
+      bind();
+      showStatus('Defaults loaded. Save to apply.');
+    });
+
+    load().catch((error) => {
+      showStatus('Settings server is not available.');
+      pathEl.textContent = `${error.message}. Launch this page with bin\\powershell\\Settings.ps1.`;
+    });
+  </script>
+</body>
+</html>

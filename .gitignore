@@ -1,0 +1,9 @@
+dist/
+logs/
+settings.json
+*.log
+*.tmp
+*.bak
+*.zip
+.DS_Store
+Thumbs.db

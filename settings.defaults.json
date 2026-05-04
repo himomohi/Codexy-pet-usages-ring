@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "colors": {
+    "primary": "#3CEBBD",
+    "secondary": "#56B2FF",
+    "warning": "#FF4238",
+    "caution": "#FFAE33",
+    "track": "#FFFFFF",
+    "readoutText": "#FFFFFF",
+    "outerReadoutBackground": "#0D181E",
+    "innerReadoutBackground": "#0F1624"
+  },
+  "opacity": {
+    "primary": 0.67,
+    "secondary": 0.63,
+    "warning": 0.73,
+    "track": 0.09,
+    "readout": 0.71,
+    "readoutText": 0.94
+  },
+  "text": {
+    "fontSize": 10.5,
+    "lineHeight": 13
+  }
+}
