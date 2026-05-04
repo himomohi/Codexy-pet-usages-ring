@@ -1,5 +1,18 @@
 ﻿# Troubleshooting
 
+## I just want the easiest install
+
+Use the root double-click launcher:
+
+```text
+Install.bat
+```
+
+The `.bat` files are intentionally thin launchers. They are easier for Windows
+users to double-click, while the actual install, process checks, shortcuts,
+settings server, and uninstall safety checks stay in PowerShell where they are
+more reliable.
+
 ## The ring does not appear
 
 1. Open Codex Desktop, or let the helper auto-start it.
@@ -82,6 +95,12 @@ The app follows the coordinates saved by Codex Desktop in
 
 Run the installer again:
 
+```text
+Install.bat
+```
+
+Or from PowerShell:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1
 ```
@@ -119,6 +138,46 @@ not supported because the overlay uses Windows WPF and Win32 APIs.
 If `bash` resolves to the legacy Windows `C:\Windows\System32\bash.exe` but no
 WSL distribution is installed, install a WSL distribution or use CMD/PowerShell
 instead.
+
+## Full uninstall refuses to remove files
+
+`Uninstall.ps1 -RemoveFiles` only removes a directory that contains the install
+marker written by the installer. This prevents a mistyped custom `-InstallDir`
+from recursively deleting unrelated files.
+
+If you installed an older version before this marker existed, run the installer
+once from the updated repository:
+
+```text
+Install.bat
+```
+
+Then run:
+
+```powershell
+.\bin\powershell\Uninstall.ps1 -RemoveFiles
+```
+
+Only remove a directory manually after confirming the path is really the
+Codex Pet Limit Rings install directory.
+
+## Settings page says forbidden
+
+Open settings through the launcher:
+
+```text
+Settings.bat
+```
+
+or:
+
+```powershell
+.\bin\powershell\Settings.ps1
+```
+
+The local settings server now requires a per-session token. Opening
+`settings\index.html` directly or reusing an old URL without the token will not
+be allowed to read or save settings.
 
 ## Logs
 

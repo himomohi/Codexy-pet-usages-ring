@@ -267,6 +267,7 @@
     const statusEl = document.getElementById('status');
     const pathEl = document.getElementById('path');
     const inputs = Array.from(document.querySelectorAll('[data-path]'));
+    const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
     let defaults = null;
 
@@ -279,6 +280,10 @@
     };
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const percent = (value) => `${Math.round(Number(value) * 100)}%`;
+    const apiHeaders = (headers = {}) => ({
+      ...headers,
+      'X-Codex-Pet-Settings-Token': sessionToken
+    });
     const rgba = (hex, opacity) => {
       const value = hex.replace('#', '');
       const r = parseInt(value.slice(0, 2), 16);
@@ -323,8 +328,8 @@
     async function load() {
       showStatus('Loading...');
       const [settingsResponse, defaultsResponse] = await Promise.all([
-        fetch('/api/settings'),
-        fetch('/api/defaults')
+        fetch('/api/settings', { headers: apiHeaders() }),
+        fetch('/api/defaults', { headers: apiHeaders() })
       ]);
       if (!settingsResponse.ok) throw new Error(await settingsResponse.text());
       if (!defaultsResponse.ok) throw new Error(await defaultsResponse.text());
@@ -341,7 +346,7 @@
       showStatus('Saving...');
       const response = await fetch('/api/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: apiHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify(settings, null, 2)
       });
       if (!response.ok) throw new Error(await response.text());
@@ -362,7 +367,7 @@
 
     load().catch((error) => {
       showStatus('Settings server is not available.');
-      pathEl.textContent = `${error.message}. Launch this page with bin\\powershell\\Settings.ps1.`;
+      pathEl.textContent = `${error.message}. Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.`;
     });
   </script>
 </body>

@@ -140,6 +140,25 @@ function Get-RequestBody {
   try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
 }
 
+function New-UrlSafeToken {
+  $bytes = New-Object byte[] 32
+  $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+  try {
+    $rng.GetBytes($bytes)
+  } finally {
+    $rng.Dispose()
+  }
+  return ([Convert]::ToBase64String($bytes).TrimEnd("=") -replace "\+", "-" -replace "/", "_")
+}
+
+function Test-RequestToken {
+  param($Request)
+  if ([string]::IsNullOrWhiteSpace($script:SessionToken)) { return $false }
+  $queryToken = $Request.QueryString["token"]
+  $headerToken = $Request.Headers["X-Codex-Pet-Settings-Token"]
+  return ($queryToken -eq $script:SessionToken -or $headerToken -eq $script:SessionToken)
+}
+
 function Start-SettingsListener {
   param([int]$StartPort)
   for ($candidate = $StartPort; $candidate -lt ($StartPort + 30); $candidate++) {
@@ -170,7 +189,8 @@ if (-not (Test-Path -LiteralPath $settingsHtml)) {
 
 Ensure-SettingsFile
 $server = Start-SettingsListener -StartPort $Port
-$url = "$($server.Url)?v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
+$script:SessionToken = New-UrlSafeToken
+$url = "$($server.Url)?token=$script:SessionToken&v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
 Write-Output "Settings UI: $url"
 Write-Output "Settings file: $script:SettingsFile"
 Write-Output "The server will stop after $TimeoutMinutes minute(s) of inactivity."
@@ -192,7 +212,9 @@ try {
     try {
       $path = $context.Request.Url.AbsolutePath.TrimEnd("/")
       if ([string]::IsNullOrWhiteSpace($path)) { $path = "/" }
-      if ($context.Request.HttpMethod -eq "OPTIONS") {
+      if (($path -like "/api/*") -and -not (Test-RequestToken -Request $context.Request)) {
+        Write-TextResponse -Context $context -Text "Forbidden: invalid settings session token." -StatusCode 403
+      } elseif ($context.Request.HttpMethod -eq "OPTIONS") {
         $context.Response.StatusCode = 204
       } elseif ($context.Request.HttpMethod -eq "GET" -and ($path -eq "/" -or $path -eq "/index.html")) {
         Write-TextResponse -Context $context -Text (Read-Utf8Text -Path $settingsHtml) -ContentType "text/html; charset=utf-8"

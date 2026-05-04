@@ -21,6 +21,11 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
   throw "Codex Pet Limit Rings for Windows can only run on Windows."
 }
 
+$runtimeStateScript = Join-Path $PSScriptRoot "RuntimeState.ps1"
+if (Test-Path -LiteralPath $runtimeStateScript) {
+  . $runtimeStateScript
+}
+
 function Get-ProjectRoot {
   if (-not [string]::IsNullOrWhiteSpace($InstallDir)) {
     return [System.IO.Path]::GetFullPath($InstallDir)
@@ -55,7 +60,7 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
   . $codexDiscoveryScript
 }
 
-& (Join-Path $PSScriptRoot "Stop.ps1") -Quiet
+& (Join-Path $PSScriptRoot "Stop.ps1") -InstallDir $projectRoot -Quiet
 
 $codexStartResult = $null
 if (-not $NoStartCodex -and (Get-Command Start-CodexDesktopApp -ErrorAction SilentlyContinue)) {
@@ -110,6 +115,9 @@ if ($NoTrayIcon) { $args += "-NoTrayIcon" }
 
 $argumentLine = ($args | ForEach-Object { Quote-Argument ([string]$_) }) -join " "
 $process = Start-Process -FilePath $powerShell -ArgumentList $argumentLine -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru
+if (Get-Command Set-CodexPetPidFile -ErrorAction SilentlyContinue) {
+  Set-CodexPetPidFile -ProjectRoot $projectRoot -ProcessId $process.Id
+}
 Write-Output "Started Codex Pet Limit Rings for Windows."
 Write-Output "PID: $($process.Id)"
 Write-Output "Project: $projectRoot"

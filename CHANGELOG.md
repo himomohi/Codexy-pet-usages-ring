@@ -2,24 +2,25 @@
 
 ## 0.1.1
 
-- Added a polished GitHub README hero image using an image-generated backdrop and a live local `/pet` usage capture.
-- Redesigned the README top image as a compact GitHub-style title bar with the live pet/ring capture.
-- Replaced the README title bar with an ImageGen-made mascot/ring banner and reduced duplicate top copy.
-- Renamed the README banner asset path to force GitHub to load the refreshed title bar.
-- Added README badges, version presentation, and clearer project navigation.
-- Clarified first-install behavior: immediate helper start, Windows startup registration, Codex Desktop auto-start, and `/pet` waiting.
-- Added copy-paste AI agent instructions for installing from this repo without separate web search.
-- Made the AI agent instructions self-contained by including the canonical repository URL and clone step.
-- Preserved upstream MIT license attribution in `LICENSE` and `NOTICE.md`.
-- Included `NOTICE.md` in installer copies and release zip packages.
+### Added
+
+- Added root `.bat` launchers for double-click install, start, stop, status, settings, and uninstall.
+
+### Fixed
+
+- Hardened the local settings server with a random per-session token for settings API requests.
+- Replaced broad stop/status process matching with exact project-script path checks and PID file tracking.
+- Required an install marker before `Uninstall.ps1 -RemoveFiles` recursively removes files.
+- Made uninstall remove shortcuts only when they point at the selected install directory.
 
 ## 0.1.0
+
+### Added
 
 - Initial Windows companion overlay.
 - Full circular translucent usage rings.
 - Ring window is kept behind the Codex avatar overlay without clipping.
 - Installer, startup shortcut, Start Menu shortcut, diagnostics, and release zip helper.
-- English README and Korean README.
 - CMD and Bash wrappers for basic terminal environments on Windows.
 - HTML settings page for ring colors, opacity, and hover text sizing.
 - Live settings reload from local `settings.json`.

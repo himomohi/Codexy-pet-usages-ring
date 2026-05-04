@@ -15,14 +15,23 @@ function Read-Utf8Text {
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
+$runtimeStateScript = Join-Path $PSScriptRoot "RuntimeState.ps1"
+if (-not (Test-Path -LiteralPath $runtimeStateScript)) {
+  throw "Missing runtime state helper: $runtimeStateScript"
+}
+. $runtimeStateScript
+
 $codexDiscoveryScript = Join-Path $projectRoot "src\CodexAppDiscovery.ps1"
 if (Test-Path -LiteralPath $codexDiscoveryScript) {
   . $codexDiscoveryScript
 }
 
-$processes = Get-CimInstance Win32_Process |
-  Where-Object { $_.CommandLine -match '(CodexPetLimitRings\.ps1|codex-pet-limit-rings-windows\.ps1)' } |
-  Select-Object ProcessId, CommandLine
+$processRoots = Get-CodexPetRuntimeRoots -ScriptProjectRoot $projectRoot -InstallDir $InstallDir
+$processes = Get-CodexPetRuntimeProcesses -ProjectRoots $processRoots
+$pidFiles = @($processRoots | ForEach-Object {
+  $paths = Get-CodexPetRuntimePaths -ProjectRoot $_
+  if (Test-Path -LiteralPath $paths.PidFile) { $paths.PidFile }
+})
 
 $codexApp = $null
 $codexDesktopProcess = $null
@@ -42,8 +51,11 @@ $startupShortcut = Join-Path ([Environment]::GetFolderPath("Startup")) "Codex Pe
 [PSCustomObject]@{
   Installed = Test-Path -LiteralPath $InstallDir
   InstallDir = [System.IO.Path]::GetFullPath($InstallDir)
+  InstallMarker = Test-CodexPetInstallMarker -ProjectRoot $InstallDir
   Running = [bool]$processes
   ProcessIds = @($processes | ForEach-Object { $_.ProcessId })
+  ProcessRoots = @($processes | ForEach-Object { $_.ProjectRoot } | Sort-Object -Unique)
+  PidFiles = $pidFiles
   StartupShortcut = Test-Path -LiteralPath $startupShortcut
   CodexDesktopFound = if ($codexApp) { $codexApp.Found } else { $null }
   CodexDesktopRunning = [bool]$codexDesktopProcess

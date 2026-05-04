@@ -69,11 +69,19 @@ if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
   throw "This installer only supports Windows."
 }
 
+$runtimeStateScript = Join-Path $PSScriptRoot "RuntimeState.ps1"
+if (-not (Test-Path -LiteralPath $runtimeStateScript)) {
+  throw "Missing runtime state helper: $runtimeStateScript"
+}
+. $runtimeStateScript
+
 $sourceRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
 if ([string]::IsNullOrWhiteSpace($InstallDir)) {
   $InstallDir = Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) "CodexPetLimitRingsWin"
 }
 $targetRoot = [System.IO.Path]::GetFullPath($InstallDir)
+$versionFile = Join-Path $sourceRoot "VERSION"
+$version = if (Test-Path -LiteralPath $versionFile) { (Get-Content -Raw -LiteralPath $versionFile).Trim() } else { "" }
 
 if ((Test-Path -LiteralPath $targetRoot) -and -not $Force) {
   Write-Output "Updating existing install: $targetRoot"
@@ -81,13 +89,14 @@ if ((Test-Path -LiteralPath $targetRoot) -and -not $Force) {
 
 if ($sourceRoot -ne $targetRoot) {
   New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
-  foreach ($name in @("bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
+  foreach ($name in @("Install.bat", "Start.bat", "Stop.bat", "Status.bat", "Settings.bat", "Uninstall.bat", "bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION", ".gitignore")) {
     Copy-ProjectFile -Name $name
   }
 } else {
   Write-Output "Source and install directory are the same; skipping file copy."
 }
 Remove-ObsoleteEntryPoints
+Write-CodexPetInstallMarker -ProjectRoot $targetRoot -SourceRoot $sourceRoot -Version $version
 
 $powerShell = Get-WindowsPowerShell
 $startScript = Join-Path $targetRoot "bin\powershell\Start.ps1"
