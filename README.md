@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codex Pet Limit Rings for Windows GitHub title bar" width="100%">
+  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
