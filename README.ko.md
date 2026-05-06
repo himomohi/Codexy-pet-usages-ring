@@ -3,7 +3,9 @@
 </p>
 
 <p align="center">
-  <video src="docs/assets/usage-rec.mp4" controls muted loop playsinline width="100%"></video>
+  <a href="docs/assets/usage-rec.mp4">
+    <img src="docs/assets/usage-rec.gif" alt="Codexy pet usage rings demo" width="100%">
+  </a>
 </p>
 
 <p align="center">
