@@ -3,6 +3,10 @@
 </p>
 
 <p align="center">
+  <video src="docs/assets/usage-rec.mp4" controls muted loop playsinline width="100%"></video>
+</p>
+
+<p align="center">
   <a href="CHANGELOG.md#014"><img alt="Version 0.1.4" src="https://img.shields.io/badge/version-0.1.4-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
