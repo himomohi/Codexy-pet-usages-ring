@@ -2,7 +2,7 @@ param(
   [string]$CodexHome = "$env:USERPROFILE\.codex",
   [switch]$NoLiveUsage,
   [int]$UsagePollSeconds = 10,
-  [int]$FramePollMs = 120,
+  [int]$FramePollMs = 60,
   [int]$IdleFramePollMs = 300,
   [int]$PetPollMs = 300,
   [double]$UsageAnimationFactor = 0.22,
@@ -255,8 +255,11 @@ $script:RingOuterRadius = $null
 $script:RingInnerRadius = $null
 $script:LastReadoutRefreshAt = [datetime]::MinValue
 $script:LastHoverSignature = ""
+$script:RingVisualsVisible = $null
+$script:RingAnimationToken = 0
 $script:SettingsLastWriteTimeUtc = [datetime]::MinValue
 $script:Style = [ordered]@{
+  Language = "auto"
   PrimaryRgb = @(60, 235, 189)
   SecondaryRgb = @(86, 178, 255)
   WarningRgb = @(255, 66, 56)
@@ -273,6 +276,10 @@ $script:Style = [ordered]@{
   ReadoutTextOpacity = 240
   ReadoutFontSize = 10.5
   ReadoutLineHeight = 13.0
+  RingGap = [Math]::Max(0.0, [double]$RingPadding - 16.0)
+  HoverRange = 24.0
+  FadeInMs = 120.0
+  FadeOutMs = 180.0
 }
 $script:RingsEnabled = $true
 
@@ -344,6 +351,7 @@ function Ensure-SettingsFile {
   }
   $fallback = [ordered]@{
     version = 1
+    language = "auto"
     colors = [ordered]@{
       primary = "#3CEBBD"
       secondary = "#56B2FF"
@@ -366,6 +374,14 @@ function Ensure-SettingsFile {
       fontSize = 10.5
       lineHeight = 13
     }
+    layout = [ordered]@{
+      ringGap = 22
+    }
+    behavior = [ordered]@{
+      hoverRange = 24
+      fadeInMs = 120
+      fadeOutMs = 180
+    }
   }
   ($fallback | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $SettingsPath -Encoding UTF8
 }
@@ -382,7 +398,12 @@ function Update-StyleFromSettings {
     $colors = Get-PropertyValue $settings "colors" $null
     $opacity = Get-PropertyValue $settings "opacity" $null
     $text = Get-PropertyValue $settings "text" $null
+    $layout = Get-PropertyValue $settings "layout" $null
+    $behavior = Get-PropertyValue $settings "behavior" $null
 
+    $language = ([string](Get-PropertyValue $settings "language" "auto")).Trim().ToLowerInvariant()
+    if ($language -notin @("auto", "ko", "en")) { $language = "auto" }
+    $script:Style.Language = $language
     $script:Style.PrimaryRgb = Convert-HexColor (Get-PropertyValue $colors "primary" $null) @(60, 235, 189)
     $script:Style.SecondaryRgb = Convert-HexColor (Get-PropertyValue $colors "secondary" $null) @(86, 178, 255)
     $script:Style.WarningRgb = Convert-HexColor (Get-PropertyValue $colors "warning" $null) @(255, 66, 56)
@@ -399,6 +420,10 @@ function Update-StyleFromSettings {
     $script:Style.ReadoutTextOpacity = Convert-OpacityByte (Get-PropertyValue $opacity "readoutText" $null) 240
     $script:Style.ReadoutFontSize = Convert-SettingNumber (Get-PropertyValue $text "fontSize" $null) 10.5 8 24
     $script:Style.ReadoutLineHeight = Convert-SettingNumber (Get-PropertyValue $text "lineHeight" $null) 13 10 32
+    $script:Style.RingGap = Convert-SettingNumber (Get-PropertyValue $layout "ringGap" $null) ([Math]::Max(0.0, [double]$RingPadding - 16.0)) 0 96
+    $script:Style.HoverRange = Convert-SettingNumber (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
+    $script:Style.FadeInMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
+    $script:Style.FadeOutMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
     $script:SettingsLastWriteTimeUtc = $item.LastWriteTimeUtc
     return $true
   } catch {
@@ -433,6 +458,8 @@ function Apply-StyleSettings {
   }
   Update-RingGeometry
   [void](Update-ReadoutText -Force)
+  Update-TrayMenuText
+  Update-TrayText
 }
 
 function Get-CapacityBrush {
@@ -447,6 +474,49 @@ function Get-CapacityBrush {
     return New-StyleBrush ([byte]$script:Style.SecondaryOpacity) ([int[]]$script:Style.SecondaryRgb)
   }
   return New-StyleBrush ([byte]$script:Style.PrimaryOpacity) ([int[]]$script:Style.PrimaryRgb)
+}
+
+function Get-EffectiveLanguage {
+  $language = if ($null -ne $script:Style.Language) { [string]$script:Style.Language } else { "auto" }
+  if ($language -eq "ko" -or $language -eq "en") { return $language }
+  try {
+    if ([System.Globalization.CultureInfo]::CurrentUICulture.Name -like "ko*") { return "ko" }
+  } catch {}
+  return "en"
+}
+
+function Test-KoreanLanguage {
+  return ((Get-EffectiveLanguage) -eq "ko")
+}
+
+function Expand-UnicodeText {
+  param([string]$Text)
+  return [System.Text.RegularExpressions.Regex]::Unescape($Text)
+}
+
+function Get-UiText {
+  param([string]$Key)
+  if (Test-KoreanLanguage) {
+    switch ($Key) {
+      "TrayTitle" { return (Expand-UnicodeText "Codex \uB9C1") }
+      "TrayText" { return (Expand-UnicodeText "Codex \uB9C1: {0} 5h, {1} \uC8FC\uAC04") }
+      "ShowRings" { return (Expand-UnicodeText "\uB9C1 \uD45C\uC2DC") }
+      "RefreshNow" { return (Expand-UnicodeText "\uC9C0\uAE08 \uC0C8\uB85C\uACE0\uCE68") }
+      "Settings" { return (Expand-UnicodeText "\uC124\uC815") }
+      "OpenLogs" { return (Expand-UnicodeText "\uB85C\uADF8 \uC5F4\uAE30") }
+      "Quit" { return (Expand-UnicodeText "\uC885\uB8CC") }
+    }
+  }
+  switch ($Key) {
+    "TrayTitle" { return "Codex Rings" }
+    "TrayText" { return "Codex Rings: {0} 5h, {1} weekly" }
+    "ShowRings" { return "Show Rings" }
+    "RefreshNow" { return "Refresh Now" }
+    "Settings" { return "Settings" }
+    "OpenLogs" { return "Open Logs" }
+    "Quit" { return "Quit" }
+  }
+  return $Key
 }
 
 function Get-BucketRemaining {
@@ -863,59 +933,98 @@ function Format-Duration {
   param($Seconds)
   if ($null -eq $Seconds) { return "--" }
   $total = [int][Math]::Max(0, [Math]::Ceiling([double]$Seconds))
+  $ko = Test-KoreanLanguage
   if ($total -ge 86400) {
     $days = [int][Math]::Floor($total / 86400)
     $hours = [int][Math]::Floor(($total % 86400) / 3600)
+    if ($ko) { return (Expand-UnicodeText "{0}\uC77C {1}\uC2DC\uAC04") -f $days, $hours }
     return "{0}d {1}h" -f $days, $hours
   }
   if ($total -ge 3600) {
     $hours = [int][Math]::Floor($total / 3600)
     $minutes = [int][Math]::Floor(($total % 3600) / 60)
+    if ($ko) { return (Expand-UnicodeText "{0}\uC2DC\uAC04 {1}\uBD84") -f $hours, $minutes }
     return "{0}h {1}m" -f $hours, $minutes
   }
   if ($total -ge 60) {
     $minutes = [int][Math]::Floor($total / 60)
     $seconds = $total % 60
+    if ($ko) { return (Expand-UnicodeText "{0}\uBD84 {1}\uCD08") -f $minutes, $seconds }
     return "{0}m {1}s" -f $minutes, $seconds
   }
+  if ($ko) { return (Expand-UnicodeText "{0}\uCD08") -f $total }
   return "{0}s" -f $total
 }
 
 function Format-ResetDetail {
   param($ResetAt)
-  if ($null -eq $ResetAt) { return "Reset --" }
+  $ko = Test-KoreanLanguage
+  if ($null -eq $ResetAt) {
+    if ($ko) { return (Expand-UnicodeText "\uC7AC\uC124\uC815 --") }
+    return "Reset --"
+  }
   $reset = [datetime]$ResetAt
   $remaining = ($reset - (Get-Date)).TotalSeconds
   $timeText = if ($reset.Date -eq (Get-Date).Date) {
     $reset.ToString("HH:mm")
   } else {
-    $reset.ToString("MMM d HH:mm", [System.Globalization.CultureInfo]::InvariantCulture)
+    if ($ko) {
+      $reset.ToString((Expand-UnicodeText "M\uC6D4 d\uC77C HH:mm"), [System.Globalization.CultureInfo]::GetCultureInfo("ko-KR"))
+    } else {
+      $reset.ToString("MMM d HH:mm", [System.Globalization.CultureInfo]::InvariantCulture)
+    }
   }
+  if ($ko) { return (Expand-UnicodeText "\uC7AC\uC124\uC815 {0} ({1})") -f (Format-Duration $remaining), $timeText }
   return "Reset {0} ({1})" -f (Format-Duration $remaining), $timeText
 }
 
 function Format-WindowLabel {
   param($Seconds, [string]$Fallback)
   if ($null -eq $Seconds) { return $Fallback }
+  $ko = Test-KoreanLanguage
   $value = [double]$Seconds
   if ([Math]::Abs($value - 18000.0) -lt 180.0) { return "5h" }
-  if ([Math]::Abs($value - 604800.0) -lt 3600.0) { return "Weekly" }
-  if ($value -ge 86400.0) { return "{0:N0}d" -f ($value / 86400.0) }
-  if ($value -ge 3600.0) { return "{0:N0}h" -f ($value / 3600.0) }
+  if ([Math]::Abs($value - 604800.0) -lt 3600.0) {
+    if ($ko) { return (Expand-UnicodeText "\uC8FC\uAC04") }
+    return "Weekly"
+  }
+  if ($value -ge 86400.0) {
+    if ($ko) { return (Expand-UnicodeText "{0:N0}\uC77C") -f ($value / 86400.0) }
+    return "{0:N0}d" -f ($value / 86400.0)
+  }
+  if ($value -ge 3600.0) {
+    if ($ko) { return (Expand-UnicodeText "{0:N0}\uC2DC\uAC04") -f ($value / 3600.0) }
+    return "{0:N0}h" -f ($value / 3600.0)
+  }
+  if ($ko) { return (Expand-UnicodeText "{0:N0}\uBD84") -f ($value / 60.0) }
   return "{0:N0}m" -f ($value / 60.0)
 }
 
 function Get-RingReadoutText {
   param([ValidateSet("Outer", "Inner")][string]$Ring)
+  $ko = Test-KoreanLanguage
   if ($Ring -eq "Outer") {
     $label = Format-WindowLabel -Seconds $script:UsageState.PrimaryWindowSeconds -Fallback "5h"
+    if ($ko) {
+      return (Expand-UnicodeText "{0} \uD55C\uB3C4  {1} \uB0A8\uC74C`n{2}") -f `
+        $label,
+        (Format-Percent $script:UsageState.PrimaryRemaining),
+        (Format-ResetDetail $script:UsageState.PrimaryResetAt)
+    }
     return "{0} limit  {1} left`n{2}" -f `
       $label,
       (Format-Percent $script:UsageState.PrimaryRemaining),
       (Format-ResetDetail $script:UsageState.PrimaryResetAt)
   }
 
-  $label = Format-WindowLabel -Seconds $script:UsageState.SecondaryWindowSeconds -Fallback "Weekly"
+  $weeklyFallback = if ($ko) { (Expand-UnicodeText "\uC8FC\uAC04") } else { "Weekly" }
+  $label = Format-WindowLabel -Seconds $script:UsageState.SecondaryWindowSeconds -Fallback $weeklyFallback
+  if ($ko) {
+    return (Expand-UnicodeText "{0}  {1} \uB0A8\uC74C`n{2}") -f `
+      $label,
+      (Format-Percent $script:UsageState.SecondaryRemaining),
+      (Format-ResetDetail $script:UsageState.SecondaryResetAt)
+  }
   return "{0}  {1} left`n{2}" -f `
     $label,
     (Format-Percent $script:UsageState.SecondaryRemaining),
@@ -946,36 +1055,239 @@ function Hide-RingReadouts {
   if ($null -ne $script:InnerReadoutBorder) {
     $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
   }
+  if ($null -ne $script:OuterReadoutWindow -and $script:OuterReadoutWindow.IsVisible) {
+    $script:OuterReadoutWindow.Hide()
+  }
+  if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
+    $script:InnerReadoutWindow.Hide()
+  }
 }
 
-function Set-ReadoutNearPoint {
-  param($Border, [double]$X, [double]$Y, [double]$Size)
+function Set-RingShapesVisibility {
+  param([System.Windows.Visibility]$Visibility)
+  foreach ($shape in @($script:OuterTrack, $script:InnerTrack, $script:OuterArc, $script:InnerArc)) {
+    if ($null -ne $shape) {
+      $shape.Visibility = $Visibility
+    }
+  }
+}
+
+function Start-RingOpacityAnimation {
+  param([double]$TargetOpacity, [double]$DurationMs, [bool]$HideWhenDone)
+  if ($null -eq $script:Window) { return }
+
+  $script:RingAnimationToken += 1
+  $animationToken = $script:RingAnimationToken
+  $duration = [Math]::Max(0.0, [double]$DurationMs)
+
+  if ($duration -le 0.0) {
+    $script:Window.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+    $script:Window.Opacity = $TargetOpacity
+    if ($HideWhenDone) {
+      Hide-RingReadouts
+      Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)
+      if ($script:Window.IsVisible) { $script:Window.Hide() }
+    }
+    return
+  }
+
+  $animation = [System.Windows.Media.Animation.DoubleAnimation]::new()
+  $animation.From = [double]$script:Window.Opacity
+  $animation.To = $TargetOpacity
+  $animation.Duration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds($duration))
+  $animation.FillBehavior = [System.Windows.Media.Animation.FillBehavior]::HoldEnd
+  $easing = [System.Windows.Media.Animation.QuadraticEase]::new()
+  $easing.EasingMode = if ($TargetOpacity -gt [double]$script:Window.Opacity) {
+    [System.Windows.Media.Animation.EasingMode]::EaseOut
+  } else {
+    [System.Windows.Media.Animation.EasingMode]::EaseIn
+  }
+  $animation.EasingFunction = $easing
+  $completedToken = $animationToken
+  $completedTargetOpacity = $TargetOpacity
+  $completedHideWhenDone = $HideWhenDone
+  $animation.Add_Completed({
+    if ($script:RingAnimationToken -ne $completedToken) { return }
+    $script:Window.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+    $script:Window.Opacity = $completedTargetOpacity
+    if ($completedHideWhenDone -and -not $script:RingVisualsVisible) {
+      Hide-RingReadouts
+      Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)
+      if ($script:Window.IsVisible) { $script:Window.Hide() }
+    }
+  }.GetNewClosure())
+  $script:Window.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $animation)
+}
+
+function Set-RingVisualsVisible {
+  param([bool]$Visible)
+  if ($script:RingVisualsVisible -eq $Visible) {
+    if ($Visible) {
+      if ($null -ne $script:Window -and -not $script:Window.IsVisible) {
+        $script:Window.Opacity = 0.0
+        $script:Window.Show()
+        Start-RingOpacityAnimation -TargetOpacity 1.0 -DurationMs ([double]$script:Style.FadeInMs) -HideWhenDone $false
+      }
+    }
+    return
+  }
+  $script:RingVisualsVisible = $Visible
+
+  if ($Visible) {
+    Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Visible)
+    if ($null -ne $script:Window -and -not $script:Window.IsVisible) {
+      $script:Window.Opacity = 0.0
+      $script:Window.Show()
+    }
+    Start-RingOpacityAnimation -TargetOpacity 1.0 -DurationMs ([double]$script:Style.FadeInMs) -HideWhenDone $false
+  } else {
+    if ($null -ne $script:Window -and $script:Window.IsVisible) {
+      Start-RingOpacityAnimation -TargetOpacity 0.0 -DurationMs ([double]$script:Style.FadeOutMs) -HideWhenDone $true
+    } else {
+      Hide-RingReadouts
+      Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)
+    }
+  }
+}
+
+function Test-CursorOverPet {
+  param($Cursor)
+  if ($null -eq $script:LastPetRect -or $null -eq $Cursor) { return $false }
+  $rect = $script:LastPetRect
+  return (
+    [double]$Cursor.X -ge [double]$rect.X -and
+    [double]$Cursor.X -le ([double]$rect.X + [double]$rect.Width) -and
+    [double]$Cursor.Y -ge [double]$rect.Y -and
+    [double]$Cursor.Y -le ([double]$rect.Y + [double]$rect.Height)
+  )
+}
+
+function Test-CursorInRingRange {
+  param($Cursor)
+  if (
+    $null -eq $script:Window -or
+    $null -eq $Cursor -or
+    [double]::IsNaN([double]$script:Window.Width) -or
+    [double]$script:Window.Width -le 1
+  ) {
+    return $false
+  }
+
+  $size = [double]$script:Window.Width
+  $centerX = [double]$script:Window.Left + $size / 2.0
+  $centerY = [double]$script:Window.Top + $size / 2.0
+  $outerRadius = if ($null -ne $script:RingOuterRadius) {
+    [double]$script:RingOuterRadius
+  } else {
+    $size / 2.0 - 16.0
+  }
+  $range = [Math]::Max(0.0, [double]$script:Style.HoverRange)
+  $distance = [Math]::Sqrt([Math]::Pow([double]$Cursor.X - $centerX, 2) + [Math]::Pow([double]$Cursor.Y - $centerY, 2))
+  return ($distance -le ($outerRadius + $range))
+}
+
+function Update-RingHoverVisibility {
+  if ($null -eq $script:Window -or $null -eq $script:LastPetRect) {
+    Set-RingVisualsVisible -Visible $false
+    return
+  }
+
+  $cursor = [System.Windows.Forms.Cursor]::Position
+  $showRing = (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
+  Set-RingVisualsVisible -Visible $showRing
+  Set-FrameTimerInterval -Fast $true
+}
+
+function Test-RectOverlap {
+  param([double]$Left, [double]$Top, [double]$Width, [double]$Height, $Rect)
+  if ($null -eq $Rect) { return $false }
+  return (
+    $Left -lt ([double]$Rect.X + [double]$Rect.Width) -and
+    ($Left + $Width) -gt [double]$Rect.X -and
+    $Top -lt ([double]$Rect.Y + [double]$Rect.Height) -and
+    ($Top + $Height) -gt [double]$Rect.Y
+  )
+}
+
+function New-ReadoutPlacement {
+  param([double]$Left, [double]$Top, [double]$Width, [double]$Height)
+  return [PSCustomObject]@{
+    Left = $Left
+    Top = $Top
+    Width = $Width
+    Height = $Height
+  }
+}
+
+function Clamp-ReadoutPlacement {
+  param($Placement, $Bounds)
+  $left = [Math]::Max([double]$Bounds.Left + 4.0, [Math]::Min([double]$Placement.Left, [double]$Bounds.Right - [double]$Placement.Width - 4.0))
+  $top = [Math]::Max([double]$Bounds.Top + 4.0, [Math]::Min([double]$Placement.Top, [double]$Bounds.Bottom - [double]$Placement.Height - 4.0))
+  return New-ReadoutPlacement -Left $left -Top $top -Width ([double]$Placement.Width) -Height ([double]$Placement.Height)
+}
+
+function Set-ReadoutWindowNearPoint {
+  param($Window, $Border, [double]$ScreenX, [double]$ScreenY)
+  if ($null -eq $Window -or $null -eq $Border) { return }
+
   $Border.Measure([System.Windows.Size]::new([double]::PositiveInfinity, [double]::PositiveInfinity))
   $width = [double]$Border.DesiredSize.Width
   $height = [double]$Border.DesiredSize.Height
-  $left = $X + 12.0
-  if (($left + $width) -gt ($Size - 4.0)) {
-    $left = $X - $width - 12.0
+  $Window.Width = $width
+  $Window.Height = $height
+
+  $screen = [System.Windows.Forms.Screen]::FromPoint([System.Drawing.Point]::new([int][Math]::Round($ScreenX), [int][Math]::Round($ScreenY)))
+  $bounds = $screen.WorkingArea
+  $pet = $script:LastPetRect
+  $margin = 12.0
+  $candidates = @()
+  if ($null -ne $pet) {
+    $candidates += New-ReadoutPlacement -Left ([double]$pet.X + [double]$pet.Width + $margin) -Top ($ScreenY - $height / 2.0) -Width $width -Height $height
+    $candidates += New-ReadoutPlacement -Left ([double]$pet.X - $width - $margin) -Top ($ScreenY - $height / 2.0) -Width $width -Height $height
+    $candidates += New-ReadoutPlacement -Left ($ScreenX - $width / 2.0) -Top ([double]$pet.Y - $height - $margin) -Width $width -Height $height
+    $candidates += New-ReadoutPlacement -Left ($ScreenX - $width / 2.0) -Top ([double]$pet.Y + [double]$pet.Height + $margin) -Width $width -Height $height
   }
-  $top = $Y - $height / 2.0
-  $left = [Math]::Max(4.0, [Math]::Min($left, $Size - $width - 4.0))
-  $top = [Math]::Max(4.0, [Math]::Min($top, $Size - $height - 4.0))
-  [System.Windows.Controls.Canvas]::SetLeft($Border, $left)
-  [System.Windows.Controls.Canvas]::SetTop($Border, $top)
+  $candidates += New-ReadoutPlacement -Left ($ScreenX + $margin) -Top ($ScreenY - $height / 2.0) -Width $width -Height $height
+  $candidates += New-ReadoutPlacement -Left ($ScreenX - $width - $margin) -Top ($ScreenY - $height / 2.0) -Width $width -Height $height
+
+  $chosen = $null
+  foreach ($candidate in $candidates) {
+    $clamped = Clamp-ReadoutPlacement -Placement $candidate -Bounds $bounds
+    if (-not (Test-RectOverlap -Left $clamped.Left -Top $clamped.Top -Width $clamped.Width -Height $clamped.Height -Rect $pet)) {
+      $chosen = $clamped
+      break
+    }
+  }
+  if ($null -eq $chosen) {
+    $chosen = Clamp-ReadoutPlacement -Placement $candidates[0] -Bounds $bounds
+  }
+
+  $Window.Left = [double]$chosen.Left
+  $Window.Top = [double]$chosen.Top
 }
 
 function Show-RingReadout {
   param([ValidateSet("Outer", "Inner")][string]$Ring, [double]$X, [double]$Y, [double]$Size)
+  $screenX = [double]$script:Window.Left + $X
+  $screenY = [double]$script:Window.Top + $Y
   if ($Ring -eq "Outer") {
+    if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
+      $script:InnerReadoutWindow.Hide()
+    }
     $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
-    Set-ReadoutNearPoint -Border $script:OuterReadoutBorder -X $X -Y $Y -Size $Size
     $script:OuterReadoutBorder.Visibility = [System.Windows.Visibility]::Visible
+    Set-ReadoutWindowNearPoint -Window $script:OuterReadoutWindow -Border $script:OuterReadoutBorder -ScreenX $screenX -ScreenY $screenY
+    if (-not $script:OuterReadoutWindow.IsVisible) { $script:OuterReadoutWindow.Show() }
     return
   }
 
+  if ($null -ne $script:OuterReadoutWindow -and $script:OuterReadoutWindow.IsVisible) {
+    $script:OuterReadoutWindow.Hide()
+  }
   $script:OuterReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
-  Set-ReadoutNearPoint -Border $script:InnerReadoutBorder -X $X -Y $Y -Size $Size
   $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Visible
+  Set-ReadoutWindowNearPoint -Window $script:InnerReadoutWindow -Border $script:InnerReadoutBorder -ScreenX $screenX -ScreenY $screenY
+  if (-not $script:InnerReadoutWindow.IsVisible) { $script:InnerReadoutWindow.Show() }
 }
 
 function Get-RingRemaining {
@@ -1084,6 +1396,7 @@ function Set-FrameTimerActive {
     if (-not $script:FrameTimer.IsEnabled) { $script:FrameTimer.Start() }
   } else {
     if ($script:FrameTimer.IsEnabled) { $script:FrameTimer.Stop() }
+    Set-RingVisualsVisible -Visible $false
     Hide-RingReadouts
   }
 }
@@ -1105,8 +1418,9 @@ function Update-PetFrame {
   }
 
   Set-PetAutoDetectState -Visible $true
-  $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $RingPadding * 2.0
-  $windowSize = $ringSize + $ReadoutPadding * 2.0
+  $ringPadding = [double]$script:Style.RingGap + 16.0
+  $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $ringPadding * 2.0
+  $windowSize = $ringSize
   $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowSize / 2.0
   $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $windowSize / 2.0
 
@@ -1132,8 +1446,9 @@ function Update-PetFrame {
     Update-RingGeometry
   }
 
-  if (-not $script:Window.IsVisible) { $script:Window.Show() }
   Set-FrameTimerActive -Active $true
+  Update-RingHoverVisibility
+  Update-HoverReadout
   Move-RingBehindCodex
 }
 
@@ -1184,15 +1499,33 @@ function Update-HoverReadout {
 
 function Update-TrayText {
   if ($NoTrayIcon -or $null -eq $script:NotifyIcon) { return }
-  $text = "Codex Rings: {0} 5h, {1} weekly" -f `
+  $text = (Get-UiText "TrayText") -f `
     (Format-Percent $script:UsageState.PrimaryRemaining), `
     (Format-Percent $script:UsageState.SecondaryRemaining)
   if ($text.Length -gt 63) { $text = $text.Substring(0, 63) }
   $script:NotifyIcon.Text = $text
 }
 
+function Update-TrayMenuText {
+  if ($NoTrayIcon) { return }
+  if ($null -ne $script:ShowItem) { $script:ShowItem.Text = Get-UiText "ShowRings" }
+  if ($null -ne $script:RefreshItem) { $script:RefreshItem.Text = Get-UiText "RefreshNow" }
+  if ($null -ne $script:SettingsItem) { $script:SettingsItem.Text = Get-UiText "Settings" }
+  if ($null -ne $script:OpenLogsItem) { $script:OpenLogsItem.Text = Get-UiText "OpenLogs" }
+  if ($null -ne $script:QuitItem) { $script:QuitItem.Text = Get-UiText "Quit" }
+  if ($null -ne $script:NotifyIcon -and [string]::IsNullOrWhiteSpace($script:NotifyIcon.Text)) {
+    $script:NotifyIcon.Text = Get-UiText "TrayTitle"
+  }
+}
+
 function Stop-RingsApp {
   Write-AppLog "Stopping Codex Pet Limit Rings for Windows."
+  if ($null -ne $script:OuterReadoutWindow -and $script:OuterReadoutWindow.IsVisible) {
+    $script:OuterReadoutWindow.Hide()
+  }
+  if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
+    $script:InnerReadoutWindow.Hide()
+  }
   if ($null -ne $script:NotifyIcon) {
     $script:NotifyIcon.Visible = $false
     $script:NotifyIcon.Dispose()
@@ -1214,6 +1547,25 @@ $script:Window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::M
 
 $script:Canvas = [System.Windows.Controls.Canvas]::new()
 $script:Window.Content = $script:Canvas
+
+function New-ReadoutWindow {
+  param($Content)
+  $window = [System.Windows.Window]::new()
+  $window.WindowStyle = [System.Windows.WindowStyle]::None
+  $window.AllowsTransparency = $true
+  $window.Background = [System.Windows.Media.Brushes]::Transparent
+  $window.Topmost = $true
+  $window.ShowInTaskbar = $false
+  $window.ResizeMode = [System.Windows.ResizeMode]::NoResize
+  $window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
+  $window.Content = $Content
+  $window.Add_SourceInitialized({
+    param($Sender, $EventArgs)
+    $handle = (New-Object System.Windows.Interop.WindowInteropHelper($Sender)).Handle
+    [CodexPetLimitRingNative]::MakeClickThrough($handle)
+  })
+  return $window
+}
 
 $script:OuterTrack = [System.Windows.Shapes.Ellipse]::new()
 $script:OuterTrack.Stroke = New-StyleBrush ([byte]$script:Style.TrackOpacity) ([int[]]$script:Style.TrackRgb)
@@ -1259,12 +1611,14 @@ $script:InnerReadoutBorder.Padding = [System.Windows.Thickness]::new(7, 4, 7, 5)
 $script:InnerReadoutBorder.Child = $script:InnerReadoutText
 $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
 
+$script:OuterReadoutWindow = New-ReadoutWindow -Content $script:OuterReadoutBorder
+$script:InnerReadoutWindow = New-ReadoutWindow -Content $script:InnerReadoutBorder
+
 $script:Canvas.Children.Add($script:OuterTrack) | Out-Null
 $script:Canvas.Children.Add($script:InnerTrack) | Out-Null
 $script:Canvas.Children.Add($script:OuterArc) | Out-Null
 $script:Canvas.Children.Add($script:InnerArc) | Out-Null
-$script:Canvas.Children.Add($script:OuterReadoutBorder) | Out-Null
-$script:Canvas.Children.Add($script:InnerReadoutBorder) | Out-Null
+Set-RingVisualsVisible -Visible $false
 
 $script:Window.Add_SourceInitialized({
   $handle = (New-Object System.Windows.Interop.WindowInteropHelper($script:Window)).Handle
@@ -1274,10 +1628,11 @@ $script:Window.Add_SourceInitialized({
 if (-not $NoTrayIcon) {
   $script:NotifyIcon = [System.Windows.Forms.NotifyIcon]::new()
   $script:NotifyIcon.Icon = [System.Drawing.SystemIcons]::Information
-  $script:NotifyIcon.Text = "Codex Rings"
+  $script:NotifyIcon.Text = Get-UiText "TrayTitle"
   $script:NotifyIcon.Visible = $true
   $menu = [System.Windows.Forms.ContextMenuStrip]::new()
-  $showItem = [System.Windows.Forms.ToolStripMenuItem]::new("Show Rings")
+  $script:ShowItem = [System.Windows.Forms.ToolStripMenuItem]::new((Get-UiText "ShowRings"))
+  $showItem = $script:ShowItem
   $showItem.Checked = $true
   $showItem.CheckOnClick = $true
   $showItem.Add_CheckedChanged({
@@ -1289,9 +1644,11 @@ if (-not $NoTrayIcon) {
       Set-FrameTimerActive -Active $false
     }
   })
-  $refreshItem = [System.Windows.Forms.ToolStripMenuItem]::new("Refresh Now")
+  $script:RefreshItem = [System.Windows.Forms.ToolStripMenuItem]::new((Get-UiText "RefreshNow"))
+  $refreshItem = $script:RefreshItem
   $refreshItem.Add_Click({ Update-UsageState; Update-PetFrame })
-  $settingsItem = [System.Windows.Forms.ToolStripMenuItem]::new("Settings")
+  $script:SettingsItem = [System.Windows.Forms.ToolStripMenuItem]::new((Get-UiText "Settings"))
+  $settingsItem = $script:SettingsItem
   $settingsItem.Add_Click({
     try {
       $settingsScript = Join-Path $ProjectRoot "bin\powershell\Settings.ps1"
@@ -1304,11 +1661,13 @@ if (-not $NoTrayIcon) {
       Write-AppLog "Settings launch failed: $($_.Exception.Message)"
     }
   })
-  $openLogsItem = [System.Windows.Forms.ToolStripMenuItem]::new("Open Logs")
+  $script:OpenLogsItem = [System.Windows.Forms.ToolStripMenuItem]::new((Get-UiText "OpenLogs"))
+  $openLogsItem = $script:OpenLogsItem
   $openLogsItem.Add_Click({
     try { [System.Diagnostics.Process]::Start("explorer.exe", $LogDirectory) | Out-Null } catch {}
   })
-  $quitItem = [System.Windows.Forms.ToolStripMenuItem]::new("Quit")
+  $script:QuitItem = [System.Windows.Forms.ToolStripMenuItem]::new((Get-UiText "Quit"))
+  $quitItem = $script:QuitItem
   $quitItem.Add_Click({ Stop-RingsApp })
   $menu.Items.Add($showItem) | Out-Null
   $menu.Items.Add($refreshItem) | Out-Null
@@ -1324,6 +1683,7 @@ $script:FrameTimer.Interval = [TimeSpan]::FromMilliseconds($IdleFramePollMs)
 $script:FrameTimer.Add_Tick({
   try {
     Update-UsageAnimation
+    Update-RingHoverVisibility
     Update-HoverReadout
   } catch {
     Write-AppLog "Frame update failed: $($_.Exception.Message)"

@@ -55,14 +55,31 @@ function Normalize-Number {
   try { return [Math]::Round([Math]::Max($Min, [Math]::Min($Max, [double]$Value)), 3) } catch { return $Fallback }
 }
 
+function Normalize-Language {
+  param($Value)
+  $language = if ($null -eq $Value) { "auto" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($language -in @("auto", "ko", "en")) { return $language }
+  return "auto"
+}
+
+function Get-SystemLanguage {
+  try {
+    if ([System.Globalization.CultureInfo]::CurrentUICulture.Name -like "ko*") { return "ko" }
+  } catch {}
+  return "en"
+}
+
 function Get-NormalizedSettings {
   param($InputObject)
   $colors = Get-PropertyValue $InputObject "colors" $null
   $opacity = Get-PropertyValue $InputObject "opacity" $null
   $text = Get-PropertyValue $InputObject "text" $null
+  $layout = Get-PropertyValue $InputObject "layout" $null
+  $behavior = Get-PropertyValue $InputObject "behavior" $null
 
   return [ordered]@{
     version = 1
+    language = Normalize-Language (Get-PropertyValue $InputObject "language" $null)
     colors = [ordered]@{
       primary = Normalize-Hex (Get-PropertyValue $colors "primary" $null) "#3CEBBD"
       secondary = Normalize-Hex (Get-PropertyValue $colors "secondary" $null) "#56B2FF"
@@ -84,6 +101,14 @@ function Get-NormalizedSettings {
     text = [ordered]@{
       fontSize = Normalize-Number (Get-PropertyValue $text "fontSize" $null) 10.5 8 24
       lineHeight = Normalize-Number (Get-PropertyValue $text "lineHeight" $null) 13 10 32
+    }
+    layout = [ordered]@{
+      ringGap = Normalize-Number (Get-PropertyValue $layout "ringGap" $null) 22 0 96
+    }
+    behavior = [ordered]@{
+      hoverRange = Normalize-Number (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
+      fadeInMs = Normalize-Number (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
+      fadeOutMs = Normalize-Number (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
     }
   }
 }
@@ -222,6 +247,7 @@ try {
         Write-JsonResponse -Context $context -Value @{
           settings = Read-Settings
           settingsPath = $script:SettingsFile
+          systemLanguage = Get-SystemLanguage
         }
       } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/defaults") {
         Write-JsonResponse -Context $context -Value (Read-Defaults)
@@ -233,6 +259,7 @@ try {
           ok = $true
           settings = $settings
           settingsPath = $script:SettingsFile
+          systemLanguage = Get-SystemLanguage
         }
       } else {
         Write-TextResponse -Context $context -Text "Not found" -StatusCode 404

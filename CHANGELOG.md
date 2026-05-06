@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.3
+
+### Added
+
+- Added pet-hover ring visibility with configurable hover range and fade timing.
+- Added localized ring/readout text with automatic Korean or English selection and settings override.
+- Added settings controls and live preview for ring gap, hover range, fade timing, and language.
+
+### Fixed
+
+- Rendered usage readouts in separate topmost windows so they are not hidden behind the pet.
+
 ## 0.1.2
 
 ### Fixed

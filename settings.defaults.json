@@ -1,5 +1,6 @@
 {
   "version": 1,
+  "language": "auto",
   "colors": {
     "primary": "#3CEBBD",
     "secondary": "#56B2FF",
@@ -21,5 +22,13 @@
   "text": {
     "fontSize": 10.5,
     "lineHeight": 13
+  },
+  "layout": {
+    "ringGap": 22
+  },
+  "behavior": {
+    "hoverRange": 24,
+    "fadeInMs": 120,
+    "fadeOutMs": 180
   }
 }

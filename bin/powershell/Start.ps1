@@ -3,7 +3,7 @@ param(
   [string]$InstallDir = "",
   [switch]$NoLiveUsage,
   [int]$UsagePollSeconds = 10,
-  [int]$FramePollMs = 120,
+  [int]$FramePollMs = 60,
   [int]$IdleFramePollMs = 300,
   [int]$PetPollMs = 300,
   [double]$ReadoutPadding = 160.0,

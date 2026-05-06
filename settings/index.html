@@ -99,6 +99,7 @@
       width: 100%;
       accent-color: var(--accent);
     }
+    select,
     input[type="number"], input[type="text"] {
       width: 100%;
       height: 30px;
@@ -171,6 +172,13 @@
       stroke-linecap: round;
       transition: stroke 120ms ease, stroke-opacity 120ms ease, stroke-dasharray 120ms ease;
     }
+    .hover-range {
+      fill: none;
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 1.5px;
+      stroke-dasharray: 4 5;
+      transition: r 160ms ease, opacity 160ms ease;
+    }
     .pet {
       position: absolute;
       left: 50%;
@@ -220,10 +228,10 @@
   <main>
     <header>
       <div>
-        <h1>Codex Pet Limit Rings Settings</h1>
-        <p>Customize ring colors, opacity, and hover text size. Changes are saved to settings.json and picked up by the running helper.</p>
+        <h1 data-i18n="title">Codex Pet Limit Rings Settings</h1>
+        <p data-i18n="subtitle">Customize ring colors, opacity, hover behavior, and hover text size. Changes are saved to settings.json and picked up by the running helper.</p>
       </div>
-      <div class="status" id="status">Loading...</div>
+      <div class="status" id="status" data-i18n="loading">Loading...</div>
     </header>
 
     <div class="preview-wrap">
@@ -235,55 +243,77 @@
           <circle class="gauge-ring" id="previewInner" cx="110" cy="110" r="62"></circle>
           <circle class="gauge-ring" id="previewCaution" cx="110" cy="110" r="92"></circle>
           <circle class="gauge-ring" id="previewWarning" cx="110" cy="110" r="92"></circle>
+          <circle class="hover-range" id="previewHoverRange" cx="110" cy="110" r="92"></circle>
         </svg>
-        <div class="pet">PET</div>
+        <div class="pet" data-i18n="pet">PET</div>
         <div class="tooltip" id="previewTip">5h limit  90% left<br>Reset 4h 12m (22:27)</div>
         <div class="tooltip inner" id="previewInnerTip">Weekly  64% left<br>Reset Tue 15:24</div>
       </div>
       <div>
-        <p>Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.</p>
+        <p data-i18n="previewDescription">Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.</p>
         <div class="path" id="path">settings.json</div>
       </div>
     </div>
 
     <div class="grid">
       <section>
-        <h2>Ring Colors</h2>
-        <div class="field"><label for="primary">Outer 5h</label><input id="primary" type="color" data-path="colors.primary"><output></output></div>
-        <div class="field"><label for="secondary">Inner Weekly</label><input id="secondary" type="color" data-path="colors.secondary"><output></output></div>
-        <div class="field"><label for="warning">Warning</label><input id="warning" type="color" data-path="colors.warning"><output></output></div>
-        <div class="field"><label for="caution">Caution</label><input id="caution" type="color" data-path="colors.caution"><output></output></div>
-        <div class="field"><label for="track">Track</label><input id="track" type="color" data-path="colors.track"><output></output></div>
+        <h2 data-i18n="sectionGeneral">General</h2>
+        <div class="field">
+          <label for="language" data-i18n="language">Language</label>
+          <select id="language" data-path="language">
+            <option value="auto" data-i18n="languageAuto">Auto</option>
+            <option value="ko" data-i18n="languageKo">Korean</option>
+            <option value="en" data-i18n="languageEn">English</option>
+          </select>
+          <output></output>
+        </div>
       </section>
 
       <section>
-        <h2>Readout Colors</h2>
-        <div class="field"><label for="readoutText">Text</label><input id="readoutText" type="color" data-path="colors.readoutText"><output></output></div>
-        <div class="field"><label for="outerBg">Outer Background</label><input id="outerBg" type="color" data-path="colors.outerReadoutBackground"><output></output></div>
-        <div class="field"><label for="innerBg">Inner Background</label><input id="innerBg" type="color" data-path="colors.innerReadoutBackground"><output></output></div>
+        <h2 data-i18n="sectionRingColors">Ring Colors</h2>
+        <div class="field"><label for="primary" data-i18n="outer5h">Outer 5h</label><input id="primary" type="color" data-path="colors.primary"><output></output></div>
+        <div class="field"><label for="secondary" data-i18n="innerWeekly">Inner Weekly</label><input id="secondary" type="color" data-path="colors.secondary"><output></output></div>
+        <div class="field"><label for="warning" data-i18n="warning">Warning</label><input id="warning" type="color" data-path="colors.warning"><output></output></div>
+        <div class="field"><label for="caution" data-i18n="caution">Caution</label><input id="caution" type="color" data-path="colors.caution"><output></output></div>
+        <div class="field"><label for="track" data-i18n="track">Track</label><input id="track" type="color" data-path="colors.track"><output></output></div>
       </section>
 
       <section>
-        <h2>Opacity</h2>
-        <div class="field"><label for="opPrimary">Outer</label><input id="opPrimary" type="range" min="0" max="1" step="0.01" data-path="opacity.primary"><output></output></div>
-        <div class="field"><label for="opSecondary">Inner</label><input id="opSecondary" type="range" min="0" max="1" step="0.01" data-path="opacity.secondary"><output></output></div>
-        <div class="field"><label for="opWarning">Warning</label><input id="opWarning" type="range" min="0" max="1" step="0.01" data-path="opacity.warning"><output></output></div>
-        <div class="field"><label for="opTrack">Track</label><input id="opTrack" type="range" min="0" max="1" step="0.01" data-path="opacity.track"><output></output></div>
-        <div class="field"><label for="opReadout">Readout Background</label><input id="opReadout" type="range" min="0" max="1" step="0.01" data-path="opacity.readout"><output></output></div>
-        <div class="field"><label for="opReadoutText">Readout Text</label><input id="opReadoutText" type="range" min="0" max="1" step="0.01" data-path="opacity.readoutText"><output></output></div>
+        <h2 data-i18n="sectionReadoutColors">Readout Colors</h2>
+        <div class="field"><label for="readoutText" data-i18n="textColor">Text</label><input id="readoutText" type="color" data-path="colors.readoutText"><output></output></div>
+        <div class="field"><label for="outerBg" data-i18n="outerBackground">Outer Background</label><input id="outerBg" type="color" data-path="colors.outerReadoutBackground"><output></output></div>
+        <div class="field"><label for="innerBg" data-i18n="innerBackground">Inner Background</label><input id="innerBg" type="color" data-path="colors.innerReadoutBackground"><output></output></div>
       </section>
 
       <section>
-        <h2>Text</h2>
-        <div class="field"><label for="fontSize">Font Size</label><input id="fontSize" type="range" min="8" max="24" step="0.5" data-path="text.fontSize"><output></output></div>
-        <div class="field"><label for="lineHeight">Line Height</label><input id="lineHeight" type="range" min="10" max="32" step="0.5" data-path="text.lineHeight"><output></output></div>
+        <h2 data-i18n="sectionOpacity">Opacity</h2>
+        <div class="field"><label for="opPrimary" data-i18n="outer">Outer</label><input id="opPrimary" type="range" min="0" max="1" step="0.01" data-path="opacity.primary"><output></output></div>
+        <div class="field"><label for="opSecondary" data-i18n="inner">Inner</label><input id="opSecondary" type="range" min="0" max="1" step="0.01" data-path="opacity.secondary"><output></output></div>
+        <div class="field"><label for="opWarning" data-i18n="warning">Warning</label><input id="opWarning" type="range" min="0" max="1" step="0.01" data-path="opacity.warning"><output></output></div>
+        <div class="field"><label for="opTrack" data-i18n="track">Track</label><input id="opTrack" type="range" min="0" max="1" step="0.01" data-path="opacity.track"><output></output></div>
+        <div class="field"><label for="opReadout" data-i18n="readoutBackground">Readout Background</label><input id="opReadout" type="range" min="0" max="1" step="0.01" data-path="opacity.readout"><output></output></div>
+        <div class="field"><label for="opReadoutText" data-i18n="readoutTextOpacity">Readout Text</label><input id="opReadoutText" type="range" min="0" max="1" step="0.01" data-path="opacity.readoutText"><output></output></div>
+      </section>
+
+      <section>
+        <h2 data-i18n="sectionText">Text</h2>
+        <div class="field"><label for="fontSize" data-i18n="fontSize">Font Size</label><input id="fontSize" type="range" min="8" max="24" step="0.5" data-path="text.fontSize"><output></output></div>
+        <div class="field"><label for="lineHeight" data-i18n="lineHeight">Line Height</label><input id="lineHeight" type="range" min="10" max="32" step="0.5" data-path="text.lineHeight"><output></output></div>
+      </section>
+
+      <section>
+        <h2 data-i18n="sectionHover">Hover Behavior</h2>
+        <div class="field"><label for="ringGap" data-i18n="ringGap">Pet-Ring Distance</label><input id="ringGap" type="range" min="0" max="96" step="1" data-path="layout.ringGap" data-unit="px"><output></output></div>
+        <div class="field"><label for="hoverRange" data-i18n="hoverRange">Ring Range</label><input id="hoverRange" type="range" min="0" max="96" step="1" data-path="behavior.hoverRange" data-unit="px"><output></output></div>
+        <div class="field"><label for="fadeInMs" data-i18n="fadeIn">Fade In</label><input id="fadeInMs" type="range" min="0" max="1000" step="10" data-path="behavior.fadeInMs" data-unit="ms"><output></output></div>
+        <div class="field"><label for="fadeOutMs" data-i18n="fadeOut">Fade Out</label><input id="fadeOutMs" type="range" min="0" max="1000" step="10" data-path="behavior.fadeOutMs" data-unit="ms"><output></output></div>
       </section>
     </div>
 
     <div class="actions">
-      <button id="reload">Reload</button>
-      <button id="reset">Reset Defaults</button>
-      <button class="primary" id="save">Save</button>
+      <button id="reload" data-i18n="reload">Reload</button>
+      <button id="reset" data-i18n="resetDefaults">Reset Defaults</button>
+      <button class="primary" id="save" data-i18n="save">Save</button>
     </div>
   </main>
 
@@ -294,6 +324,103 @@
     const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
     let defaults = null;
+    let statusKey = 'loading';
+    let systemLanguage = '';
+
+    const translations = {
+      en: {
+        title: 'Codex Pet Limit Rings Settings',
+        subtitle: 'Customize ring colors, opacity, language, layout, hover behavior, and hover text size. Changes are saved to settings.json and picked up by the running helper.',
+        loading: 'Loading...',
+        ready: 'Ready',
+        saving: 'Saving...',
+        saved: 'Saved. Running rings will update automatically.',
+        defaultsLoaded: 'Defaults loaded. Save to apply.',
+        serverUnavailable: 'Settings server is not available.',
+        launchHint: 'Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.',
+        previewDescription: 'Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.',
+        pet: 'PET',
+        sectionGeneral: 'General',
+        language: 'Language',
+        languageAuto: 'Auto',
+        languageKo: 'Korean',
+        languageEn: 'English',
+        sectionRingColors: 'Ring Colors',
+        outer5h: 'Outer 5h',
+        innerWeekly: 'Inner Weekly',
+        warning: 'Warning',
+        caution: 'Caution',
+        track: 'Track',
+        sectionReadoutColors: 'Readout Colors',
+        textColor: 'Text',
+        outerBackground: 'Outer Background',
+        innerBackground: 'Inner Background',
+        sectionOpacity: 'Opacity',
+        outer: 'Outer',
+        inner: 'Inner',
+        readoutBackground: 'Readout Background',
+        readoutTextOpacity: 'Readout Text',
+        sectionText: 'Text',
+        fontSize: 'Font Size',
+        lineHeight: 'Line Height',
+        sectionHover: 'Hover Behavior',
+        ringGap: 'Pet-Ring Distance',
+        hoverRange: 'Ring Range',
+        fadeIn: 'Fade In',
+        fadeOut: 'Fade Out',
+        reload: 'Reload',
+        resetDefaults: 'Reset Defaults',
+        save: 'Save',
+        previewOuter: '5h limit  90% left<br>Reset 4h 12m (22:27)',
+        previewInner: 'Weekly  64% left<br>Reset Tue 15:24'
+      },
+      ko: {
+        title: 'Codex Pet 사용량 링 설정',
+        subtitle: '링 색상, 투명도, 언어, 배치, 호버 동작, 사용량 텍스트 크기를 조정합니다. 변경값은 settings.json에 저장되고 실행 중인 helper에 반영됩니다.',
+        loading: '불러오는 중...',
+        ready: '준비됨',
+        saving: '저장 중...',
+        saved: '저장됨. 실행 중인 링에 자동 반영됩니다.',
+        defaultsLoaded: '기본값을 불러왔습니다. 적용하려면 저장하세요.',
+        serverUnavailable: '설정 서버를 사용할 수 없습니다.',
+        launchHint: 'Settings.bat 또는 bin\\powershell\\Settings.ps1로 이 페이지를 실행하세요.',
+        previewDescription: '바깥 링은 5h 한도, 안쪽 링은 주간 한도를 나타냅니다. 남은 사용량이 적으면 주의/위험 색상이 표시됩니다.',
+        pet: 'PET',
+        sectionGeneral: '일반',
+        language: '언어',
+        languageAuto: '자동',
+        languageKo: '한국어',
+        languageEn: '영어',
+        sectionRingColors: '링 색상',
+        outer5h: '바깥 5h',
+        innerWeekly: '안쪽 주간',
+        warning: '위험',
+        caution: '주의',
+        track: '트랙',
+        sectionReadoutColors: '사용량 표시 색상',
+        textColor: '글자',
+        outerBackground: '바깥 배경',
+        innerBackground: '안쪽 배경',
+        sectionOpacity: '투명도',
+        outer: '바깥',
+        inner: '안쪽',
+        readoutBackground: '사용량 표시 배경',
+        readoutTextOpacity: '사용량 표시 글자',
+        sectionText: '텍스트',
+        fontSize: '글자 크기',
+        lineHeight: '줄 높이',
+        sectionHover: '호버 동작',
+        ringGap: 'Pet-Ring 거리',
+        hoverRange: '링 유지 범위',
+        fadeIn: '페이드 인',
+        fadeOut: '페이드 아웃',
+        reload: '다시 불러오기',
+        resetDefaults: '기본값 복원',
+        save: '저장',
+        previewOuter: '5h 한도  90% 남음<br>재설정 4시간 12분 (22:27)',
+        previewInner: '주간  64% 남음<br>재설정 화 15:24'
+      }
+    };
 
     const get = (obj, path) => path.split('.').reduce((node, key) => node && node[key], obj);
     const set = (obj, path, value) => {
@@ -304,6 +431,33 @@
     };
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const percent = (value) => `${Math.round(Number(value) * 100)}%`;
+    const autoLanguage = () => systemLanguage || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en');
+    const activeLanguage = () => {
+      const configured = settings && settings.language ? settings.language : 'auto';
+      return configured === 'ko' || configured === 'en' ? configured : autoLanguage();
+    };
+    const t = (key) => translations[activeLanguage()][key] || translations.en[key] || key;
+    const applyLanguage = () => {
+      const lang = activeLanguage();
+      document.documentElement.lang = lang;
+      document.title = t('title');
+      for (const element of document.querySelectorAll('[data-i18n]')) {
+        element.textContent = t(element.dataset.i18n);
+      }
+      if (statusKey) statusEl.textContent = t(statusKey);
+    };
+    const valueFor = (path) => {
+      const value = get(settings, path);
+      return value ?? get(defaults, path);
+    };
+    const formatValue = (input, value) => {
+      if (input.tagName === 'SELECT') {
+        const option = input.querySelector(`option[value="${value}"]`);
+        return option && option.dataset.i18n ? t(option.dataset.i18n) : value;
+      }
+      if (input.type === 'range' && input.max === '1') return percent(value);
+      return `${value}${input.dataset.unit || ''}`;
+    };
     const apiHeaders = (headers = {}) => ({
       ...headers,
       'X-Codex-Pet-Settings-Token': sessionToken
@@ -315,7 +469,10 @@
       const b = parseInt(value.slice(4, 6), 16);
       return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     };
-    const showStatus = (text) => { statusEl.textContent = text; };
+    const showStatus = (text) => {
+      statusKey = translations.en[text] ? text : '';
+      statusEl.textContent = statusKey ? t(statusKey) : text;
+    };
     const setCircle = (circle, ratio, offsetRatio = 0) => {
       const radius = Number(circle.getAttribute('r'));
       const circumference = 2 * Math.PI * radius;
@@ -326,9 +483,14 @@
 
     function bind() {
       for (const input of inputs) {
-        const value = get(settings, input.dataset.path);
+        const value = valueFor(input.dataset.path);
+        set(settings, input.dataset.path, value);
         input.value = value;
-        input.nextElementSibling.textContent = input.type === 'range' && input.max === '1' ? percent(value) : value;
+        input.nextElementSibling.textContent = formatValue(input, value);
+      }
+      applyLanguage();
+      for (const input of inputs) {
+        input.nextElementSibling.textContent = formatValue(input, valueFor(input.dataset.path));
       }
       updatePreview();
     }
@@ -338,7 +500,11 @@
       for (const input of inputs) {
         const value = input.type === 'range' ? Number(input.value) : input.value;
         set(settings, input.dataset.path, value);
-        input.nextElementSibling.textContent = input.type === 'range' && input.max === '1' ? percent(value) : value;
+        input.nextElementSibling.textContent = formatValue(input, value);
+      }
+      applyLanguage();
+      for (const input of inputs) {
+        input.nextElementSibling.textContent = formatValue(input, get(settings, input.dataset.path));
       }
       updatePreview();
     }
@@ -351,8 +517,30 @@
       const inner = document.getElementById('previewInner');
       const warning = document.getElementById('previewWarning');
       const caution = document.getElementById('previewCaution');
+      const hoverRange = document.getElementById('previewHoverRange');
       const tip = document.getElementById('previewTip');
       const innerTip = document.getElementById('previewInnerTip');
+      const petSize = 78;
+      const ringGap = Number(valueFor('layout.ringGap') || 0);
+      const hoverRangeValue = Number(valueFor('behavior.hoverRange') || 0);
+      const petRadius = petSize / 2;
+      const maxPreviewRadius = 108;
+      const adjustableRadius = ringGap + hoverRangeValue;
+      const fitScale = petRadius + adjustableRadius > maxPreviewRadius
+        ? (maxPreviewRadius - petRadius) / Math.max(1, adjustableRadius)
+        : 1;
+      const outerRadius = petRadius + ringGap * fitScale;
+      const innerRadius = Math.max(26, outerRadius - 13 * fitScale);
+      const alertRadius = Math.min(maxPreviewRadius, outerRadius + 14 * fitScale);
+      const hoverRadius = petRadius + adjustableRadius * fitScale;
+      outerTrack.setAttribute('r', outerRadius);
+      innerTrack.setAttribute('r', innerRadius);
+      outer.setAttribute('r', outerRadius);
+      inner.setAttribute('r', innerRadius);
+      caution.setAttribute('r', alertRadius);
+      warning.setAttribute('r', alertRadius);
+      hoverRange.setAttribute('r', hoverRadius);
+      hoverRange.style.opacity = hoverRangeValue > 0 ? '1' : '0';
       outerTrack.style.stroke = rgba(settings.colors.track, settings.opacity.track);
       outerTrack.style.strokeWidth = '8px';
       innerTrack.style.stroke = rgba(settings.colors.track, settings.opacity.track);
@@ -375,14 +563,24 @@
       tip.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
       tip.style.fontSize = `${settings.text.fontSize}px`;
       tip.style.lineHeight = `${settings.text.lineHeight}px`;
+      tip.innerHTML = t('previewOuter');
       innerTip.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
       innerTip.style.background = rgba(settings.colors.innerReadoutBackground, settings.opacity.readout);
       innerTip.style.fontSize = `${settings.text.fontSize}px`;
       innerTip.style.lineHeight = `${settings.text.lineHeight}px`;
+      innerTip.innerHTML = t('previewInner');
+      const fadeMs = Math.max(Number(valueFor('behavior.fadeInMs') || 0), Number(valueFor('behavior.fadeOutMs') || 0));
+      outerTrack.style.transition = `r ${fadeMs}ms ease, stroke ${fadeMs}ms ease`;
+      innerTrack.style.transition = `r ${fadeMs}ms ease, stroke ${fadeMs}ms ease`;
+      outer.style.transitionDuration = `${fadeMs}ms`;
+      inner.style.transitionDuration = `${fadeMs}ms`;
+      hoverRange.style.transitionDuration = `${fadeMs}ms`;
+      tip.style.transition = `opacity ${fadeMs}ms ease`;
+      innerTip.style.transition = `opacity ${fadeMs}ms ease`;
     }
 
     async function load() {
-      showStatus('Loading...');
+      showStatus('loading');
       const [settingsResponse, defaultsResponse] = await Promise.all([
         fetch('/api/settings', { headers: apiHeaders() }),
         fetch('/api/defaults', { headers: apiHeaders() })
@@ -392,14 +590,15 @@
       const payload = await settingsResponse.json();
       defaults = await defaultsResponse.json();
       settings = payload.settings;
+      systemLanguage = payload.systemLanguage || '';
       pathEl.textContent = payload.settingsPath;
       bind();
-      showStatus('Ready');
+      showStatus('ready');
     }
 
     async function save() {
       collect();
-      showStatus('Saving...');
+      showStatus('saving');
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: apiHeaders({ 'Content-Type': 'application/json' }),
@@ -408,8 +607,9 @@
       if (!response.ok) throw new Error(await response.text());
       const payload = await response.json();
       settings = payload.settings;
+      systemLanguage = payload.systemLanguage || systemLanguage;
       bind();
-      showStatus('Saved. Running rings will update automatically.');
+      showStatus('saved');
     }
 
     for (const input of inputs) {
@@ -421,12 +621,12 @@
     document.getElementById('reset').addEventListener('click', () => {
       settings = clone(defaults);
       bind();
-      showStatus('Defaults loaded. Save to apply.');
+      showStatus('defaultsLoaded');
     });
 
     load().catch((error) => {
-      showStatus('Settings server is not available.');
-      pathEl.textContent = `${error.message}. Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.`;
+      showStatus('serverUnavailable');
+      pathEl.textContent = `${error.message}. ${t('launchHint')}`;
     });
   </script>
 </body>
