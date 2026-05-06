@@ -3,6 +3,12 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.4-3CEBBD?style=for-the-badge&logo=github">
+  </a>
+</p>
+
+<p align="center">
   <a href="CHANGELOG.md#014"><img alt="Version 0.1.4" src="https://img.shields.io/badge/version-0.1.4-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
@@ -30,6 +36,8 @@ Codex Pet Limit Rings for Windows は、Codex Desktop の `/pet` アバターの
   </a>
 </p>
 
+<!-- Features -->
+
 ## 機能
 
 - 現在の Codex `/pet` アバターの背面に完全な円形リングを表示します。
@@ -41,6 +49,8 @@ Codex Pet Limit Rings for Windows は、Codex Desktop の `/pet` アバターの
 - Windows スタートアップとスタートメニューのショートカットを作成できます。
 - ルートの `.bat` launcher から、インストール、設定、状態確認、開始、停止、アンインストールをダブルクリックで実行できます。
 
+<!-- Requirements -->
+
 ## 要件
 
 - Windows 10 または Windows 11。
@@ -49,6 +59,8 @@ Codex Pet Limit Rings for Windows は、Codex Desktop の `/pet` アバターの
 - リングを表示するには Codex `/pet` overlay が開いている必要があります。
 
 Python は任意で、ローカル SQLite log fallback にのみ使用されます。
+
+<!-- Quick Start -->
 
 ## クイックスタート
 
