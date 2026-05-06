@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
+  <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
@@ -13,9 +13,10 @@
   <a href="#quick-start">Quick Start</a>
   · <a href="#commands">Commands</a>
   · <a href="#privacy">Privacy</a>
+  · <span>English</span>
   · <a href="README.ko.md">한국어</a>
-  · <span title="Japanese localization supported">日本語</span>
-  · <span title="Chinese localization supported">中文</span>
+  · <a href="README.ja.md">日本語</a>
+  · <a href="README.zh.md">中文</a>
 </p>
 
 Codex Pet Limit Rings for Windows draws translucent usage-limit rings around

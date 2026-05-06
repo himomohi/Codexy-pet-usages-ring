@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
+  <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
@@ -15,8 +15,8 @@
   · <a href="#개인정보">개인정보</a>
   · <a href="README.md">English</a>
   · <span>한국어</span>
-  · <span title="일본어 현지화 지원">日本語</span>
-  · <span title="중국어 현지화 지원">中文</span>
+  · <a href="README.ja.md">日本語</a>
+  · <a href="README.zh.md">中文</a>
 </p>
 
 Codex Pet Limit Rings for Windows는 Codex Desktop `/pet` 아바타 주변에 반투명
