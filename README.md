@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#013"><img alt="Version 0.1.3" src="https://img.shields.io/badge/version-0.1.3-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#014"><img alt="Version 0.1.4" src="https://img.shields.io/badge/version-0.1.4-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -25,6 +25,7 @@ using PowerShell, WPF, and Win32 window positioning.
 
 - Shows a full circular ring behind the current Codex `/pet` avatar.
 - Displays outer 5h and inner weekly usage readouts on hover.
+- Localizes readouts, tray text, and settings UI for English, Korean, Japanese, and Chinese.
 - Auto-detects and can start Codex Desktop.
 - Waits quietly until `/pet` is visible.
 - Uses a click-through WPF overlay, so it does not intercept mouse input.

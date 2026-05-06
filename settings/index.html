@@ -264,6 +264,8 @@
             <option value="auto" data-i18n="languageAuto">Auto</option>
             <option value="ko" data-i18n="languageKo">Korean</option>
             <option value="en" data-i18n="languageEn">English</option>
+            <option value="ja" data-i18n="languageJa">Japanese</option>
+            <option value="zh" data-i18n="languageZh">Chinese</option>
           </select>
           <output></output>
         </div>
@@ -345,6 +347,8 @@
         languageAuto: 'Auto',
         languageKo: 'Korean',
         languageEn: 'English',
+        languageJa: 'Japanese',
+        languageZh: 'Chinese',
         sectionRingColors: 'Ring Colors',
         outer5h: 'Outer 5h',
         innerWeekly: 'Inner Weekly',
@@ -391,6 +395,8 @@
         languageAuto: '자동',
         languageKo: '한국어',
         languageEn: '영어',
+        languageJa: '일본어',
+        languageZh: '중국어',
         sectionRingColors: '링 색상',
         outer5h: '바깥 5h',
         innerWeekly: '안쪽 주간',
@@ -419,6 +425,102 @@
         save: '저장',
         previewOuter: '5h 한도  90% 남음<br>재설정 4시간 12분 (22:27)',
         previewInner: '주간  64% 남음<br>재설정 화 15:24'
+      },
+      ja: {
+        title: 'Codex Pet 使用量リング設定',
+        subtitle: 'リングの色、不透明度、言語、配置、ホバー動作、使用量テキストのサイズを調整します。変更は settings.json に保存され、実行中の helper に反映されます。',
+        loading: '読み込み中...',
+        ready: '準備完了',
+        saving: '保存中...',
+        saved: '保存しました。実行中のリングへ自動的に反映されます。',
+        defaultsLoaded: '既定値を読み込みました。適用するには保存してください。',
+        serverUnavailable: '設定サーバーを利用できません。',
+        launchHint: 'Settings.bat または bin\\powershell\\Settings.ps1 でこのページを開いてください。',
+        previewDescription: '外側のリングは 5h 制限、内側のリングは週次制限を表します。残り使用量が少ないと警告/注意色が表示されます。',
+        pet: 'PET',
+        sectionGeneral: '一般',
+        language: '言語',
+        languageAuto: '自動',
+        languageKo: '韓国語',
+        languageEn: '英語',
+        languageJa: '日本語',
+        languageZh: '中国語',
+        sectionRingColors: 'リングの色',
+        outer5h: '外側 5h',
+        innerWeekly: '内側 週次',
+        warning: '警告',
+        caution: '注意',
+        track: 'トラック',
+        sectionReadoutColors: '使用量表示の色',
+        textColor: '文字',
+        outerBackground: '外側の背景',
+        innerBackground: '内側の背景',
+        sectionOpacity: '不透明度',
+        outer: '外側',
+        inner: '内側',
+        readoutBackground: '使用量表示の背景',
+        readoutTextOpacity: '使用量表示の文字',
+        sectionText: 'テキスト',
+        fontSize: '文字サイズ',
+        lineHeight: '行の高さ',
+        sectionHover: 'ホバー動作',
+        ringGap: 'Pet-Ring 距離',
+        hoverRange: 'リング保持範囲',
+        fadeIn: 'フェードイン',
+        fadeOut: 'フェードアウト',
+        reload: '再読み込み',
+        resetDefaults: '既定値に戻す',
+        save: '保存',
+        previewOuter: '5h 制限  残り90%<br>リセット 4時間 12分 (22:27)',
+        previewInner: '週次  残り64%<br>リセット 火 15:24'
+      },
+      zh: {
+        title: 'Codex Pet 使用量圆环设置',
+        subtitle: '自定义圆环颜色、透明度、语言、布局、悬停行为和使用量文字大小。更改会保存到 settings.json，并由正在运行的 helper 自动读取。',
+        loading: '正在加载...',
+        ready: '已就绪',
+        saving: '正在保存...',
+        saved: '已保存。正在运行的圆环会自动更新。',
+        defaultsLoaded: '已加载默认值。保存后应用。',
+        serverUnavailable: '设置服务器不可用。',
+        launchHint: '请使用 Settings.bat 或 bin\\powershell\\Settings.ps1 打开此页面。',
+        previewDescription: '外圈对应 5h 限制，内圈对应每周限制。剩余使用量较低时会显示警告/注意颜色。',
+        pet: 'PET',
+        sectionGeneral: '常规',
+        language: '语言',
+        languageAuto: '自动',
+        languageKo: '韩语',
+        languageEn: '英语',
+        languageJa: '日语',
+        languageZh: '中文',
+        sectionRingColors: '圆环颜色',
+        outer5h: '外圈 5h',
+        innerWeekly: '内圈 每周',
+        warning: '警告',
+        caution: '注意',
+        track: '轨道',
+        sectionReadoutColors: '使用量提示颜色',
+        textColor: '文字',
+        outerBackground: '外圈背景',
+        innerBackground: '内圈背景',
+        sectionOpacity: '透明度',
+        outer: '外圈',
+        inner: '内圈',
+        readoutBackground: '使用量提示背景',
+        readoutTextOpacity: '使用量提示文字',
+        sectionText: '文本',
+        fontSize: '字体大小',
+        lineHeight: '行高',
+        sectionHover: '悬停行为',
+        ringGap: 'Pet-Ring 距离',
+        hoverRange: '圆环保持范围',
+        fadeIn: '淡入',
+        fadeOut: '淡出',
+        reload: '重新加载',
+        resetDefaults: '恢复默认值',
+        save: '保存',
+        previewOuter: '5h 限制  剩余90%<br>重置 4小时 12分钟 (22:27)',
+        previewInner: '每周  剩余64%<br>重置 周二 15:24'
       }
     };
 
@@ -431,12 +533,22 @@
     };
     const clone = (value) => JSON.parse(JSON.stringify(value));
     const percent = (value) => `${Math.round(Number(value) * 100)}%`;
-    const autoLanguage = () => systemLanguage || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en');
+    const supportedLanguages = ['ko', 'en', 'ja', 'zh'];
+    const resolveLanguage = (value) => {
+      const language = (value || '').toLowerCase();
+      if (language.startsWith('ko')) return 'ko';
+      if (language.startsWith('ja')) return 'ja';
+      if (language.startsWith('zh')) return 'zh';
+      return 'en';
+    };
+    const autoLanguage = () => supportedLanguages.includes(systemLanguage)
+      ? systemLanguage
+      : resolveLanguage(navigator.language || '');
     const activeLanguage = () => {
       const configured = settings && settings.language ? settings.language : 'auto';
-      return configured === 'ko' || configured === 'en' ? configured : autoLanguage();
+      return supportedLanguages.includes(configured) ? configured : autoLanguage();
     };
-    const t = (key) => translations[activeLanguage()][key] || translations.en[key] || key;
+    const t = (key) => (translations[activeLanguage()] || translations.en)[key] || translations.en[key] || key;
     const applyLanguage = () => {
       const lang = activeLanguage();
       document.documentElement.lang = lang;

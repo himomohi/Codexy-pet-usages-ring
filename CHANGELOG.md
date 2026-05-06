@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.4
+
+### Added
+
+- Added Japanese and Chinese localization for ring readouts, tray text, and settings UI.
+- Extended automatic language selection to match Windows UI languages for Korean, Japanese, Chinese, and English.
+
 ## 0.1.3
 
 ### Added

@@ -58,13 +58,16 @@ function Normalize-Number {
 function Normalize-Language {
   param($Value)
   $language = if ($null -eq $Value) { "auto" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($language -in @("auto", "ko", "en")) { return $language }
+  if ($language -in @("auto", "ko", "en", "ja", "zh")) { return $language }
   return "auto"
 }
 
 function Get-SystemLanguage {
   try {
-    if ([System.Globalization.CultureInfo]::CurrentUICulture.Name -like "ko*") { return "ko" }
+    $cultureName = [System.Globalization.CultureInfo]::CurrentUICulture.Name
+    if ($cultureName -like "ko*") { return "ko" }
+    if ($cultureName -like "ja*") { return "ja" }
+    if ($cultureName -like "zh*") { return "zh" }
   } catch {}
   return "en"
 }

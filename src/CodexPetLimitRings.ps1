@@ -402,7 +402,7 @@ function Update-StyleFromSettings {
     $behavior = Get-PropertyValue $settings "behavior" $null
 
     $language = ([string](Get-PropertyValue $settings "language" "auto")).Trim().ToLowerInvariant()
-    if ($language -notin @("auto", "ko", "en")) { $language = "auto" }
+    if ($language -notin @("auto", "ko", "en", "ja", "zh")) { $language = "auto" }
     $script:Style.Language = $language
     $script:Style.PrimaryRgb = Convert-HexColor (Get-PropertyValue $colors "primary" $null) @(60, 235, 189)
     $script:Style.SecondaryRgb = Convert-HexColor (Get-PropertyValue $colors "secondary" $null) @(86, 178, 255)
@@ -478,15 +478,26 @@ function Get-CapacityBrush {
 
 function Get-EffectiveLanguage {
   $language = if ($null -ne $script:Style.Language) { [string]$script:Style.Language } else { "auto" }
-  if ($language -eq "ko" -or $language -eq "en") { return $language }
+  if ($language -in @("ko", "en", "ja", "zh")) { return $language }
   try {
-    if ([System.Globalization.CultureInfo]::CurrentUICulture.Name -like "ko*") { return "ko" }
+    $cultureName = [System.Globalization.CultureInfo]::CurrentUICulture.Name
+    if ($cultureName -like "ko*") { return "ko" }
+    if ($cultureName -like "ja*") { return "ja" }
+    if ($cultureName -like "zh*") { return "zh" }
   } catch {}
   return "en"
 }
 
 function Test-KoreanLanguage {
   return ((Get-EffectiveLanguage) -eq "ko")
+}
+
+function Test-JapaneseLanguage {
+  return ((Get-EffectiveLanguage) -eq "ja")
+}
+
+function Test-ChineseLanguage {
+  return ((Get-EffectiveLanguage) -eq "zh")
 }
 
 function Expand-UnicodeText {
@@ -505,6 +516,28 @@ function Get-UiText {
       "Settings" { return (Expand-UnicodeText "\uC124\uC815") }
       "OpenLogs" { return (Expand-UnicodeText "\uB85C\uADF8 \uC5F4\uAE30") }
       "Quit" { return (Expand-UnicodeText "\uC885\uB8CC") }
+    }
+  }
+  if (Test-JapaneseLanguage) {
+    switch ($Key) {
+      "TrayTitle" { return (Expand-UnicodeText "Codex \u30EA\u30F3\u30B0") }
+      "TrayText" { return (Expand-UnicodeText "Codex \u30EA\u30F3\u30B0: {0} 5h, {1} \u9031\u6B21") }
+      "ShowRings" { return (Expand-UnicodeText "\u30EA\u30F3\u30B0\u3092\u8868\u793A") }
+      "RefreshNow" { return (Expand-UnicodeText "\u4ECA\u3059\u3050\u66F4\u65B0") }
+      "Settings" { return (Expand-UnicodeText "\u8A2D\u5B9A") }
+      "OpenLogs" { return (Expand-UnicodeText "\u30ED\u30B0\u3092\u958B\u304F") }
+      "Quit" { return (Expand-UnicodeText "\u7D42\u4E86") }
+    }
+  }
+  if (Test-ChineseLanguage) {
+    switch ($Key) {
+      "TrayTitle" { return (Expand-UnicodeText "Codex \u5706\u73AF") }
+      "TrayText" { return (Expand-UnicodeText "Codex \u5706\u73AF\uFF1A{0} 5h\uFF0C{1} \u6BCF\u5468") }
+      "ShowRings" { return (Expand-UnicodeText "\u663E\u793A\u5706\u73AF") }
+      "RefreshNow" { return (Expand-UnicodeText "\u7ACB\u5373\u5237\u65B0") }
+      "Settings" { return (Expand-UnicodeText "\u8BBE\u7F6E") }
+      "OpenLogs" { return (Expand-UnicodeText "\u6253\u5F00\u65E5\u5FD7") }
+      "Quit" { return (Expand-UnicodeText "\u9000\u51FA") }
     }
   }
   switch ($Key) {
@@ -933,34 +966,44 @@ function Format-Duration {
   param($Seconds)
   if ($null -eq $Seconds) { return "--" }
   $total = [int][Math]::Max(0, [Math]::Ceiling([double]$Seconds))
-  $ko = Test-KoreanLanguage
+  $language = Get-EffectiveLanguage
   if ($total -ge 86400) {
     $days = [int][Math]::Floor($total / 86400)
     $hours = [int][Math]::Floor(($total % 86400) / 3600)
-    if ($ko) { return (Expand-UnicodeText "{0}\uC77C {1}\uC2DC\uAC04") -f $days, $hours }
+    if ($language -eq "ko") { return (Expand-UnicodeText "{0}\uC77C {1}\uC2DC\uAC04") -f $days, $hours }
+    if ($language -eq "ja") { return (Expand-UnicodeText "{0}\u65E5 {1}\u6642\u9593") -f $days, $hours }
+    if ($language -eq "zh") { return (Expand-UnicodeText "{0}\u5929 {1}\u5C0F\u65F6") -f $days, $hours }
     return "{0}d {1}h" -f $days, $hours
   }
   if ($total -ge 3600) {
     $hours = [int][Math]::Floor($total / 3600)
     $minutes = [int][Math]::Floor(($total % 3600) / 60)
-    if ($ko) { return (Expand-UnicodeText "{0}\uC2DC\uAC04 {1}\uBD84") -f $hours, $minutes }
+    if ($language -eq "ko") { return (Expand-UnicodeText "{0}\uC2DC\uAC04 {1}\uBD84") -f $hours, $minutes }
+    if ($language -eq "ja") { return (Expand-UnicodeText "{0}\u6642\u9593 {1}\u5206") -f $hours, $minutes }
+    if ($language -eq "zh") { return (Expand-UnicodeText "{0}\u5C0F\u65F6 {1}\u5206\u949F") -f $hours, $minutes }
     return "{0}h {1}m" -f $hours, $minutes
   }
   if ($total -ge 60) {
     $minutes = [int][Math]::Floor($total / 60)
     $seconds = $total % 60
-    if ($ko) { return (Expand-UnicodeText "{0}\uBD84 {1}\uCD08") -f $minutes, $seconds }
+    if ($language -eq "ko") { return (Expand-UnicodeText "{0}\uBD84 {1}\uCD08") -f $minutes, $seconds }
+    if ($language -eq "ja") { return (Expand-UnicodeText "{0}\u5206 {1}\u79D2") -f $minutes, $seconds }
+    if ($language -eq "zh") { return (Expand-UnicodeText "{0}\u5206\u949F {1}\u79D2") -f $minutes, $seconds }
     return "{0}m {1}s" -f $minutes, $seconds
   }
-  if ($ko) { return (Expand-UnicodeText "{0}\uCD08") -f $total }
+  if ($language -eq "ko") { return (Expand-UnicodeText "{0}\uCD08") -f $total }
+  if ($language -eq "ja") { return (Expand-UnicodeText "{0}\u79D2") -f $total }
+  if ($language -eq "zh") { return (Expand-UnicodeText "{0}\u79D2") -f $total }
   return "{0}s" -f $total
 }
 
 function Format-ResetDetail {
   param($ResetAt)
-  $ko = Test-KoreanLanguage
+  $language = Get-EffectiveLanguage
   if ($null -eq $ResetAt) {
-    if ($ko) { return (Expand-UnicodeText "\uC7AC\uC124\uC815 --") }
+    if ($language -eq "ko") { return (Expand-UnicodeText "\uC7AC\uC124\uC815 --") }
+    if ($language -eq "ja") { return (Expand-UnicodeText "\u30EA\u30BB\u30C3\u30C8 --") }
+    if ($language -eq "zh") { return (Expand-UnicodeText "\u91CD\u7F6E --") }
     return "Reset --"
   }
   $reset = [datetime]$ResetAt
@@ -968,45 +1011,71 @@ function Format-ResetDetail {
   $timeText = if ($reset.Date -eq (Get-Date).Date) {
     $reset.ToString("HH:mm")
   } else {
-    if ($ko) {
+    if ($language -eq "ko") {
       $reset.ToString((Expand-UnicodeText "M\uC6D4 d\uC77C HH:mm"), [System.Globalization.CultureInfo]::GetCultureInfo("ko-KR"))
+    } elseif ($language -eq "ja") {
+      $reset.ToString((Expand-UnicodeText "M\u6708d\u65E5 HH:mm"), [System.Globalization.CultureInfo]::GetCultureInfo("ja-JP"))
+    } elseif ($language -eq "zh") {
+      $reset.ToString((Expand-UnicodeText "M\u6708d\u65E5 HH:mm"), [System.Globalization.CultureInfo]::GetCultureInfo("zh-CN"))
     } else {
       $reset.ToString("MMM d HH:mm", [System.Globalization.CultureInfo]::InvariantCulture)
     }
   }
-  if ($ko) { return (Expand-UnicodeText "\uC7AC\uC124\uC815 {0} ({1})") -f (Format-Duration $remaining), $timeText }
+  if ($language -eq "ko") { return (Expand-UnicodeText "\uC7AC\uC124\uC815 {0} ({1})") -f (Format-Duration $remaining), $timeText }
+  if ($language -eq "ja") { return (Expand-UnicodeText "\u30EA\u30BB\u30C3\u30C8 {0} ({1})") -f (Format-Duration $remaining), $timeText }
+  if ($language -eq "zh") { return (Expand-UnicodeText "\u91CD\u7F6E {0} ({1})") -f (Format-Duration $remaining), $timeText }
   return "Reset {0} ({1})" -f (Format-Duration $remaining), $timeText
 }
 
 function Format-WindowLabel {
   param($Seconds, [string]$Fallback)
   if ($null -eq $Seconds) { return $Fallback }
-  $ko = Test-KoreanLanguage
+  $language = Get-EffectiveLanguage
   $value = [double]$Seconds
   if ([Math]::Abs($value - 18000.0) -lt 180.0) { return "5h" }
   if ([Math]::Abs($value - 604800.0) -lt 3600.0) {
-    if ($ko) { return (Expand-UnicodeText "\uC8FC\uAC04") }
+    if ($language -eq "ko") { return (Expand-UnicodeText "\uC8FC\uAC04") }
+    if ($language -eq "ja") { return (Expand-UnicodeText "\u9031\u6B21") }
+    if ($language -eq "zh") { return (Expand-UnicodeText "\u6BCF\u5468") }
     return "Weekly"
   }
   if ($value -ge 86400.0) {
-    if ($ko) { return (Expand-UnicodeText "{0:N0}\uC77C") -f ($value / 86400.0) }
+    if ($language -eq "ko") { return (Expand-UnicodeText "{0:N0}\uC77C") -f ($value / 86400.0) }
+    if ($language -eq "ja") { return (Expand-UnicodeText "{0:N0}\u65E5") -f ($value / 86400.0) }
+    if ($language -eq "zh") { return (Expand-UnicodeText "{0:N0}\u5929") -f ($value / 86400.0) }
     return "{0:N0}d" -f ($value / 86400.0)
   }
   if ($value -ge 3600.0) {
-    if ($ko) { return (Expand-UnicodeText "{0:N0}\uC2DC\uAC04") -f ($value / 3600.0) }
+    if ($language -eq "ko") { return (Expand-UnicodeText "{0:N0}\uC2DC\uAC04") -f ($value / 3600.0) }
+    if ($language -eq "ja") { return (Expand-UnicodeText "{0:N0}\u6642\u9593") -f ($value / 3600.0) }
+    if ($language -eq "zh") { return (Expand-UnicodeText "{0:N0}\u5C0F\u65F6") -f ($value / 3600.0) }
     return "{0:N0}h" -f ($value / 3600.0)
   }
-  if ($ko) { return (Expand-UnicodeText "{0:N0}\uBD84") -f ($value / 60.0) }
+  if ($language -eq "ko") { return (Expand-UnicodeText "{0:N0}\uBD84") -f ($value / 60.0) }
+  if ($language -eq "ja") { return (Expand-UnicodeText "{0:N0}\u5206") -f ($value / 60.0) }
+  if ($language -eq "zh") { return (Expand-UnicodeText "{0:N0}\u5206\u949F") -f ($value / 60.0) }
   return "{0:N0}m" -f ($value / 60.0)
 }
 
 function Get-RingReadoutText {
   param([ValidateSet("Outer", "Inner")][string]$Ring)
-  $ko = Test-KoreanLanguage
+  $language = Get-EffectiveLanguage
   if ($Ring -eq "Outer") {
     $label = Format-WindowLabel -Seconds $script:UsageState.PrimaryWindowSeconds -Fallback "5h"
-    if ($ko) {
+    if ($language -eq "ko") {
       return (Expand-UnicodeText "{0} \uD55C\uB3C4  {1} \uB0A8\uC74C`n{2}") -f `
+        $label,
+        (Format-Percent $script:UsageState.PrimaryRemaining),
+        (Format-ResetDetail $script:UsageState.PrimaryResetAt)
+    }
+    if ($language -eq "ja") {
+      return (Expand-UnicodeText "{0}\u5236\u9650  \u6B8B\u308A{1}`n{2}") -f `
+        $label,
+        (Format-Percent $script:UsageState.PrimaryRemaining),
+        (Format-ResetDetail $script:UsageState.PrimaryResetAt)
+    }
+    if ($language -eq "zh") {
+      return (Expand-UnicodeText "{0}\u9650\u5236  \u5269\u4F59{1}`n{2}") -f `
         $label,
         (Format-Percent $script:UsageState.PrimaryRemaining),
         (Format-ResetDetail $script:UsageState.PrimaryResetAt)
@@ -1017,10 +1086,27 @@ function Get-RingReadoutText {
       (Format-ResetDetail $script:UsageState.PrimaryResetAt)
   }
 
-  $weeklyFallback = if ($ko) { (Expand-UnicodeText "\uC8FC\uAC04") } else { "Weekly" }
+  $weeklyFallback = switch ($language) {
+    "ko" { Expand-UnicodeText "\uC8FC\uAC04" }
+    "ja" { Expand-UnicodeText "\u9031\u6B21" }
+    "zh" { Expand-UnicodeText "\u6BCF\u5468" }
+    default { "Weekly" }
+  }
   $label = Format-WindowLabel -Seconds $script:UsageState.SecondaryWindowSeconds -Fallback $weeklyFallback
-  if ($ko) {
+  if ($language -eq "ko") {
     return (Expand-UnicodeText "{0}  {1} \uB0A8\uC74C`n{2}") -f `
+      $label,
+      (Format-Percent $script:UsageState.SecondaryRemaining),
+      (Format-ResetDetail $script:UsageState.SecondaryResetAt)
+  }
+  if ($language -eq "ja") {
+    return (Expand-UnicodeText "{0}  \u6B8B\u308A{1}`n{2}") -f `
+      $label,
+      (Format-Percent $script:UsageState.SecondaryRemaining),
+      (Format-ResetDetail $script:UsageState.SecondaryResetAt)
+  }
+  if ($language -eq "zh") {
+    return (Expand-UnicodeText "{0}  \u5269\u4F59{1}`n{2}") -f `
       $label,
       (Format-Percent $script:UsageState.SecondaryRemaining),
       (Format-ResetDetail $script:UsageState.SecondaryResetAt)
