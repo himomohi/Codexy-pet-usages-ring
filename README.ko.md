@@ -3,12 +3,6 @@
 </p>
 
 <p align="center">
-  <a href="docs/assets/usage-rec.mp4">
-    <img src="docs/assets/usage-rec.gif" alt="Codexy pet usage rings demo" width="100%">
-  </a>
-</p>
-
-<p align="center">
   <a href="CHANGELOG.md#014"><img alt="Version 0.1.4" src="https://img.shields.io/badge/version-0.1.4-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
@@ -29,6 +23,12 @@ Codex Pet Limit Rings for Windows는 Codex Desktop `/pet` 아바타 주변에 �
 사용량 링을 표시하는 companion overlay입니다.
 [petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings)
 의 companion-app 방식을 Windows용 PowerShell, WPF, Win32 창 제어로 구현했습니다.
+
+<p align="center">
+  <a href="docs/assets/usage-rec.mp4">
+    <img src="docs/assets/usage-rec.gif" alt="Codexy pet usage rings demo" width="100%">
+  </a>
+</p>
 
 ## 기능
 
