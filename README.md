@@ -19,6 +19,9 @@
   · <a href="README.zh.md">中文</a>
 </p>
 
+I kept checking my Codex usage every few minutes.
+So I made the rings follow the pet instead.
+
 Codex Pet Limit Rings for Windows draws translucent usage-limit rings around
 the Codex Desktop `/pet` avatar. It is a Windows companion implementation of
 [petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings)
