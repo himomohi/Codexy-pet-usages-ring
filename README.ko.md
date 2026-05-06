@@ -14,6 +14,9 @@
   · <a href="#명령">명령</a>
   · <a href="#개인정보">개인정보</a>
   · <a href="README.md">English</a>
+  · <span>한국어</span>
+  · <span title="일본어 현지화 지원">日本語</span>
+  · <span title="중국어 현지화 지원">中文</span>
 </p>
 
 Codex Pet Limit Rings for Windows는 Codex Desktop `/pet` 아바타 주변에 반투명

@@ -14,6 +14,8 @@
   · <a href="#commands">Commands</a>
   · <a href="#privacy">Privacy</a>
   · <a href="README.ko.md">한국어</a>
+  · <span title="Japanese localization supported">日本語</span>
+  · <span title="Chinese localization supported">中文</span>
 </p>
 
 Codex Pet Limit Rings for Windows draws translucent usage-limit rings around
