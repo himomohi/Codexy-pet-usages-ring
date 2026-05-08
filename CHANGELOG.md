@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.6
+
+### Fixed
+
+- Preserved display and visibility settings when saving from the settings UI.
+- Made the live preview visibly react to ring/battery and hover/always visibility choices.
+- Kept settings select text readable after changing localized option values.
+
 ## 0.1.5
 
 ### Added

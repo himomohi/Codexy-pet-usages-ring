@@ -204,6 +204,16 @@
       color: #f4f1e8;
       background-color: #101410;
       font-weight: 650;
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #dce3d8 50%),
+        linear-gradient(135deg, #dce3d8 50%, transparent 50%);
+      background-position:
+        calc(100% - 15px) 14px,
+        calc(100% - 10px) 14px;
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+      padding-right: 30px;
     }
     select option {
       color: #f4f1e8;
@@ -296,6 +306,23 @@
       border: 1px solid var(--line);
       overflow: hidden;
       box-shadow: inset 0 1px 0 rgba(244, 241, 232, 0.055);
+    }
+    .preview[data-visibility-mode="hover"] .preview-gauge,
+    .preview[data-visibility-mode="hover"] .battery-preview {
+      opacity: 0.26;
+    }
+    .preview[data-visibility-mode="hover"]:hover .preview-gauge,
+    .preview[data-visibility-mode="hover"]:hover .battery-preview,
+    .preview[data-visibility-mode="always"] .preview-gauge,
+    .preview[data-visibility-mode="always"] .battery-preview {
+      opacity: 1;
+    }
+    .preview[data-visibility-mode="hover"] .tooltip {
+      opacity: 0;
+    }
+    .preview[data-visibility-mode="hover"]:hover .tooltip,
+    .preview[data-visibility-mode="always"] .tooltip {
+      opacity: 1;
     }
     .preview::before,
     .preview::after {
@@ -581,7 +608,7 @@
           <p data-i18n="previewDescription">Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.</p>
         </div>
         <div class="preview-shell">
-          <div class="preview" aria-label="Ring preview">
+          <div class="preview" id="previewSurface" aria-label="Ring preview">
             <svg class="preview-gauge" viewBox="0 0 220 220" aria-hidden="true">
               <circle class="gauge-track" id="previewOuterTrack" cx="110" cy="110" r="78"></circle>
               <circle class="gauge-track" id="previewInnerTrack" cx="110" cy="110" r="62"></circle>
@@ -624,6 +651,7 @@
   <script>
     const statusEl = document.getElementById('status');
     const pathEl = document.getElementById('path');
+    const saveButton = document.getElementById('save');
     const inputs = Array.from(document.querySelectorAll('[data-path]'));
     const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
@@ -639,7 +667,7 @@
         loading: 'Loading...',
         ready: 'Ready',
         saving: 'Saving...',
-        saved: 'Saved. Running rings will update automatically.',
+        saved: 'Saved and applied. Running rings will update automatically.',
         defaultsLoaded: 'Defaults loaded. Save to apply.',
         serverUnavailable: 'Settings server is not available.',
         launchHint: 'Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.',
@@ -697,7 +725,7 @@
         loading: '불러오는 중...',
         ready: '준비됨',
         saving: '저장 중...',
-        saved: '저장됨. 실행 중인 링에 자동 반영됩니다.',
+        saved: '저장 및 적용됨. 실행 중인 표시에 자동 반영됩니다.',
         defaultsLoaded: '기본값을 불러왔습니다. 적용하려면 저장하세요.',
         serverUnavailable: '설정 서버를 사용할 수 없습니다.',
         launchHint: 'Settings.bat 또는 bin\\powershell\\Settings.ps1로 이 페이지를 실행하세요.',
@@ -755,7 +783,7 @@
         loading: '読み込み中...',
         ready: '準備完了',
         saving: '保存中...',
-        saved: '保存しました。実行中のリングへ自動的に反映されます。',
+        saved: '保存して適用しました。実行中の表示へ自動的に反映されます。',
         defaultsLoaded: '既定値を読み込みました。適用するには保存してください。',
         serverUnavailable: '設定サーバーを利用できません。',
         launchHint: 'Settings.bat または bin\\powershell\\Settings.ps1 でこのページを開いてください。',
@@ -813,7 +841,7 @@
         loading: '正在加载...',
         ready: '已就绪',
         saving: '正在保存...',
-        saved: '已保存。正在运行的圆环会自动更新。',
+        saved: '已保存并应用。正在运行的显示会自动更新。',
         defaultsLoaded: '已加载默认值。保存后应用。',
         serverUnavailable: '设置服务器不可用。',
         launchHint: '请使用 Settings.bat 或 bin\\powershell\\Settings.ps1 打开此页面。',
@@ -907,7 +935,8 @@
     const formatValue = (input, value) => {
       if (input.tagName === 'SELECT') {
         const option = input.querySelector(`option[value="${value}"]`);
-        return option && option.dataset.i18n ? t(option.dataset.i18n) : value;
+        const label = option && option.dataset.i18n ? t(option.dataset.i18n) : value;
+        return label || value || '';
       }
       if (input.type === 'range' && input.max === '1') return percent(value);
       return `${value}${input.dataset.unit || ''}`;
@@ -973,6 +1002,7 @@
       const warning = document.getElementById('previewWarning');
       const caution = document.getElementById('previewCaution');
       const hoverRange = document.getElementById('previewHoverRange');
+      const previewSurface = document.getElementById('previewSurface');
       const battery = document.getElementById('previewBattery');
       const batteryPrimary = document.getElementById('previewBatteryPrimary');
       const batterySecondary = document.getElementById('previewBatterySecondary');
@@ -981,8 +1011,11 @@
       const tip = document.getElementById('previewTip');
       const innerTip = document.getElementById('previewInnerTip');
       const displayMode = valueFor('displayMode') || 'ring';
+      const visibilityMode = valueFor('behavior.visibilityMode') || 'hover';
       const ringDisplay = displayMode === 'battery' ? 'none' : '';
       const batteryDisplay = displayMode === 'battery' ? 'grid' : 'none';
+      previewSurface.dataset.displayMode = displayMode;
+      previewSurface.dataset.visibilityMode = visibilityMode;
       for (const element of [outerTrack, innerTrack, outer, inner, warning, caution, hoverRange]) {
         element.style.display = ringDisplay;
       }
@@ -1072,24 +1105,29 @@
     async function save() {
       collect();
       showStatus('saving');
-      const response = await fetch('/api/settings', {
-        method: 'POST',
-        headers: apiHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(settings, null, 2)
-      });
-      if (!response.ok) throw new Error(await response.text());
-      const payload = await response.json();
-      settings = payload.settings;
-      systemLanguage = payload.systemLanguage || systemLanguage;
-      bind();
-      showStatus('saved');
+      saveButton.disabled = true;
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: apiHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify(settings, null, 2)
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const payload = await response.json();
+        settings = payload.settings;
+        systemLanguage = payload.systemLanguage || systemLanguage;
+        bind();
+        showStatus('saved');
+      } finally {
+        saveButton.disabled = false;
+      }
     }
 
     for (const input of inputs) {
       input.addEventListener('input', collect);
       input.addEventListener('change', collect);
     }
-    document.getElementById('save').addEventListener('click', () => save().catch((error) => showStatus(error.message)));
+    saveButton.addEventListener('click', () => save().catch((error) => showStatus(error.message)));
     document.getElementById('reload').addEventListener('click', () => load().catch((error) => showStatus(error.message)));
     document.getElementById('reset').addEventListener('click', () => {
       settings = clone(defaults);

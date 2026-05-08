@@ -62,6 +62,20 @@ function Normalize-Language {
   return "auto"
 }
 
+function Normalize-DisplayMode {
+  param($Value)
+  $displayMode = if ($null -eq $Value) { "ring" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($displayMode -in @("ring", "battery")) { return $displayMode }
+  return "ring"
+}
+
+function Normalize-VisibilityMode {
+  param($Value)
+  $visibilityMode = if ($null -eq $Value) { "hover" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($visibilityMode -in @("hover", "always")) { return $visibilityMode }
+  return "hover"
+}
+
 function Get-SystemLanguage {
   try {
     $cultureName = [System.Globalization.CultureInfo]::CurrentUICulture.Name
@@ -83,6 +97,7 @@ function Get-NormalizedSettings {
   return [ordered]@{
     version = 1
     language = Normalize-Language (Get-PropertyValue $InputObject "language" $null)
+    displayMode = Normalize-DisplayMode (Get-PropertyValue $InputObject "displayMode" $null)
     colors = [ordered]@{
       primary = Normalize-Hex (Get-PropertyValue $colors "primary" $null) "#3CEBBD"
       secondary = Normalize-Hex (Get-PropertyValue $colors "secondary" $null) "#56B2FF"
@@ -109,6 +124,7 @@ function Get-NormalizedSettings {
       ringGap = Normalize-Number (Get-PropertyValue $layout "ringGap" $null) 22 0 96
     }
     behavior = [ordered]@{
+      visibilityMode = Normalize-VisibilityMode (Get-PropertyValue $behavior "visibilityMode" $null)
       hoverRange = Normalize-Number (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
       fadeInMs = Normalize-Number (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
       fadeOutMs = Normalize-Number (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
