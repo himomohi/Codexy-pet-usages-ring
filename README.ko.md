@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.4-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.5-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#014"><img alt="Version 0.1.4" src="https://img.shields.io/badge/version-0.1.4-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#015"><img alt="Version 0.1.5" src="https://img.shields.io/badge/version-0.1.5-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -45,8 +45,8 @@ Codexy pet usages ring은 Codex Desktop `/pet` 아바타 주변에 반투명
 
 ## 기능
 
-- 현재 Codex `/pet` 아바타 뒤에 완전한 원형 링을 표시합니다.
-- 바깥 링은 5h 한도, 안쪽 링은 주간 한도를 hover readout으로 보여줍니다.
+- 현재 Codex `/pet` 아바타 주변에 원형 링 또는 작은 배터리 바를 표시합니다.
+- 5h 한도와 주간 한도를 hover readout으로 보여줍니다.
 - 영어, 한국어, 일본어, 중국어로 readout, tray text, 설정 UI를 현지화합니다.
 - Codex Desktop을 자동 감지하고 필요하면 실행합니다.
 - `/pet`가 보일 때까지 조용히 대기합니다.
@@ -141,7 +141,8 @@ PowerShell:
 %LOCALAPPDATA%\CodexPetLimitRingsWin\settings.json
 ```
 
-링 색상, 투명도, readout 색상, hover text 크기를 바꿀 수 있습니다. 실행 중인
+링/배터리 표시 방식을 선택하고, 색상, 투명도, readout 색상, hover text 크기를
+바꿀 수 있습니다. 실행 중인
 helper는 설정 파일 변경을 자동으로 다시 읽습니다.
 
 ## 개인정보

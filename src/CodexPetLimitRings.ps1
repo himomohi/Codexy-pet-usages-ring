@@ -253,6 +253,8 @@ $script:LastStateWriteTimeUtc = [datetime]::MinValue
 $script:CachedPetRect = $null
 $script:RingOuterRadius = $null
 $script:RingInnerRadius = $null
+$script:BatteryPrimaryBounds = $null
+$script:BatterySecondaryBounds = $null
 $script:LastReadoutRefreshAt = [datetime]::MinValue
 $script:LastHoverSignature = ""
 $script:RingVisualsVisible = $null
@@ -260,6 +262,7 @@ $script:RingAnimationToken = 0
 $script:SettingsLastWriteTimeUtc = [datetime]::MinValue
 $script:Style = [ordered]@{
   Language = "auto"
+  DisplayMode = "ring"
   PrimaryRgb = @(60, 235, 189)
   SecondaryRgb = @(86, 178, 255)
   WarningRgb = @(255, 66, 56)
@@ -277,6 +280,7 @@ $script:Style = [ordered]@{
   ReadoutFontSize = 10.5
   ReadoutLineHeight = 13.0
   RingGap = [Math]::Max(0.0, [double]$RingPadding - 16.0)
+  VisibilityMode = "hover"
   HoverRange = 24.0
   FadeInMs = 120.0
   FadeOutMs = 180.0
@@ -352,6 +356,7 @@ function Ensure-SettingsFile {
   $fallback = [ordered]@{
     version = 1
     language = "auto"
+    displayMode = "ring"
     colors = [ordered]@{
       primary = "#3CEBBD"
       secondary = "#56B2FF"
@@ -378,6 +383,7 @@ function Ensure-SettingsFile {
       ringGap = 22
     }
     behavior = [ordered]@{
+      visibilityMode = "hover"
       hoverRange = 24
       fadeInMs = 120
       fadeOutMs = 180
@@ -403,7 +409,10 @@ function Update-StyleFromSettings {
 
     $language = ([string](Get-PropertyValue $settings "language" "auto")).Trim().ToLowerInvariant()
     if ($language -notin @("auto", "ko", "en", "ja", "zh")) { $language = "auto" }
+    $displayMode = ([string](Get-PropertyValue $settings "displayMode" "ring")).Trim().ToLowerInvariant()
+    if ($displayMode -notin @("ring", "battery")) { $displayMode = "ring" }
     $script:Style.Language = $language
+    $script:Style.DisplayMode = $displayMode
     $script:Style.PrimaryRgb = Convert-HexColor (Get-PropertyValue $colors "primary" $null) @(60, 235, 189)
     $script:Style.SecondaryRgb = Convert-HexColor (Get-PropertyValue $colors "secondary" $null) @(86, 178, 255)
     $script:Style.WarningRgb = Convert-HexColor (Get-PropertyValue $colors "warning" $null) @(255, 66, 56)
@@ -421,6 +430,9 @@ function Update-StyleFromSettings {
     $script:Style.ReadoutFontSize = Convert-SettingNumber (Get-PropertyValue $text "fontSize" $null) 10.5 8 24
     $script:Style.ReadoutLineHeight = Convert-SettingNumber (Get-PropertyValue $text "lineHeight" $null) 13 10 32
     $script:Style.RingGap = Convert-SettingNumber (Get-PropertyValue $layout "ringGap" $null) ([Math]::Max(0.0, [double]$RingPadding - 16.0)) 0 96
+    $visibilityMode = ([string](Get-PropertyValue $behavior "visibilityMode" "hover")).Trim().ToLowerInvariant()
+    if ($visibilityMode -notin @("hover", "always")) { $visibilityMode = "hover" }
+    $script:Style.VisibilityMode = $visibilityMode
     $script:Style.HoverRange = Convert-SettingNumber (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
     $script:Style.FadeInMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
     $script:Style.FadeOutMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
@@ -439,6 +451,22 @@ function Apply-StyleSettings {
   if ($null -ne $script:InnerTrack) {
     $innerTrackOpacity = [byte][Math]::Max(10, [Math]::Min(255, [int]$script:Style.TrackOpacity - 4))
     $script:InnerTrack.Stroke = New-StyleBrush $innerTrackOpacity ([int[]]$script:Style.TrackRgb)
+  }
+  foreach ($track in @($script:PrimaryBatteryTrack, $script:SecondaryBatteryTrack)) {
+    if ($null -ne $track) {
+      $track.Stroke = New-StyleBrush ([byte]$script:Style.TrackOpacity) ([int[]]$script:Style.TrackRgb)
+      $track.Fill = New-StyleBrush ([byte][Math]::Max(8, [Math]::Min(255, [int]$script:Style.TrackOpacity + 12))) ([int[]]$script:Style.TrackRgb)
+    }
+  }
+  foreach ($cap in @($script:PrimaryBatteryCap, $script:SecondaryBatteryCap)) {
+    if ($null -ne $cap) {
+      $cap.Fill = New-StyleBrush ([byte][Math]::Max(22, [Math]::Min(255, [int]$script:Style.TrackOpacity + 28))) ([int[]]$script:Style.TrackRgb)
+    }
+  }
+  foreach ($label in @($script:PrimaryBatteryLabel, $script:SecondaryBatteryLabel)) {
+    if ($null -ne $label) {
+      $label.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+    }
   }
   if ($null -ne $script:OuterReadoutText) {
     $script:OuterReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
@@ -997,6 +1025,15 @@ function Format-Duration {
   return "{0}s" -f $total
 }
 
+function Set-RectangleBounds {
+  param($Rectangle, [double]$X, [double]$Y, [double]$Width, [double]$Height)
+  if ($null -eq $Rectangle) { return }
+  $Rectangle.Width = [Math]::Max(0.0, $Width)
+  $Rectangle.Height = [Math]::Max(0.0, $Height)
+  [System.Windows.Controls.Canvas]::SetLeft($Rectangle, $X)
+  [System.Windows.Controls.Canvas]::SetTop($Rectangle, $Y)
+}
+
 function Format-ResetDetail {
   param($ResetAt)
   $language = Get-EffectiveLanguage
@@ -1151,10 +1188,52 @@ function Hide-RingReadouts {
 
 function Set-RingShapesVisibility {
   param([System.Windows.Visibility]$Visibility)
-  foreach ($shape in @($script:OuterTrack, $script:InnerTrack, $script:OuterArc, $script:InnerArc)) {
+  foreach ($shape in @(
+    $script:OuterTrack,
+    $script:InnerTrack,
+    $script:OuterArc,
+    $script:InnerArc,
+    $script:PrimaryBatteryTrack,
+    $script:PrimaryBatteryFill,
+    $script:PrimaryBatteryCap,
+    $script:PrimaryBatteryLabel,
+    $script:SecondaryBatteryTrack,
+    $script:SecondaryBatteryFill,
+    $script:SecondaryBatteryCap,
+    $script:SecondaryBatteryLabel
+  )) {
     if ($null -ne $shape) {
       $shape.Visibility = $Visibility
     }
+  }
+}
+
+function Update-ModeShapeVisibility {
+  if ($null -eq $script:Window) { return }
+  $ringVisibility = if ($script:Style.DisplayMode -eq "battery") {
+    [System.Windows.Visibility]::Collapsed
+  } else {
+    [System.Windows.Visibility]::Visible
+  }
+  $batteryVisibility = if ($script:Style.DisplayMode -eq "battery") {
+    [System.Windows.Visibility]::Visible
+  } else {
+    [System.Windows.Visibility]::Collapsed
+  }
+  foreach ($shape in @($script:OuterTrack, $script:InnerTrack, $script:OuterArc, $script:InnerArc)) {
+    if ($null -ne $shape) { $shape.Visibility = $ringVisibility }
+  }
+  foreach ($shape in @(
+    $script:PrimaryBatteryTrack,
+    $script:PrimaryBatteryFill,
+    $script:PrimaryBatteryCap,
+    $script:PrimaryBatteryLabel,
+    $script:SecondaryBatteryTrack,
+    $script:SecondaryBatteryFill,
+    $script:SecondaryBatteryCap,
+    $script:SecondaryBatteryLabel
+  )) {
+    if ($null -ne $shape) { $shape.Visibility = $batteryVisibility }
   }
 }
 
@@ -1221,6 +1300,7 @@ function Set-RingVisualsVisible {
 
   if ($Visible) {
     Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Visible)
+    Update-ModeShapeVisibility
     if ($null -ne $script:Window -and -not $script:Window.IsVisible) {
       $script:Window.Opacity = 0.0
       $script:Window.Show()
@@ -1260,6 +1340,15 @@ function Test-CursorInRingRange {
   }
 
   $size = [double]$script:Window.Width
+  if ($script:Style.DisplayMode -eq "battery") {
+    $range = [Math]::Max(0.0, [double]$script:Style.HoverRange)
+    return (
+      [double]$Cursor.X -ge ([double]$script:Window.Left - $range) -and
+      [double]$Cursor.X -le ([double]$script:Window.Left + [double]$script:Window.Width + $range) -and
+      [double]$Cursor.Y -ge ([double]$script:Window.Top - $range) -and
+      [double]$Cursor.Y -le ([double]$script:Window.Top + [double]$script:Window.Height + $range)
+    )
+  }
   $centerX = [double]$script:Window.Left + $size / 2.0
   $centerY = [double]$script:Window.Top + $size / 2.0
   $outerRadius = if ($null -ne $script:RingOuterRadius) {
@@ -1272,14 +1361,51 @@ function Test-CursorInRingRange {
   return ($distance -le ($outerRadius + $range))
 }
 
+function Test-CursorInBatteryRange {
+  param($Cursor)
+  if (
+    $null -eq $script:Window -or
+    $null -eq $Cursor -or
+    -not $script:Window.IsVisible
+  ) {
+    return $false
+  }
+
+  $localX = [double]$Cursor.X - [double]$script:Window.Left
+  $localY = [double]$Cursor.Y - [double]$script:Window.Top
+  $padding = [Math]::Max(6.0, [Math]::Min(18.0, [double]$script:Style.HoverRange))
+  foreach ($bounds in @($script:BatteryPrimaryBounds, $script:BatterySecondaryBounds)) {
+    if ($null -eq $bounds) { continue }
+    if (
+      $localX -ge ([double]$bounds.X - $padding) -and
+      $localX -le ([double]$bounds.X + [double]$bounds.Width + $padding) -and
+      $localY -ge ([double]$bounds.Y - $padding) -and
+      $localY -le ([double]$bounds.Y + [double]$bounds.Height + $padding)
+    ) {
+      return $true
+    }
+  }
+  return $false
+}
+
 function Update-RingHoverVisibility {
   if ($null -eq $script:Window -or $null -eq $script:LastPetRect) {
     Set-RingVisualsVisible -Visible $false
     return
   }
 
+  if ($script:Style.VisibilityMode -eq "always") {
+    Set-RingVisualsVisible -Visible $true
+    Set-FrameTimerInterval -Fast $false
+    return
+  }
+
   $cursor = [System.Windows.Forms.Cursor]::Position
-  $showRing = (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
+  $showRing = if ($script:Style.DisplayMode -eq "battery") {
+    (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBatteryRange -Cursor $cursor)
+  } else {
+    (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
+  }
   Set-RingVisualsVisible -Visible $showRing
   Set-FrameTimerInterval -Fast $true
 }
@@ -1426,6 +1552,7 @@ function Update-RingGeometry {
     return
   }
   $size = [double]$script:Window.Width
+  $isBattery = $script:Style.DisplayMode -eq "battery"
   $center = $size / 2.0
   $outerRadius = if ($null -ne $script:RingOuterRadius) {
     [double]$script:RingOuterRadius
@@ -1438,18 +1565,47 @@ function Update-RingGeometry {
     $outerRadius - 13.0
   }
 
-  Set-EllipseBounds $script:OuterTrack $center $outerRadius
-  Set-EllipseBounds $script:InnerTrack $center $innerRadius
   $primaryRemaining = Get-RingRemaining `
     -DisplayedValue $script:DisplayedUsageState.PrimaryRemaining `
     -TargetValue $script:UsageState.PrimaryRemaining
   $secondaryRemaining = Get-RingRemaining `
     -DisplayedValue $script:DisplayedUsageState.SecondaryRemaining `
     -TargetValue $script:UsageState.SecondaryRemaining
-  $script:OuterArc.Data = New-ArcGeometry -Center $center -Radius $outerRadius -Percent $primaryRemaining
-  $script:InnerArc.Data = New-ArcGeometry -Center $center -Radius $innerRadius -Percent $secondaryRemaining
-  $script:OuterArc.Stroke = Get-CapacityBrush -Remaining $primaryRemaining
-  $script:InnerArc.Stroke = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
+  if ($isBattery) {
+    $barWidth = [Math]::Min(132.0, [Math]::Max(96.0, [double]$script:Window.Width - 22.0))
+    $barHeight = 9.0
+    $barX = ([double]$script:Window.Width - $barWidth) / 2.0
+    $barY = [Math]::Max(4.0, [double]$script:Window.Height - 31.0)
+    $labelWidth = 24.0
+    $bodyX = $barX + $labelWidth
+    $bodyWidth = $barWidth - $labelWidth - 7.0
+    $capWidth = 4.0
+    $primaryFillWidth = $bodyWidth * ([Math]::Max(0.0, [Math]::Min(100.0, $primaryRemaining)) / 100.0)
+    $secondaryFillWidth = $bodyWidth * ([Math]::Max(0.0, [Math]::Min(100.0, $secondaryRemaining)) / 100.0)
+
+    Set-RectangleBounds $script:PrimaryBatteryTrack $bodyX $barY $bodyWidth $barHeight
+    Set-RectangleBounds $script:PrimaryBatteryFill $bodyX $barY $primaryFillWidth $barHeight
+    Set-RectangleBounds $script:PrimaryBatteryCap ($bodyX + $bodyWidth + 2.0) ($barY + 2.0) $capWidth ($barHeight - 4.0)
+    Set-RectangleBounds $script:SecondaryBatteryTrack $bodyX ($barY + 15.0) $bodyWidth $barHeight
+    Set-RectangleBounds $script:SecondaryBatteryFill $bodyX ($barY + 15.0) $secondaryFillWidth $barHeight
+    Set-RectangleBounds $script:SecondaryBatteryCap ($bodyX + $bodyWidth + 2.0) ($barY + 17.0) $capWidth ($barHeight - 4.0)
+    [System.Windows.Controls.Canvas]::SetLeft($script:PrimaryBatteryLabel, $barX)
+    [System.Windows.Controls.Canvas]::SetTop($script:PrimaryBatteryLabel, $barY - 3.0)
+    [System.Windows.Controls.Canvas]::SetLeft($script:SecondaryBatteryLabel, $barX)
+    [System.Windows.Controls.Canvas]::SetTop($script:SecondaryBatteryLabel, $barY + 12.0)
+    $script:BatteryPrimaryBounds = [pscustomobject]@{ X = $barX; Y = $barY; Width = $barWidth + $capWidth + 3.0; Height = $barHeight }
+    $script:BatterySecondaryBounds = [pscustomobject]@{ X = $barX; Y = $barY + 15.0; Width = $barWidth + $capWidth + 3.0; Height = $barHeight }
+    $script:PrimaryBatteryFill.Fill = Get-CapacityBrush -Remaining $primaryRemaining
+    $script:SecondaryBatteryFill.Fill = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
+  } else {
+    Set-EllipseBounds $script:OuterTrack $center $outerRadius
+    Set-EllipseBounds $script:InnerTrack $center $innerRadius
+    $script:OuterArc.Data = New-ArcGeometry -Center $center -Radius $outerRadius -Percent $primaryRemaining
+    $script:InnerArc.Data = New-ArcGeometry -Center $center -Radius $innerRadius -Percent $secondaryRemaining
+    $script:OuterArc.Stroke = Get-CapacityBrush -Remaining $primaryRemaining
+    $script:InnerArc.Stroke = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
+  }
+  Update-ModeShapeVisibility
 
   [void](Update-ReadoutText)
 }
@@ -1459,7 +1615,7 @@ function Set-PetAutoDetectState {
   if ($script:LastPetVisible -ne $Visible) {
     $script:LastPetVisible = $Visible
     if ($Visible) {
-      Write-AppLog "Codex /pet overlay detected; showing rings."
+      Write-AppLog "Codex /pet overlay detected; showing usage visuals."
     } else {
       Write-AppLog "Codex /pet overlay is not visible; waiting automatically."
     }
@@ -1504,16 +1660,28 @@ function Update-PetFrame {
   }
 
   Set-PetAutoDetectState -Visible $true
-  $ringPadding = [double]$script:Style.RingGap + 16.0
-  $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $ringPadding * 2.0
-  $windowSize = $ringSize
-  $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowSize / 2.0
-  $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $windowSize / 2.0
+  $isBattery = $script:Style.DisplayMode -eq "battery"
+  if ($isBattery) {
+    $windowWidth = [Math]::Max([double]$rect.Width + 28.0, 148.0)
+    $windowHeight = [double]$rect.Height + 43.0
+    $ringSize = [Math]::Max($windowWidth, $windowHeight)
+    $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
+    $top = [double]$rect.Y
+  } else {
+    $ringPadding = [double]$script:Style.RingGap + 16.0
+    $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $ringPadding * 2.0
+    $windowWidth = $ringSize
+    $windowHeight = $ringSize
+    $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
+    $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $windowHeight / 2.0
+  }
 
-  $signature = "{0:N1}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}" -f `
+  $signature = "{0}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}|{6:N1}|{7:N1}" -f `
+    $script:Style.DisplayMode,
     $left,
     $top,
-    $windowSize,
+    $windowWidth,
+    $windowHeight,
     $rect.X,
     $rect.Y,
     $ringSize
@@ -1521,12 +1689,12 @@ function Update-PetFrame {
   if ($changed) {
     $script:LastPetRect = $rect
     $script:LastPetFrameSignature = $signature
-    $script:RingOuterRadius = $ringSize / 2.0 - 16.0
-    $script:RingInnerRadius = $script:RingOuterRadius - 13.0
-    $script:Window.Width = $windowSize
-    $script:Window.Height = $windowSize
-    $script:Canvas.Width = $windowSize
-    $script:Canvas.Height = $windowSize
+    $script:RingOuterRadius = if ($isBattery) { $null } else { $ringSize / 2.0 - 16.0 }
+    $script:RingInnerRadius = if ($isBattery) { $null } else { $script:RingOuterRadius - 13.0 }
+    $script:Window.Width = $windowWidth
+    $script:Window.Height = $windowHeight
+    $script:Canvas.Width = $windowWidth
+    $script:Canvas.Height = $windowHeight
     $script:Window.Left = $left
     $script:Window.Top = $top
     Update-RingGeometry
@@ -1546,11 +1714,40 @@ function Update-HoverReadout {
   $cursor = [System.Windows.Forms.Cursor]::Position
   $localX = [double]$cursor.X - [double]$script:Window.Left
   $localY = [double]$cursor.Y - [double]$script:Window.Top
-  $size = [double]$script:Window.Width
-  if ($localX -lt 0 -or $localY -lt 0 -or $localX -gt $size -or $localY -gt $size) {
+  $width = [double]$script:Window.Width
+  $height = [double]$script:Window.Height
+  if ($localX -lt 0 -or $localY -lt 0 -or $localX -gt $width -or $localY -gt $height) {
     Hide-RingReadouts
     return
   }
+  if ($script:Style.DisplayMode -eq "battery") {
+    $primary = $script:BatteryPrimaryBounds
+    $secondary = $script:BatterySecondaryBounds
+    $hitPadding = 8.0
+    $textUpdated = [bool](Update-ReadoutText)
+    foreach ($candidate in @(
+      @{ Ring = "Outer"; Bounds = $primary },
+      @{ Ring = "Inner"; Bounds = $secondary }
+    )) {
+      $bounds = $candidate.Bounds
+      if ($null -eq $bounds) { continue }
+      if (
+        $localX -ge ([double]$bounds.X - $hitPadding) -and
+        $localX -le ([double]$bounds.X + [double]$bounds.Width + $hitPadding) -and
+        $localY -ge ([double]$bounds.Y - $hitPadding) -and
+        $localY -le ([double]$bounds.Y + [double]$bounds.Height + $hitPadding)
+      ) {
+        $hoverSignature = "{0}|{1:N0}|{2:N0}" -f $candidate.Ring, $localX, $localY
+        if (-not $textUpdated -and $script:LastHoverSignature -eq $hoverSignature) { return }
+        $script:LastHoverSignature = $hoverSignature
+        Show-RingReadout -Ring $candidate.Ring -X ([double]$bounds.X + [double]$bounds.Width / 2.0) -Y ([double]$bounds.Y + [double]$bounds.Height / 2.0) -Size $width
+        return
+      }
+    }
+    Hide-RingReadouts
+    return
+  }
+  $size = [double]$script:Window.Width
   $distance = [Math]::Sqrt([Math]::Pow($localX - $size / 2.0, 2) + [Math]::Pow($localY - $size / 2.0, 2))
   $outerRadius = if ($null -ne $script:RingOuterRadius) {
     [double]$script:RingOuterRadius
@@ -1671,6 +1868,54 @@ $script:InnerArc.StrokeThickness = $InnerStroke
 $script:InnerArc.StrokeStartLineCap = [System.Windows.Media.PenLineCap]::Round
 $script:InnerArc.StrokeEndLineCap = [System.Windows.Media.PenLineCap]::Round
 
+$script:PrimaryBatteryTrack = [System.Windows.Shapes.Rectangle]::new()
+$script:PrimaryBatteryTrack.RadiusX = 3
+$script:PrimaryBatteryTrack.RadiusY = 3
+$script:PrimaryBatteryTrack.StrokeThickness = 1
+$script:PrimaryBatteryTrack.Stroke = New-StyleBrush ([byte]$script:Style.TrackOpacity) ([int[]]$script:Style.TrackRgb)
+$script:PrimaryBatteryTrack.Fill = New-StyleBrush ([byte][Math]::Max(8, [Math]::Min(255, [int]$script:Style.TrackOpacity + 12))) ([int[]]$script:Style.TrackRgb)
+
+$script:PrimaryBatteryFill = [System.Windows.Shapes.Rectangle]::new()
+$script:PrimaryBatteryFill.RadiusX = 3
+$script:PrimaryBatteryFill.RadiusY = 3
+
+$script:PrimaryBatteryCap = [System.Windows.Shapes.Rectangle]::new()
+$script:PrimaryBatteryCap.RadiusX = 1.5
+$script:PrimaryBatteryCap.RadiusY = 1.5
+$script:PrimaryBatteryCap.Fill = New-StyleBrush ([byte][Math]::Max(22, [Math]::Min(255, [int]$script:Style.TrackOpacity + 28))) ([int[]]$script:Style.TrackRgb)
+
+$script:SecondaryBatteryTrack = [System.Windows.Shapes.Rectangle]::new()
+$script:SecondaryBatteryTrack.RadiusX = 3
+$script:SecondaryBatteryTrack.RadiusY = 3
+$script:SecondaryBatteryTrack.StrokeThickness = 1
+$script:SecondaryBatteryTrack.Stroke = New-StyleBrush ([byte]$script:Style.TrackOpacity) ([int[]]$script:Style.TrackRgb)
+$script:SecondaryBatteryTrack.Fill = New-StyleBrush ([byte][Math]::Max(8, [Math]::Min(255, [int]$script:Style.TrackOpacity + 12))) ([int[]]$script:Style.TrackRgb)
+
+$script:SecondaryBatteryFill = [System.Windows.Shapes.Rectangle]::new()
+$script:SecondaryBatteryFill.RadiusX = 3
+$script:SecondaryBatteryFill.RadiusY = 3
+
+$script:SecondaryBatteryCap = [System.Windows.Shapes.Rectangle]::new()
+$script:SecondaryBatteryCap.RadiusX = 1.5
+$script:SecondaryBatteryCap.RadiusY = 1.5
+$script:SecondaryBatteryCap.Fill = New-StyleBrush ([byte][Math]::Max(22, [Math]::Min(255, [int]$script:Style.TrackOpacity + 28))) ([int[]]$script:Style.TrackRgb)
+
+$script:PrimaryBatteryLabel = [System.Windows.Controls.TextBlock]::new()
+$script:PrimaryBatteryLabel.Text = "5h"
+$script:PrimaryBatteryLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:PrimaryBatteryLabel.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:PrimaryBatteryLabel.FontSize = 9.0
+$script:PrimaryBatteryLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
+$script:PrimaryBatteryLabel.Opacity = 0.86
+
+$script:SecondaryBatteryLabel = [System.Windows.Controls.TextBlock]::new()
+$script:SecondaryBatteryLabel.Text = "W"
+$script:SecondaryBatteryLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:SecondaryBatteryLabel.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:SecondaryBatteryLabel.FontSize = 9.0
+$script:SecondaryBatteryLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
+$script:SecondaryBatteryLabel.Opacity = 0.86
+
 $script:OuterReadoutText = [System.Windows.Controls.TextBlock]::new()
 $script:OuterReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
 $script:OuterReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
@@ -1704,6 +1949,14 @@ $script:Canvas.Children.Add($script:OuterTrack) | Out-Null
 $script:Canvas.Children.Add($script:InnerTrack) | Out-Null
 $script:Canvas.Children.Add($script:OuterArc) | Out-Null
 $script:Canvas.Children.Add($script:InnerArc) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBatteryTrack) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBatteryFill) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBatteryCap) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBatteryLabel) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBatteryTrack) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBatteryFill) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBatteryCap) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBatteryLabel) | Out-Null
 Set-RingVisualsVisible -Visible $false
 
 $script:Window.Add_SourceInitialized({

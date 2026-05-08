@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.5
+
+### Added
+
+- Added a settings-selectable battery display mode for the Codex `/pet` usage overlay.
+- Added a shared visibility setting for hover-only or always-visible usage displays.
+
+### Fixed
+
+- Kept battery hover mode visible while moving from the pet to the battery bars so usage readouts can be inspected.
+- Improved settings select contrast so selected values stay readable on the dark settings surface.
+
 ## 0.1.4
 
 ### Added

@@ -200,6 +200,15 @@
       outline: none;
       transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
     }
+    select {
+      color: #f4f1e8;
+      background-color: #101410;
+      font-weight: 650;
+    }
+    select option {
+      color: #f4f1e8;
+      background-color: #101410;
+    }
     select:focus-visible,
     input:focus-visible,
     button:focus-visible {
@@ -208,9 +217,10 @@
       outline: none;
     }
     output {
-      color: var(--muted);
+      color: #dce3d8;
       font-family: "Cascadia Mono", "JetBrains Mono", Consolas, monospace;
       font-size: 11px;
+      font-weight: 650;
       text-align: right;
       font-variant-numeric: tabular-nums;
       overflow-wrap: anywhere;
@@ -369,6 +379,45 @@
       left: 112px;
       top: 122px;
     }
+    .battery-preview {
+      position: absolute;
+      left: 50%;
+      top: 154px;
+      width: 144px;
+      transform: translateX(-50%);
+      display: grid;
+      gap: 7px;
+      pointer-events: none;
+    }
+    .battery-row {
+      display: grid;
+      grid-template-columns: 28px 1fr 6px;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      font-weight: 760;
+      color: rgba(245, 243, 232, 0.86);
+      font-variant-numeric: tabular-nums;
+    }
+    .battery-body {
+      height: 11px;
+      border: 1px solid rgba(244, 241, 232, 0.13);
+      border-radius: 4px;
+      overflow: hidden;
+      background: rgba(244, 241, 232, 0.05);
+    }
+    .battery-fill {
+      width: 70%;
+      height: 100%;
+      border-radius: 3px;
+      transition: width 160ms ease, background 120ms ease;
+    }
+    .battery-cap {
+      width: 5px;
+      height: 7px;
+      border-radius: 2px;
+      background: rgba(244, 241, 232, 0.18);
+    }
     .path-row {
       display: grid;
       gap: 7px;
@@ -464,6 +513,14 @@
             </select>
             <output></output>
           </div>
+          <div class="field">
+            <label for="displayMode" data-i18n="displayMode">Display Mode</label>
+            <select id="displayMode" data-path="displayMode">
+              <option value="ring" data-i18n="displayModeRing">Rings</option>
+              <option value="battery" data-i18n="displayModeBattery">Battery</option>
+            </select>
+            <output></output>
+          </div>
         </section>
 
         <div class="grid">
@@ -501,6 +558,14 @@
 
           <section>
             <h2 data-i18n="sectionHover">Hover Behavior</h2>
+            <div class="field">
+              <label for="visibilityMode" data-i18n="visibilityMode">Visibility</label>
+              <select id="visibilityMode" data-path="behavior.visibilityMode">
+                <option value="hover" data-i18n="visibilityModeHover">Mouse Hover</option>
+                <option value="always" data-i18n="visibilityModeAlways">Always Visible</option>
+              </select>
+              <output></output>
+            </div>
             <div class="field"><label for="ringGap" data-i18n="ringGap">Pet-Ring Distance</label><input id="ringGap" type="range" min="0" max="96" step="1" data-path="layout.ringGap" data-unit="px"><output></output></div>
             <div class="field"><label for="hoverRange" data-i18n="hoverRange">Ring Range</label><input id="hoverRange" type="range" min="0" max="96" step="1" data-path="behavior.hoverRange" data-unit="px"><output></output></div>
             <div class="field"><label for="fadeInMs" data-i18n="fadeIn">Fade In</label><input id="fadeInMs" type="range" min="0" max="1000" step="10" data-path="behavior.fadeInMs" data-unit="ms"><output></output></div>
@@ -527,6 +592,18 @@
               <circle class="hover-range" id="previewHoverRange" cx="110" cy="110" r="92"></circle>
             </svg>
             <div class="pet" data-i18n="pet">PET</div>
+            <div class="battery-preview" id="previewBattery" aria-hidden="true">
+              <div class="battery-row">
+                <span>5h</span>
+                <div class="battery-body"><div class="battery-fill" id="previewBatteryPrimary"></div></div>
+                <div class="battery-cap" id="previewBatteryPrimaryCap"></div>
+              </div>
+              <div class="battery-row">
+                <span>W</span>
+                <div class="battery-body"><div class="battery-fill" id="previewBatterySecondary"></div></div>
+                <div class="battery-cap" id="previewBatterySecondaryCap"></div>
+              </div>
+            </div>
             <div class="tooltip" id="previewTip">5h 90% left<br>Reset 22:27</div>
             <div class="tooltip inner" id="previewInnerTip">Week 64% left<br>Tue 15:24</div>
           </div>
@@ -567,12 +644,15 @@
         serverUnavailable: 'Settings server is not available.',
         launchHint: 'Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.',
         previewLabel: 'Live Preview',
-        previewTitle: 'Ring Preview',
-        previewDescription: 'Ring geometry, readout opacity, and alert colors update here as you edit.',
+        previewTitle: 'Usage Preview',
+        previewDescription: 'Ring or battery geometry, readout opacity, and alert colors update here as you edit.',
         settingsFile: 'Settings File',
         pet: 'PET',
         sectionGeneral: 'General',
         language: 'Language',
+        displayMode: 'Display Mode',
+        displayModeRing: 'Rings',
+        displayModeBattery: 'Battery',
         languageAuto: 'Auto',
         languageKo: 'Korean',
         languageEn: 'English',
@@ -597,6 +677,9 @@
         fontSize: 'Font Size',
         lineHeight: 'Line Height',
         sectionHover: 'Hover Behavior',
+        visibilityMode: 'Visibility',
+        visibilityModeHover: 'Mouse Hover',
+        visibilityModeAlways: 'Always Visible',
         ringGap: 'Pet-Ring Distance',
         hoverRange: 'Ring Range',
         fadeIn: 'Fade In',
@@ -619,12 +702,15 @@
         serverUnavailable: '설정 서버를 사용할 수 없습니다.',
         launchHint: 'Settings.bat 또는 bin\\powershell\\Settings.ps1로 이 페이지를 실행하세요.',
         previewLabel: '실시간 미리보기',
-        previewTitle: '링 프리뷰',
-        previewDescription: '편집하는 값에 맞춰 링 간격, 표시 투명도, 경고 색상이 함께 반영됩니다.',
+        previewTitle: '사용량 프리뷰',
+        previewDescription: '선택한 링 또는 배터리 표시, 사용량 표시 투명도, 경고 색상이 함께 반영됩니다.',
         settingsFile: '설정 파일',
         pet: 'PET',
         sectionGeneral: '일반',
         language: '언어',
+        displayMode: '표시 방식',
+        displayModeRing: '링',
+        displayModeBattery: '배터리',
         languageAuto: '자동',
         languageKo: '한국어',
         languageEn: '영어',
@@ -649,6 +735,9 @@
         fontSize: '글자 크기',
         lineHeight: '줄 높이',
         sectionHover: '호버 동작',
+        visibilityMode: '노출 방식',
+        visibilityModeHover: '마우스 호버 시',
+        visibilityModeAlways: '상시 노출',
         ringGap: 'Pet-Ring 거리',
         hoverRange: '링 유지 범위',
         fadeIn: '페이드 인',
@@ -671,12 +760,15 @@
         serverUnavailable: '設定サーバーを利用できません。',
         launchHint: 'Settings.bat または bin\\powershell\\Settings.ps1 でこのページを開いてください。',
         previewLabel: 'ライブプレビュー',
-        previewTitle: 'リングプレビュー',
-        previewDescription: '編集中の値に合わせてリング間隔、表示の不透明度、警告色が反映されます。',
+        previewTitle: '使用量プレビュー',
+        previewDescription: '選択したリングまたはバッテリー表示、使用量表示の不透明度、警告色が反映されます。',
         settingsFile: '設定ファイル',
         pet: 'PET',
         sectionGeneral: '一般',
         language: '言語',
+        displayMode: '表示形式',
+        displayModeRing: 'リング',
+        displayModeBattery: 'バッテリー',
         languageAuto: '自動',
         languageKo: '韓国語',
         languageEn: '英語',
@@ -701,6 +793,9 @@
         fontSize: '文字サイズ',
         lineHeight: '行の高さ',
         sectionHover: 'ホバー動作',
+        visibilityMode: '表示タイミング',
+        visibilityModeHover: 'マウスホバー時',
+        visibilityModeAlways: '常に表示',
         ringGap: 'Pet-Ring 距離',
         hoverRange: 'リング保持範囲',
         fadeIn: 'フェードイン',
@@ -723,12 +818,15 @@
         serverUnavailable: '设置服务器不可用。',
         launchHint: '请使用 Settings.bat 或 bin\\powershell\\Settings.ps1 打开此页面。',
         previewLabel: '实时预览',
-        previewTitle: '圆环预览',
-        previewDescription: '编辑时会同步反映圆环间距、提示透明度和警告颜色。',
+        previewTitle: '使用量预览',
+        previewDescription: '编辑时会同步反映圆环或电池显示、提示透明度和警告颜色。',
         settingsFile: '设置文件',
         pet: 'PET',
         sectionGeneral: '常规',
         language: '语言',
+        displayMode: '显示模式',
+        displayModeRing: '圆环',
+        displayModeBattery: '电池',
         languageAuto: '自动',
         languageKo: '韩语',
         languageEn: '英语',
@@ -753,6 +851,9 @@
         fontSize: '字体大小',
         lineHeight: '行高',
         sectionHover: '悬停行为',
+        visibilityMode: '显示时机',
+        visibilityModeHover: '鼠标悬停时',
+        visibilityModeAlways: '始终显示',
         ringGap: 'Pet-Ring 距离',
         hoverRange: '圆环保持范围',
         fadeIn: '淡入',
@@ -872,8 +973,20 @@
       const warning = document.getElementById('previewWarning');
       const caution = document.getElementById('previewCaution');
       const hoverRange = document.getElementById('previewHoverRange');
+      const battery = document.getElementById('previewBattery');
+      const batteryPrimary = document.getElementById('previewBatteryPrimary');
+      const batterySecondary = document.getElementById('previewBatterySecondary');
+      const batteryPrimaryCap = document.getElementById('previewBatteryPrimaryCap');
+      const batterySecondaryCap = document.getElementById('previewBatterySecondaryCap');
       const tip = document.getElementById('previewTip');
       const innerTip = document.getElementById('previewInnerTip');
+      const displayMode = valueFor('displayMode') || 'ring';
+      const ringDisplay = displayMode === 'battery' ? 'none' : '';
+      const batteryDisplay = displayMode === 'battery' ? 'grid' : 'none';
+      for (const element of [outerTrack, innerTrack, outer, inner, warning, caution, hoverRange]) {
+        element.style.display = ringDisplay;
+      }
+      battery.style.display = batteryDisplay;
       const petSize = 78;
       const ringGap = Number(valueFor('layout.ringGap') || 0);
       const hoverRangeValue = Number(valueFor('behavior.hoverRange') || 0);
@@ -913,6 +1026,12 @@
       setCircle(inner, 0.58);
       setCircle(caution, 0.08, 0.67);
       setCircle(warning, 0.08, 0.8);
+      batteryPrimary.style.width = '74%';
+      batterySecondary.style.width = '58%';
+      batteryPrimary.style.background = rgba(settings.colors.primary, settings.opacity.primary);
+      batterySecondary.style.background = rgba(settings.colors.secondary, settings.opacity.secondary);
+      batteryPrimaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
+      batterySecondaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
       tip.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
       tip.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
       tip.style.fontSize = `${settings.text.fontSize}px`;
