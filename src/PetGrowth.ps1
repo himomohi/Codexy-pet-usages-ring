@@ -32,31 +32,47 @@ function Normalize-PetGrowthMode {
   return "balanced"
 }
 
+function Get-PetGrowthPrimaryTargetUsed {
+  param([string]$GrowthMode = "balanced")
+  $mode = Normalize-PetGrowthMode $GrowthMode
+  if ($mode -eq "conserve") { return 20.0 }
+  if ($mode -eq "active") { return 60.0 }
+  return 40.0
+}
+
+function Get-PetGrowthPrimaryUsedPercent {
+  param($PrimaryRemaining)
+  if ($null -eq $PrimaryRemaining) { return $null }
+  $primary = [Math]::Max(0.0, [Math]::Min(100.0, [double]$PrimaryRemaining))
+  return [Math]::Round(100.0 - $primary, 3)
+}
+
+function Get-PetGrowthTodayXpTarget {
+  param($PrimaryRemaining, [bool]$HasUsageSnapshot = $true, [string]$GrowthMode = "balanced")
+  if (-not $HasUsageSnapshot -or $null -eq $PrimaryRemaining) { return 0 }
+  $used = Get-PetGrowthPrimaryUsedPercent -PrimaryRemaining $PrimaryRemaining
+  if ($null -eq $used) { return 0 }
+  $target = Get-PetGrowthPrimaryTargetUsed -GrowthMode $GrowthMode
+  if ($target -le 0.0) { return 0 }
+  $progress = [Math]::Max(0.0, [Math]::Min(1.0, [double]$used / [double]$target))
+  return [Math]::Min(30, [int][Math]::Floor($progress * 30.0))
+}
+
 function Get-PetGrowthCondition {
   param($PrimaryRemaining, $SecondaryRemaining, [bool]$HasUsageSnapshot = $true, [string]$GrowthMode = "balanced")
-  if (-not $HasUsageSnapshot -or $null -eq $PrimaryRemaining -or $null -eq $SecondaryRemaining) {
+  if (-not $HasUsageSnapshot -or $null -eq $PrimaryRemaining) {
     return "waiting"
   }
 
   $primary = [Math]::Max(0.0, [Math]::Min(100.0, [double]$PrimaryRemaining))
-  $secondary = [Math]::Max(0.0, [Math]::Min(100.0, [double]$SecondaryRemaining))
+  $secondary = if ($null -eq $SecondaryRemaining) { 100.0 } else { [Math]::Max(0.0, [Math]::Min(100.0, [double]$SecondaryRemaining)) }
   if ($primary -lt 10.0 -or $secondary -lt 10.0) { return "sleepy" }
   if ($primary -lt 20.0 -or $secondary -lt 20.0) { return "tired" }
 
-  $mode = Normalize-PetGrowthMode $GrowthMode
   $primaryUsed = 100.0 - $primary
-  $secondaryUsed = 100.0 - $secondary
-  $healthyPrimaryUsed = 20.0
-  $healthySecondaryUsed = 10.0
-  if ($mode -eq "balanced") {
-    $healthyPrimaryUsed = 40.0
-    $healthySecondaryUsed = 20.0
-  } elseif ($mode -eq "active") {
-    $healthyPrimaryUsed = 60.0
-    $healthySecondaryUsed = 35.0
-  }
+  $healthyPrimaryUsed = Get-PetGrowthPrimaryTargetUsed -GrowthMode $GrowthMode
 
-  if ($primaryUsed -ge $healthyPrimaryUsed -and $secondaryUsed -ge $healthySecondaryUsed) { return "healthy" }
+  if ($primaryUsed -ge $healthyPrimaryUsed) { return "healthy" }
   return "stable"
 }
 
@@ -70,6 +86,8 @@ function New-PetGrowthState {
     todayKey = Get-PetGrowthDateKey -Now $Now
     todayHealthySeconds = 0
     todayXp = 0
+    todayPrimaryUsedPercent = 0
+    todayTargetUsedPercent = 0
     healthyRemainderSeconds = 0
     lastUpdatedAt = $null
     lastCondition = "waiting"
@@ -115,6 +133,8 @@ function Normalize-PetGrowthState {
   $totalXp = [Math]::Max(0, [int][double](& $get $State "totalXp" 0))
   $todayXp = [Math]::Max(0, [Math]::Min(30, [int][double](& $get $State "todayXp" 0)))
   $todayHealthy = [Math]::Max(0.0, [double](& $get $State "todayHealthySeconds" 0))
+  $todayPrimaryUsed = [Math]::Max(0.0, [Math]::Min(100.0, [double](& $get $State "todayPrimaryUsedPercent" 0)))
+  $todayTargetUsed = [Math]::Max(0.0, [Math]::Min(100.0, [double](& $get $State "todayTargetUsedPercent" 0)))
   $remainder = [Math]::Max(0.0, [Math]::Min(59.999, [double](& $get $State "healthyRemainderSeconds" 0)))
   $condition = [string](& $get $State "condition" "waiting")
   if ($condition -notin @("waiting", "healthy", "stable", "tired", "sleepy")) { $condition = "waiting" }
@@ -131,6 +151,8 @@ function Normalize-PetGrowthState {
     todayKey = $todayKey
     todayHealthySeconds = [Math]::Round($todayHealthy, 3)
     todayXp = $todayXp
+    todayPrimaryUsedPercent = [Math]::Round($todayPrimaryUsed, 3)
+    todayTargetUsedPercent = [Math]::Round($todayTargetUsed, 3)
     healthyRemainderSeconds = [Math]::Round($remainder, 3)
     lastUpdatedAt = & $get $State "lastUpdatedAt" $null
     lastCondition = $lastCondition
@@ -170,6 +192,8 @@ function Update-PetGrowthState {
     $next.todayKey = $todayKey
     $next.todayHealthySeconds = 0
     $next.todayXp = 0
+    $next.todayPrimaryUsedPercent = 0
+    $next.todayTargetUsedPercent = 0
     $next.healthyRemainderSeconds = 0
   }
 
@@ -180,11 +204,6 @@ function Update-PetGrowthState {
   }
 
   $lastUpdatedAt = ConvertTo-PetGrowthDateTime $next.lastUpdatedAt
-  $elapsedSeconds = if ($null -eq $lastUpdatedAt) {
-    0.0
-  } else {
-    [Math]::Max(0.0, [Math]::Min(300.0, ($Now - $lastUpdatedAt).TotalSeconds))
-  }
 
   $awardedXp = 0
   $weeklyResetApplied = $false
@@ -197,6 +216,8 @@ function Update-PetGrowthState {
         $next.level = 1
         $next.todayHealthySeconds = 0
         $next.todayXp = 0
+        $next.todayPrimaryUsedPercent = 0
+        $next.todayTargetUsedPercent = 0
         $next.healthyRemainderSeconds = 0
         $next.awardedResetKeys = @($next.awardedResetKeys + $weeklyResetKey)
         $weeklyResetApplied = $true
@@ -204,24 +225,28 @@ function Update-PetGrowthState {
     }
   }
 
-  if ($Enabled -and $PetVisible -and $HasUsageSnapshot -and -not $weeklyResetApplied -and $condition -eq "healthy") {
-    $next.todayHealthySeconds = [Math]::Round(([double]$next.todayHealthySeconds + $elapsedSeconds), 3)
-    $remainder = [double]$next.healthyRemainderSeconds + $elapsedSeconds
-    while ($remainder -ge 60.0 -and [int]$next.todayXp -lt 30) {
-      $next.totalXp = [int]$next.totalXp + 1
-      $next.todayXp = [int]$next.todayXp + 1
-      $awardedXp += 1
-      $remainder -= 60.0
+  if ($Enabled -and $PetVisible -and $HasUsageSnapshot -and -not $weeklyResetApplied -and $condition -in @("stable", "healthy")) {
+    $usedPercent = Get-PetGrowthPrimaryUsedPercent -PrimaryRemaining $PrimaryRemaining
+    if ($null -ne $usedPercent) {
+      $next.todayPrimaryUsedPercent = [Math]::Round([double]$usedPercent, 3)
+      $next.todayTargetUsedPercent = [Math]::Round((Get-PetGrowthPrimaryTargetUsed -GrowthMode $GrowthMode), 3)
+      $targetTodayXp = Get-PetGrowthTodayXpTarget -PrimaryRemaining $PrimaryRemaining -HasUsageSnapshot $HasUsageSnapshot -GrowthMode $GrowthMode
+      if ($targetTodayXp -gt [int]$next.todayXp) {
+        $deltaXp = [Math]::Min(30 - [int]$next.todayXp, [int]$targetTodayXp - [int]$next.todayXp)
+        if ($deltaXp -gt 0) {
+          $next.totalXp = [int]$next.totalXp + $deltaXp
+          $next.todayXp = [int]$next.todayXp + $deltaXp
+          $awardedXp += $deltaXp
+        }
+      }
     }
-    if ([int]$next.todayXp -ge 30) {
-      $remainder = [Math]::Min($remainder, 59.999)
-    }
-    $next.healthyRemainderSeconds = [Math]::Round([Math]::Max(0.0, $remainder), 3)
+    $next.healthyRemainderSeconds = 0
 
     $primaryResetAt = ConvertTo-PetGrowthDateTime $PrimaryResetAt
     if ($null -ne $primaryResetAt -and $null -ne $lastUpdatedAt -and $lastUpdatedAt -lt $primaryResetAt -and $Now -ge $primaryResetAt) {
       $key = Get-PetGrowthResetKey -Name "primary" -ResetAt $primaryResetAt
-      if ($null -ne $key -and $key -notin @($next.awardedResetKeys)) {
+      $chargedForReset = ($condition -eq "healthy" -or [string]$next.lastCondition -eq "healthy")
+      if ($chargedForReset -and $null -ne $key -and $key -notin @($next.awardedResetKeys)) {
         $next.totalXp = [int]$next.totalXp + 10
         $awardedXp += 10
         $next.awardedResetKeys = @($next.awardedResetKeys + $key)

@@ -1305,18 +1305,32 @@ function Get-PetGrowthReadoutText {
   $totalXp = [int]$script:PetGrowthState.totalXp
   $nextXp = Get-PetGrowthNextLevelXp -TotalXp $totalXp
   $condition = Get-PetGrowthConditionLabel -Condition ([string]$script:PetGrowthState.condition)
-  $healthyTime = Format-Duration ([double]$script:PetGrowthState.todayHealthySeconds)
+  $todayUsed = [Math]::Round([Math]::Max(0.0, [Math]::Min(100.0, [double]$script:PetGrowthState.todayPrimaryUsedPercent)), 0)
+  $todayTarget = [Math]::Round([Math]::Max(0.0, [Math]::Min(100.0, [double]$script:PetGrowthState.todayTargetUsedPercent)), 0)
+  if ($todayTarget -le 0) {
+    $todayTarget = [Math]::Round((Get-PetGrowthPrimaryTargetUsed -GrowthMode ([string]$script:Style.GrowthMode)), 0)
+  }
+  $todayXp = [int]$script:PetGrowthState.todayXp
+  $todayGrowth = if ($language -eq "ko") {
+    "5h {0}%/{1}%  +{2} XP" -f $todayUsed, $todayTarget, $todayXp
+  } elseif ($language -eq "ja") {
+    "5h {0}%/{1}%  +{2} XP" -f $todayUsed, $todayTarget, $todayXp
+  } elseif ($language -eq "zh") {
+    "5h {0}%/{1}%  +{2} XP" -f $todayUsed, $todayTarget, $todayXp
+  } else {
+    "5h {0}%/{1}%  +{2} XP" -f $todayUsed, $todayTarget, $todayXp
+  }
   if ($null -eq $nextXp) {
-    if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uCD5C\uB300 \uB808\uBCA8  XP {2}`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $totalXp, $healthyTime }
-    if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6700\u5927\u30EC\u30D9\u30EB  XP {2}`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $totalXp, $healthyTime }
-    if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u5DF2\u8FBE\u6700\u9AD8\u7B49\u7EA7  XP {2}`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $totalXp, $healthyTime }
-    return "Lv{0} {1}`nMax level  XP {2}`nGrowth today {3}" -f $level, $condition, $totalXp, $healthyTime
+    if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uCD5C\uB300 \uB808\uBCA8  XP {2}`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $totalXp, $todayGrowth }
+    if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6700\u5927\u30EC\u30D9\u30EB  XP {2}`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $totalXp, $todayGrowth }
+    if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u5DF2\u8FBE\u6700\u9AD8\u7B49\u7EA7  XP {2}`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $totalXp, $todayGrowth }
+    return "Lv{0} {1}`nMax level  XP {2}`nGrowth today {3}" -f $level, $condition, $totalXp, $todayGrowth
   }
   $toNext = [Math]::Max(0, [int]$nextXp - $totalXp)
-  if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uB2E4\uC74C \uB808\uBCA8\uAE4C\uC9C0 {2} XP`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $toNext, $healthyTime }
-  if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6B21\u306E\u30EC\u30D9\u30EB\u307E\u3067 {2} XP`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $toNext, $healthyTime }
-  if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u8DDD\u4E0B\u4E00\u7EA7 {2} XP`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $toNext, $healthyTime }
-  return "Lv{0} {1}`n{2} XP to next`nGrowth today {3}" -f $level, $condition, $toNext, $healthyTime
+  if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uB2E4\uC74C \uB808\uBCA8\uAE4C\uC9C0 {2} XP`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $toNext, $todayGrowth }
+  if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6B21\u306E\u30EC\u30D9\u30EB\u307E\u3067 {2} XP`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $toNext, $todayGrowth }
+  if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u8DDD\u4E0B\u4E00\u7EA7 {2} XP`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $toNext, $todayGrowth }
+  return "Lv{0} {1}`n{2} XP to next`nGrowth today {3}" -f $level, $condition, $toNext, $todayGrowth
 }
 
 function Update-ReadoutText {

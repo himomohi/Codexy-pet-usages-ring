@@ -146,8 +146,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "balanced" `
     -Enabled $true
-  if ($result.State.totalXp -ne 1 -or $result.State.todayXp -ne 1) {
-    throw "Usage target should award 1 XP per accumulated minute."
+  if ($result.State.totalXp -ne 30 -or $result.State.todayXp -ne 30 -or [int]$result.State.todayPrimaryUsedPercent -ne 45) {
+    throw "5h usage progress should fill today's XP from primary usage."
   }
 
   $low = Update-PetGrowthState `
@@ -160,8 +160,36 @@ function Assert-PetGrowthCalculations {
     -HasUsageSnapshot $true `
     -PetVisible $true `
     -Enabled $true
-  if ($low.State.totalXp -ne 1 -or $low.State.condition -ne "sleepy") {
+  if ($low.State.totalXp -ne 30 -or $low.State.condition -ne "sleepy") {
     throw "Low remaining usage should stop XP and mark the pet sleepy."
+  }
+
+  $primaryProgressState = New-PetGrowthState -Now $start
+  $primaryProgressState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $primaryProgress = Update-PetGrowthState `
+    -State $primaryProgressState `
+    -PrimaryRemaining 95 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(10) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  $primaryProgressNext = Update-PetGrowthState `
+    -State $primaryProgress.State `
+    -PrimaryRemaining 80 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(20) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($primaryProgress.State.totalXp -ne 3 -or $primaryProgressNext.State.totalXp -ne 15 -or $primaryProgressNext.AwardedXp -ne 12) {
+    throw "Increasing 5h usage should award XP even when weekly usage is unchanged."
   }
 
   $lightState = New-PetGrowthState -Now $start
@@ -177,8 +205,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "conserve" `
     -Enabled $true
-  if ($light.State.totalXp -ne 1 -or $light.State.condition -ne "healthy") {
-    throw "Light use growth mode should award XP at the light usage threshold."
+  if ($light.State.totalXp -ne 30 -or $light.State.condition -ne "healthy") {
+    throw "Light use growth mode should fill XP at the light 5h usage target."
   }
 
   $tooLittleUseState = New-PetGrowthState -Now $start
@@ -194,8 +222,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "conserve" `
     -Enabled $true
-  if ($tooLittleUse.State.totalXp -ne 0 -or $tooLittleUse.State.condition -ne "stable") {
-    throw "Too little usage should stay stable without XP."
+  if ($tooLittleUse.State.totalXp -ne 15 -or $tooLittleUse.State.condition -ne "stable") {
+    throw "Partial 5h usage should partially fill XP while staying stable."
   }
 
   $balancedState = New-PetGrowthState -Now $start
@@ -211,8 +239,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "balanced" `
     -Enabled $true
-  if ($balanced.State.totalXp -ne 1 -or $balanced.State.condition -ne "healthy") {
-    throw "Balanced use growth mode should award XP at the balanced usage threshold."
+  if ($balanced.State.totalXp -ne 30 -or $balanced.State.condition -ne "healthy") {
+    throw "Balanced use growth mode should fill XP at the balanced 5h usage target."
   }
 
   $activeState = New-PetGrowthState -Now $start
@@ -228,8 +256,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "active" `
     -Enabled $true
-  if ($active.State.totalXp -ne 1 -or $active.State.condition -ne "healthy") {
-    throw "Focused use growth mode should award XP at the focused usage threshold."
+  if ($active.State.totalXp -ne 30 -or $active.State.condition -ne "healthy") {
+    throw "Focused use growth mode should fill XP at the focused 5h usage target."
   }
 
   $resetState = New-PetGrowthState -Now $start
@@ -246,8 +274,8 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "balanced" `
     -Enabled $true
-  if ($resetResult.State.totalXp -ne 11) {
-    throw "Healthy reset crossing should award 1 minute XP plus one 10 XP reset bonus."
+  if ($resetResult.State.totalXp -ne 40) {
+    throw "Healthy reset crossing should award 5h usage XP plus one 10 XP reset bonus."
   }
   $resetAgain = Update-PetGrowthState `
     -State $resetResult.State `
@@ -260,7 +288,7 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "balanced" `
     -Enabled $true
-  if ($resetAgain.State.totalXp -ne 11) {
+  if ($resetAgain.State.totalXp -ne 40) {
     throw "Reset bonus should only be awarded once per reset timestamp."
   }
 
@@ -296,7 +324,7 @@ function Assert-PetGrowthCalculations {
     -PetVisible $true `
     -GrowthMode "balanced" `
     -Enabled $true
-  if ($weeklyResetAgain.State.totalXp -ne 1 -or $weeklyResetAgain.State.level -ne 1) {
+  if ($weeklyResetAgain.State.totalXp -ne 30 -or $weeklyResetAgain.State.level -ne 1) {
     throw "Weekly reset should only restart once per reset timestamp, then allow XP again."
   }
 

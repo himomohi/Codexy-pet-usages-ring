@@ -1043,12 +1043,12 @@
         <section class="panel" id="growth" aria-labelledby="growthTitle">
           <h2 id="growthTitle" data-i18n="sectionPetGrowth">펫 성장</h2>
           <div class="growth-guide">
-            <p data-i18n="growthIntro">성장은 Codex를 실제로 사용한 양에 반응합니다. 5h와 주간 사용량이 선택한 기준 이상이면 /pet이 보이는 동안 XP가 오릅니다.</p>
-            <div class="growth-mode-help" id="growthModeHelp">균형 사용형: 5h 사용량 40% 이상, 주간 사용량 20% 이상을 1분 유지하면 +1 XP.</div>
+            <p data-i18n="growthIntro">성장은 현재 5h 사용량에 직접 반응합니다. /pet이 보이면 5h 사용률이 목표치까지 차오르는 만큼 오늘 XP가 함께 오릅니다.</p>
+            <div class="growth-mode-help" id="growthModeHelp">균형 사용형: 5h 사용량 40%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.</div>
             <ul class="growth-rules">
               <li data-i18n="growthRuleVisible">XP는 실제 /pet 창이 보이고 사용량 스냅샷이 있을 때만 계산됩니다.</li>
-              <li data-i18n="growthRuleMinute">성장 구간을 1분 누적할 때마다 +1 XP, 하루 최대 +30 XP입니다.</li>
-              <li data-i18n="growthRuleLow">남은 한도가 둘 중 하나라도 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.</li>
+              <li data-i18n="growthRuleMinute">5h 사용량 진행률이 오늘 XP가 되며 하루 최대 +30 XP까지 차오릅니다.</li>
+              <li data-i18n="growthRuleLow">5h 또는 주간 잔량이 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.</li>
               <li data-i18n="growthRuleReset">5h 리셋은 성장 조건을 유지했을 때 1회 +10 XP를 줍니다. 주간 리셋이 오면 펫은 Lv1부터 다시 시작합니다.</li>
             </ul>
           </div>
@@ -1359,13 +1359,13 @@
         growthModeConserve: 'Light Use',
         growthModeBalanced: 'Balanced Use',
         growthModeActive: 'Focused Use',
-        growthIntro: 'Growth reacts to how much Codex you actually use. XP rises while /pet is visible and your 5h and weekly usage meet the selected target.',
-        growthModeHelpConserve: 'Light Use: earn +1 XP for each minute with 5h usage at 20%+ and weekly usage at 10%+.',
-        growthModeHelpBalanced: 'Balanced Use: earn +1 XP for each minute with 5h usage at 40%+ and weekly usage at 20%+.',
-        growthModeHelpActive: 'Focused Use: earn +1 XP for each minute with 5h usage at 60%+ and weekly usage at 35%+.',
+        growthIntro: 'Growth reacts directly to current 5h usage. While /pet is visible, today XP fills as 5h usage approaches the selected target.',
+        growthModeHelpConserve: 'Light Use: convert progress toward 20% 5h usage into up to +30 XP today.',
+        growthModeHelpBalanced: 'Balanced Use: convert progress toward 40% 5h usage into up to +30 XP today.',
+        growthModeHelpActive: 'Focused Use: convert progress toward 60% 5h usage into up to +30 XP today.',
         growthRuleVisible: 'XP is calculated only when the real /pet window is visible and a usage snapshot exists.',
-        growthRuleMinute: 'Every accumulated growth minute gives +1 XP, up to +30 XP per day.',
-        growthRuleLow: 'If either remaining quota drops below 20%, the pet becomes Overheated; below 10%, Cooldown. XP pauses to avoid depletion.',
+        growthRuleMinute: '5h usage progress becomes today XP, filling up to +30 XP per day.',
+        growthRuleLow: 'If 5h or weekly remaining quota drops below 20%, the pet becomes Overheated; below 10%, Cooldown. XP pauses to avoid depletion.',
         growthRuleReset: 'A 5h reset grants +10 XP once if the growth target stayed charged. A weekly reset restarts the pet at Lv1.',
         growthChip: 'Show Growth Chip',
         growthHoverReadout: 'Growth Hover Readout',
@@ -1444,13 +1444,13 @@
         growthModeConserve: '가벼운 사용형',
         growthModeBalanced: '균형 사용형',
         growthModeActive: '집중 사용형',
-        growthIntro: '성장은 Codex를 실제로 사용한 양에 반응합니다. 5h와 주간 사용량이 선택한 기준 이상이면 /pet이 보이는 동안 XP가 오릅니다.',
-        growthModeHelpConserve: '가벼운 사용형: 5h 사용량 20% 이상, 주간 사용량 10% 이상을 1분 유지하면 +1 XP.',
-        growthModeHelpBalanced: '균형 사용형: 5h 사용량 40% 이상, 주간 사용량 20% 이상을 1분 유지하면 +1 XP.',
-        growthModeHelpActive: '집중 사용형: 5h 사용량 60% 이상, 주간 사용량 35% 이상을 1분 유지하면 +1 XP.',
+        growthIntro: '성장은 현재 5h 사용량에 직접 반응합니다. /pet이 보이면 5h 사용률이 목표치까지 차오르는 만큼 오늘 XP가 함께 오릅니다.',
+        growthModeHelpConserve: '가벼운 사용형: 5h 사용량 20%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
+        growthModeHelpBalanced: '균형 사용형: 5h 사용량 40%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
+        growthModeHelpActive: '집중 사용형: 5h 사용량 60%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
         growthRuleVisible: 'XP는 실제 /pet 창이 보이고 사용량 스냅샷이 있을 때만 계산됩니다.',
-        growthRuleMinute: '성장 구간을 1분 누적할 때마다 +1 XP, 하루 최대 +30 XP입니다.',
-        growthRuleLow: '남은 한도가 둘 중 하나라도 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.',
+        growthRuleMinute: '5h 사용량 진행률이 오늘 XP가 되며 하루 최대 +30 XP까지 차오릅니다.',
+        growthRuleLow: '5h 또는 주간 잔량이 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.',
         growthRuleReset: '5h 리셋은 성장 조건을 유지했을 때 1회 +10 XP를 줍니다. 주간 리셋이 오면 펫은 Lv1부터 다시 시작합니다.',
         growthChip: '성장 칩 표시',
         growthHoverReadout: '성장 호버 표시',
@@ -1529,13 +1529,13 @@
         growthModeConserve: 'ライト使用型',
         growthModeBalanced: 'バランス使用型',
         growthModeActive: '集中使用型',
-        growthIntro: '成長は Codex を実際に使った量に反応します。5h と週次の使用量が選択した基準以上なら、/pet が見えている間に XP が増えます。',
-        growthModeHelpConserve: 'ライト使用型: 5h 使用量 20%以上、週次使用量 10%以上を 1分維持すると +1 XP。',
-        growthModeHelpBalanced: 'バランス使用型: 5h 使用量 40%以上、週次使用量 20%以上を 1分維持すると +1 XP。',
-        growthModeHelpActive: '集中使用型: 5h 使用量 60%以上、週次使用量 35%以上を 1分維持すると +1 XP。',
+        growthIntro: '成長は現在の 5h 使用量に直接反応します。/pet が見えている間、5h 使用率が目標に近づくほど今日の XP が増えます。',
+        growthModeHelpConserve: 'ライト使用型: 5h 使用量 20% への進行度を、今日最大 +30 XP に換算します。',
+        growthModeHelpBalanced: 'バランス使用型: 5h 使用量 40% への進行度を、今日最大 +30 XP に換算します。',
+        growthModeHelpActive: '集中使用型: 5h 使用量 60% への進行度を、今日最大 +30 XP に換算します。',
         growthRuleVisible: 'XP は実際の /pet ウィンドウが見えていて、使用量スナップショットがある時だけ計算されます。',
-        growthRuleMinute: '成長状態を 1分蓄積するたびに +1 XP、1日最大 +30 XP です。',
-        growthRuleLow: 'どちらかの残量が 20% 未満なら オーバーヒート、10% 未満なら クールダウン になり、使い切り防止のため XP は止まります。',
+        growthRuleMinute: '5h 使用量の進行度が今日の XP になり、1日最大 +30 XP まで増えます。',
+        growthRuleLow: '5h または週次の残量が 20% 未満なら オーバーヒート、10% 未満なら クールダウン になり、使い切り防止のため XP は止まります。',
         growthRuleReset: '5h リセットは成長条件を保った場合に 1回 +10 XP。週次リセットではペットが Lv1 から再開します。',
         growthChip: '成長チップを表示',
         growthHoverReadout: '成長ホバー表示',
@@ -1614,13 +1614,13 @@
         growthModeConserve: '轻量使用型',
         growthModeBalanced: '均衡使用型',
         growthModeActive: '专注使用型',
-        growthIntro: '成长会响应你实际使用 Codex 的量。/pet 可见时，5h 和每周使用量达到所选目标即可获得 XP。',
-        growthModeHelpConserve: '轻量使用型：5h 使用量 20%+ 且每周使用量 10%+，保持 1 分钟获得 +1 XP。',
-        growthModeHelpBalanced: '均衡使用型：5h 使用量 40%+ 且每周使用量 20%+，保持 1 分钟获得 +1 XP。',
-        growthModeHelpActive: '专注使用型：5h 使用量 60%+ 且每周使用量 35%+，保持 1 分钟获得 +1 XP。',
+        growthIntro: '成长会直接响应当前 5h 使用量。/pet 可见时，5h 使用率越接近目标，今日 XP 越会填充。',
+        growthModeHelpConserve: '轻量使用型：将 5h 使用量到 20% 目标的进度换算为今日最多 +30 XP。',
+        growthModeHelpBalanced: '均衡使用型：将 5h 使用量到 40% 目标的进度换算为今日最多 +30 XP。',
+        growthModeHelpActive: '专注使用型：将 5h 使用量到 60% 目标的进度换算为今日最多 +30 XP。',
         growthRuleVisible: '只有真实 /pet 窗口可见并且存在使用量快照时，才会计算 XP。',
-        growthRuleMinute: '成长区间每累计 1 分钟获得 +1 XP，每天最多 +30 XP。',
-        growthRuleLow: '任一剩余额度低于 20% 会变为过热，低于 10% 会变为冷却中，XP 会暂停以避免耗尽。',
+        growthRuleMinute: '5h 使用量进度会变成今日 XP，每天最多填充到 +30 XP。',
+        growthRuleLow: '5h 或每周剩余额度低于 20% 会变为过热，低于 10% 会变为冷却中，XP 会暂停以避免耗尽。',
         growthRuleReset: '5h 重置时，如果使用目标保持健康，可获得一次 +10 XP。每周重置时，宠物会从 Lv1 重新开始。',
         growthChip: '显示成长标签',
         growthHoverReadout: '成长悬停提示',
