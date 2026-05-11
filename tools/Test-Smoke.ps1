@@ -305,6 +305,28 @@ function Assert-PetGrowthCalculations {
   }
 }
 
+function Assert-PetHudHideCleanup {
+  $runtimePath = Join-Path $root "src\CodexyPetUsagesRing.ps1"
+  $source = Get-Content -Raw -LiteralPath $runtimePath
+  foreach ($required in @(
+    "function Hide-PetHud",
+    '$script:LastPetRect = $null',
+    '$script:GrowthChipBounds = $null',
+    '$script:BatteryPrimaryBounds = $null',
+    '$script:BadgePrimaryBounds = $null',
+    'Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)',
+    'Hide-PetHud -UpdateGrowth $true',
+    'Hide-PetHud -UpdateGrowth $false'
+  )) {
+    if (-not $source.Contains($required)) {
+      throw "Pet HUD hide cleanup is missing required code: $required"
+    }
+  }
+  if ($source -match 'LastWriteTimeUtc[^\r\n]*-eq[^\r\n]*\$script:LastStateWriteTimeUtc[\s\S]{0,160}?return\s+\$script:CachedPetRect') {
+    throw "Read-PetRect must not reuse stale cached pet bounds when /pet visibility may have changed."
+  }
+}
+
 try {
   New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 
@@ -321,6 +343,7 @@ try {
   Assert-SettingsLauncherUsesActiveInstall
   Assert-SettingsDisplayModes
   Assert-PetGrowthCalculations
+  Assert-PetHudHideCleanup
 
   $parseErrorsText = @()
   Get-ChildItem -LiteralPath $root -Recurse -Filter "*.ps1" | Where-Object { $_.FullName -notmatch '\\.git\\' } | ForEach-Object {

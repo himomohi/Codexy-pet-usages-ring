@@ -970,9 +970,6 @@ function Read-PetRect {
   }
   try {
     $stateItem = Get-Item -LiteralPath $StatePath -ErrorAction Stop
-    if ($stateItem.LastWriteTimeUtc -eq $script:LastStateWriteTimeUtc) {
-      return $script:CachedPetRect
-    }
     $script:LastStateWriteTimeUtc = $stateItem.LastWriteTimeUtc
     $root = Read-Utf8Text -Path $StatePath | ConvertFrom-Json
     if ($root.'electron-avatar-overlay-open' -is [bool] -and -not $root.'electron-avatar-overlay-open') {
@@ -1503,6 +1500,36 @@ function Update-PetGrowth {
   }
 }
 
+function Hide-PetHud {
+  param([bool]$UpdateGrowth = $true)
+  if ($UpdateGrowth) {
+    Update-PetGrowth -PetVisible $false
+  }
+
+  $script:LastPetRect = $null
+  $script:LastPetFrameSignature = ""
+  $script:RingOuterRadius = $null
+  $script:RingInnerRadius = $null
+  $script:BatteryPrimaryBounds = $null
+  $script:BatterySecondaryBounds = $null
+  $script:BadgePrimaryBounds = $null
+  $script:BadgeSecondaryBounds = $null
+  $script:GrowthChipBounds = $null
+  $script:LastHoverSignature = ""
+  $script:RingVisualsVisible = $false
+  $script:RingAnimationToken += 1
+
+  Hide-RingReadouts
+  Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)
+  if ($null -ne $script:Window) {
+    $script:Window.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $null)
+    $script:Window.Opacity = 0.0
+    if ($script:Window.IsVisible) {
+      $script:Window.Hide()
+    }
+  }
+}
+
 function Update-GrowthChipGeometry {
   if ($null -eq $script:Window -or $null -eq $script:LastPetRect) {
     $script:GrowthChipBounds = $null
@@ -1773,7 +1800,7 @@ function Test-CursorInBatteryRange {
 
 function Update-RingHoverVisibility {
   if ($null -eq $script:Window -or $null -eq $script:LastPetRect) {
-    Set-RingVisualsVisible -Visible $false
+    Hide-PetHud -UpdateGrowth $false
     return
   }
 
@@ -2069,20 +2096,16 @@ function Set-FrameTimerInterval {
 
 function Set-FrameTimerActive {
   param([bool]$Active)
-  if ($null -eq $script:FrameTimer) { return }
   if ($Active) {
-    if (-not $script:FrameTimer.IsEnabled) { $script:FrameTimer.Start() }
+    if ($null -ne $script:FrameTimer -and -not $script:FrameTimer.IsEnabled) { $script:FrameTimer.Start() }
   } else {
-    if ($script:FrameTimer.IsEnabled) { $script:FrameTimer.Stop() }
-    Set-RingVisualsVisible -Visible $false
-    Hide-RingReadouts
+    if ($null -ne $script:FrameTimer -and $script:FrameTimer.IsEnabled) { $script:FrameTimer.Stop() }
+    Hide-PetHud -UpdateGrowth $true
   }
 }
 
 function Update-PetFrame {
   if (-not $script:RingsEnabled) {
-    Update-PetGrowth -PetVisible $false
-    if ($script:Window.IsVisible) { $script:Window.Hide() }
     Set-FrameTimerActive -Active $false
     return
   }
@@ -2090,9 +2113,6 @@ function Update-PetFrame {
   $rect = Read-PetRect
   if ($null -eq $rect) {
     Set-PetAutoDetectState -Visible $false
-    Update-PetGrowth -PetVisible $false
-    $script:LastPetFrameSignature = ""
-    if ($script:Window.IsVisible) { $script:Window.Hide() }
     Set-FrameTimerActive -Active $false
     return
   }
@@ -2160,7 +2180,7 @@ function Update-PetFrame {
 }
 
 function Update-HoverReadout {
-  if (-not $script:Window.IsVisible) {
+  if ($null -eq $script:Window -or $null -eq $script:LastPetRect -or -not $script:Window.IsVisible) {
     Hide-RingReadouts
     return
   }
@@ -2263,12 +2283,8 @@ function Update-TrayMenuText {
 
 function Stop-RingsApp {
   Write-AppLog "Stopping Codexy pet usages ring."
-  if ($null -ne $script:OuterReadoutWindow -and $script:OuterReadoutWindow.IsVisible) {
-    $script:OuterReadoutWindow.Hide()
-  }
-  if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
-    $script:InnerReadoutWindow.Hide()
-  }
+  Hide-RingReadouts
+  Hide-PetHud -UpdateGrowth $false
   if ($null -ne $script:NotifyIcon) {
     $script:NotifyIcon.Visible = $false
     $script:NotifyIcon.Dispose()
