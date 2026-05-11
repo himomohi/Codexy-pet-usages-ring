@@ -255,6 +255,8 @@ $script:RingOuterRadius = $null
 $script:RingInnerRadius = $null
 $script:BatteryPrimaryBounds = $null
 $script:BatterySecondaryBounds = $null
+$script:BadgePrimaryBounds = $null
+$script:BadgeSecondaryBounds = $null
 $script:LastReadoutRefreshAt = [datetime]::MinValue
 $script:LastHoverSignature = ""
 $script:RingVisualsVisible = $null
@@ -410,7 +412,7 @@ function Update-StyleFromSettings {
     $language = ([string](Get-PropertyValue $settings "language" "auto")).Trim().ToLowerInvariant()
     if ($language -notin @("auto", "ko", "en", "ja", "zh")) { $language = "auto" }
     $displayMode = ([string](Get-PropertyValue $settings "displayMode" "ring")).Trim().ToLowerInvariant()
-    if ($displayMode -notin @("ring", "battery")) { $displayMode = "ring" }
+    if ($displayMode -notin @("ring", "battery", "badge")) { $displayMode = "ring" }
     $script:Style.Language = $language
     $script:Style.DisplayMode = $displayMode
     $script:Style.PrimaryRgb = Convert-HexColor (Get-PropertyValue $colors "primary" $null) @(60, 235, 189)
@@ -464,6 +466,18 @@ function Apply-StyleSettings {
     }
   }
   foreach ($label in @($script:PrimaryBatteryLabel, $script:SecondaryBatteryLabel)) {
+    if ($null -ne $label) {
+      $label.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+    }
+  }
+  if ($null -ne $script:BadgeBackground) {
+    $script:BadgeBackground.Fill = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
+    $script:BadgeBackground.Stroke = New-StyleBrush ([byte][Math]::Max(20, [Math]::Min(255, [int]$script:Style.TrackOpacity + 34))) ([int[]]$script:Style.TrackRgb)
+  }
+  if ($null -ne $script:BadgeDivider) {
+    $script:BadgeDivider.Fill = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 26))) ([int[]]$script:Style.TrackRgb)
+  }
+  foreach ($label in @($script:PrimaryBadgeLabel, $script:SecondaryBadgeLabel)) {
     if ($null -ne $label) {
       $label.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
     }
@@ -1200,7 +1214,13 @@ function Set-RingShapesVisibility {
     $script:SecondaryBatteryTrack,
     $script:SecondaryBatteryFill,
     $script:SecondaryBatteryCap,
-    $script:SecondaryBatteryLabel
+    $script:SecondaryBatteryLabel,
+    $script:BadgeBackground,
+    $script:PrimaryBadgeChip,
+    $script:SecondaryBadgeChip,
+    $script:BadgeDivider,
+    $script:PrimaryBadgeLabel,
+    $script:SecondaryBadgeLabel
   )) {
     if ($null -ne $shape) {
       $shape.Visibility = $Visibility
@@ -1210,12 +1230,17 @@ function Set-RingShapesVisibility {
 
 function Update-ModeShapeVisibility {
   if ($null -eq $script:Window) { return }
-  $ringVisibility = if ($script:Style.DisplayMode -eq "battery") {
-    [System.Windows.Visibility]::Collapsed
-  } else {
+  $ringVisibility = if ($script:Style.DisplayMode -eq "ring") {
     [System.Windows.Visibility]::Visible
+  } else {
+    [System.Windows.Visibility]::Collapsed
   }
   $batteryVisibility = if ($script:Style.DisplayMode -eq "battery") {
+    [System.Windows.Visibility]::Visible
+  } else {
+    [System.Windows.Visibility]::Collapsed
+  }
+  $badgeVisibility = if ($script:Style.DisplayMode -eq "badge") {
     [System.Windows.Visibility]::Visible
   } else {
     [System.Windows.Visibility]::Collapsed
@@ -1234,6 +1259,16 @@ function Update-ModeShapeVisibility {
     $script:SecondaryBatteryLabel
   )) {
     if ($null -ne $shape) { $shape.Visibility = $batteryVisibility }
+  }
+  foreach ($shape in @(
+    $script:BadgeBackground,
+    $script:PrimaryBadgeChip,
+    $script:SecondaryBadgeChip,
+    $script:BadgeDivider,
+    $script:PrimaryBadgeLabel,
+    $script:SecondaryBadgeLabel
+  )) {
+    if ($null -ne $shape) { $shape.Visibility = $badgeVisibility }
   }
 }
 
@@ -1340,7 +1375,7 @@ function Test-CursorInRingRange {
   }
 
   $size = [double]$script:Window.Width
-  if ($script:Style.DisplayMode -eq "battery") {
+  if ($script:Style.DisplayMode -in @("battery", "badge")) {
     $range = [Math]::Max(0.0, [double]$script:Style.HoverRange)
     return (
       [double]$Cursor.X -ge ([double]$script:Window.Left - $range) -and
@@ -1359,6 +1394,33 @@ function Test-CursorInRingRange {
   $range = [Math]::Max(0.0, [double]$script:Style.HoverRange)
   $distance = [Math]::Sqrt([Math]::Pow([double]$Cursor.X - $centerX, 2) + [Math]::Pow([double]$Cursor.Y - $centerY, 2))
   return ($distance -le ($outerRadius + $range))
+}
+
+function Test-CursorInBadgeRange {
+  param($Cursor)
+  if (
+    $null -eq $script:Window -or
+    $null -eq $Cursor -or
+    -not $script:Window.IsVisible
+  ) {
+    return $false
+  }
+
+  $localX = [double]$Cursor.X - [double]$script:Window.Left
+  $localY = [double]$Cursor.Y - [double]$script:Window.Top
+  $padding = [Math]::Max(7.0, [Math]::Min(20.0, [double]$script:Style.HoverRange))
+  foreach ($bounds in @($script:BadgePrimaryBounds, $script:BadgeSecondaryBounds)) {
+    if ($null -eq $bounds) { continue }
+    if (
+      $localX -ge ([double]$bounds.X - $padding) -and
+      $localX -le ([double]$bounds.X + [double]$bounds.Width + $padding) -and
+      $localY -ge ([double]$bounds.Y - $padding) -and
+      $localY -le ([double]$bounds.Y + [double]$bounds.Height + $padding)
+    ) {
+      return $true
+    }
+  }
+  return $false
 }
 
 function Test-CursorInBatteryRange {
@@ -1401,10 +1463,12 @@ function Update-RingHoverVisibility {
   }
 
   $cursor = [System.Windows.Forms.Cursor]::Position
-  $showRing = if ($script:Style.DisplayMode -eq "battery") {
-    (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBatteryRange -Cursor $cursor)
+  if ($script:Style.DisplayMode -eq "battery") {
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBatteryRange -Cursor $cursor)
+  } elseif ($script:Style.DisplayMode -eq "badge") {
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBadgeRange -Cursor $cursor)
   } else {
-    (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
   }
   Set-RingVisualsVisible -Visible $showRing
   Set-FrameTimerInterval -Fast $true
@@ -1553,6 +1617,7 @@ function Update-RingGeometry {
   }
   $size = [double]$script:Window.Width
   $isBattery = $script:Style.DisplayMode -eq "battery"
+  $isBadge = $script:Style.DisplayMode -eq "badge"
   $center = $size / 2.0
   $outerRadius = if ($null -ne $script:RingOuterRadius) {
     [double]$script:RingOuterRadius
@@ -1597,7 +1662,49 @@ function Update-RingGeometry {
     $script:BatterySecondaryBounds = [pscustomobject]@{ X = $barX; Y = $barY + 15.0; Width = $barWidth + $capWidth + 3.0; Height = $barHeight }
     $script:PrimaryBatteryFill.Fill = Get-CapacityBrush -Remaining $primaryRemaining
     $script:SecondaryBatteryFill.Fill = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
+    $script:BadgePrimaryBounds = $null
+    $script:BadgeSecondaryBounds = $null
+  } elseif ($isBadge) {
+    $badgeWidth = [Math]::Min(156.0, [Math]::Max(128.0, [double]$script:Window.Width - 18.0))
+    $badgeHeight = 26.0
+    $badgeX = ([double]$script:Window.Width - $badgeWidth) / 2.0
+    $badgeY = [Math]::Max(5.0, [double]$script:Window.Height - $badgeHeight - 7.0)
+    $gap = 4.0
+    $chipWidth = ($badgeWidth - 12.0 - $gap) / 2.0
+    $chipHeight = $badgeHeight - 8.0
+    $chipY = $badgeY + 4.0
+    $primaryChipX = $badgeX + 6.0
+    $secondaryChipX = $primaryChipX + $chipWidth + $gap
+
+    Set-RectangleBounds $script:BadgeBackground $badgeX $badgeY $badgeWidth $badgeHeight
+    Set-RectangleBounds $script:PrimaryBadgeChip $primaryChipX $chipY $chipWidth $chipHeight
+    Set-RectangleBounds $script:SecondaryBadgeChip $secondaryChipX $chipY $chipWidth $chipHeight
+    Set-RectangleBounds $script:BadgeDivider ($primaryChipX + $chipWidth + ($gap / 2.0) - 0.5) ($chipY + 2.5) 1.0 ($chipHeight - 5.0)
+
+    foreach ($labelInfo in @(
+      @{ Label = $script:PrimaryBadgeLabel; X = $primaryChipX; Text = ("5h {0}" -f (Format-Percent $primaryRemaining)) },
+      @{ Label = $script:SecondaryBadgeLabel; X = $secondaryChipX; Text = ("W {0}" -f (Format-Percent $secondaryRemaining)) }
+    )) {
+      $label = $labelInfo.Label
+      if ($null -eq $label) { continue }
+      $label.Text = $labelInfo.Text
+      $label.Width = $chipWidth
+      $label.Height = $chipHeight
+      [System.Windows.Controls.Canvas]::SetLeft($label, [double]$labelInfo.X)
+      [System.Windows.Controls.Canvas]::SetTop($label, $chipY + 2.0)
+    }
+
+    $script:BadgePrimaryBounds = [pscustomobject]@{ X = $primaryChipX; Y = $chipY; Width = $chipWidth; Height = $chipHeight }
+    $script:BadgeSecondaryBounds = [pscustomobject]@{ X = $secondaryChipX; Y = $chipY; Width = $chipWidth; Height = $chipHeight }
+    $script:BatteryPrimaryBounds = $null
+    $script:BatterySecondaryBounds = $null
+    $script:PrimaryBadgeChip.Fill = Get-CapacityBrush -Remaining $primaryRemaining
+    $script:SecondaryBadgeChip.Fill = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
   } else {
+    $script:BatteryPrimaryBounds = $null
+    $script:BatterySecondaryBounds = $null
+    $script:BadgePrimaryBounds = $null
+    $script:BadgeSecondaryBounds = $null
     Set-EllipseBounds $script:OuterTrack $center $outerRadius
     Set-EllipseBounds $script:InnerTrack $center $innerRadius
     $script:OuterArc.Data = New-ArcGeometry -Center $center -Radius $outerRadius -Percent $primaryRemaining
@@ -1661,9 +1768,16 @@ function Update-PetFrame {
 
   Set-PetAutoDetectState -Visible $true
   $isBattery = $script:Style.DisplayMode -eq "battery"
+  $isBadge = $script:Style.DisplayMode -eq "badge"
   if ($isBattery) {
     $windowWidth = [Math]::Max([double]$rect.Width + 28.0, 148.0)
     $windowHeight = [double]$rect.Height + 43.0
+    $ringSize = [Math]::Max($windowWidth, $windowHeight)
+    $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
+    $top = [double]$rect.Y
+  } elseif ($isBadge) {
+    $windowWidth = [Math]::Max([double]$rect.Width + 34.0, 158.0)
+    $windowHeight = [double]$rect.Height + 40.0
     $ringSize = [Math]::Max($windowWidth, $windowHeight)
     $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
     $top = [double]$rect.Y
@@ -1689,8 +1803,8 @@ function Update-PetFrame {
   if ($changed) {
     $script:LastPetRect = $rect
     $script:LastPetFrameSignature = $signature
-    $script:RingOuterRadius = if ($isBattery) { $null } else { $ringSize / 2.0 - 16.0 }
-    $script:RingInnerRadius = if ($isBattery) { $null } else { $script:RingOuterRadius - 13.0 }
+    $script:RingOuterRadius = if ($isBattery -or $isBadge) { $null } else { $ringSize / 2.0 - 16.0 }
+    $script:RingInnerRadius = if ($isBattery -or $isBadge) { $null } else { $script:RingOuterRadius - 13.0 }
     $script:Window.Width = $windowWidth
     $script:Window.Height = $windowHeight
     $script:Canvas.Width = $windowWidth
@@ -1720,9 +1834,9 @@ function Update-HoverReadout {
     Hide-RingReadouts
     return
   }
-  if ($script:Style.DisplayMode -eq "battery") {
-    $primary = $script:BatteryPrimaryBounds
-    $secondary = $script:BatterySecondaryBounds
+  if ($script:Style.DisplayMode -in @("battery", "badge")) {
+    $primary = if ($script:Style.DisplayMode -eq "badge") { $script:BadgePrimaryBounds } else { $script:BatteryPrimaryBounds }
+    $secondary = if ($script:Style.DisplayMode -eq "badge") { $script:BadgeSecondaryBounds } else { $script:BatterySecondaryBounds }
     $hitPadding = 8.0
     $textUpdated = [bool](Update-ReadoutText)
     foreach ($candidate in @(
@@ -1916,6 +2030,44 @@ $script:SecondaryBatteryLabel.FontSize = 9.0
 $script:SecondaryBatteryLabel.FontWeight = [System.Windows.FontWeights]::SemiBold
 $script:SecondaryBatteryLabel.Opacity = 0.86
 
+$script:BadgeBackground = [System.Windows.Shapes.Rectangle]::new()
+$script:BadgeBackground.RadiusX = 13
+$script:BadgeBackground.RadiusY = 13
+$script:BadgeBackground.StrokeThickness = 1
+$script:BadgeBackground.Fill = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
+$script:BadgeBackground.Stroke = New-StyleBrush ([byte][Math]::Max(20, [Math]::Min(255, [int]$script:Style.TrackOpacity + 34))) ([int[]]$script:Style.TrackRgb)
+
+$script:PrimaryBadgeChip = [System.Windows.Shapes.Rectangle]::new()
+$script:PrimaryBadgeChip.RadiusX = 9
+$script:PrimaryBadgeChip.RadiusY = 9
+
+$script:SecondaryBadgeChip = [System.Windows.Shapes.Rectangle]::new()
+$script:SecondaryBadgeChip.RadiusX = 9
+$script:SecondaryBadgeChip.RadiusY = 9
+
+$script:BadgeDivider = [System.Windows.Shapes.Rectangle]::new()
+$script:BadgeDivider.RadiusX = 0.5
+$script:BadgeDivider.RadiusY = 0.5
+$script:BadgeDivider.Fill = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 26))) ([int[]]$script:Style.TrackRgb)
+
+$script:PrimaryBadgeLabel = [System.Windows.Controls.TextBlock]::new()
+$script:PrimaryBadgeLabel.Text = "5h --"
+$script:PrimaryBadgeLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:PrimaryBadgeLabel.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:PrimaryBadgeLabel.FontSize = 10.0
+$script:PrimaryBadgeLabel.FontWeight = [System.Windows.FontWeights]::Bold
+$script:PrimaryBadgeLabel.TextAlignment = [System.Windows.TextAlignment]::Center
+$script:PrimaryBadgeLabel.Opacity = 0.96
+
+$script:SecondaryBadgeLabel = [System.Windows.Controls.TextBlock]::new()
+$script:SecondaryBadgeLabel.Text = "W --"
+$script:SecondaryBadgeLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:SecondaryBadgeLabel.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:SecondaryBadgeLabel.FontSize = 10.0
+$script:SecondaryBadgeLabel.FontWeight = [System.Windows.FontWeights]::Bold
+$script:SecondaryBadgeLabel.TextAlignment = [System.Windows.TextAlignment]::Center
+$script:SecondaryBadgeLabel.Opacity = 0.96
+
 $script:OuterReadoutText = [System.Windows.Controls.TextBlock]::new()
 $script:OuterReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
 $script:OuterReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
@@ -1957,6 +2109,12 @@ $script:Canvas.Children.Add($script:SecondaryBatteryTrack) | Out-Null
 $script:Canvas.Children.Add($script:SecondaryBatteryFill) | Out-Null
 $script:Canvas.Children.Add($script:SecondaryBatteryCap) | Out-Null
 $script:Canvas.Children.Add($script:SecondaryBatteryLabel) | Out-Null
+$script:Canvas.Children.Add($script:BadgeBackground) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBadgeChip) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBadgeChip) | Out-Null
+$script:Canvas.Children.Add($script:BadgeDivider) | Out-Null
+$script:Canvas.Children.Add($script:PrimaryBadgeLabel) | Out-Null
+$script:Canvas.Children.Add($script:SecondaryBadgeLabel) | Out-Null
 Set-RingVisualsVisible -Visible $false
 
 $script:Window.Add_SourceInitialized({

@@ -74,6 +74,37 @@ function Assert-SettingsLauncherUsesActiveInstall {
   }
 }
 
+function Assert-SettingsDisplayModes {
+  $settingsScriptPath = Join-Path $root "bin\powershell\Settings.ps1"
+  $settingsScript = Get-Content -Raw -LiteralPath $settingsScriptPath
+  $marker = "`r`n`$projectRoot = Get-ProjectRoot"
+  $markerIndex = $settingsScript.IndexOf($marker)
+  if ($markerIndex -lt 0) {
+    $marker = "`n`$projectRoot = Get-ProjectRoot"
+    $markerIndex = $settingsScript.IndexOf($marker)
+  }
+  if ($markerIndex -lt 0) {
+    throw "Could not locate Settings.ps1 runtime boundary for normalization smoke test."
+  }
+
+  . ([scriptblock]::Create($settingsScript.Substring(0, $markerIndex)))
+
+  $defaults = Get-NormalizedSettings ((Get-Content -Raw -LiteralPath (Join-Path $root "settings.defaults.json")) | ConvertFrom-Json)
+  if ($defaults.displayMode -ne "ring") {
+    throw "Default settings displayMode should remain ring. Found: $($defaults.displayMode)"
+  }
+
+  $badgeSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "badge" })
+  if ($badgeSettings.displayMode -ne "badge") {
+    throw "Settings normalizer should preserve displayMode=badge. Found: $($badgeSettings.displayMode)"
+  }
+
+  $invalidSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "sparkle" })
+  if ($invalidSettings.displayMode -ne "ring") {
+    throw "Invalid displayMode should fall back to ring. Found: $($invalidSettings.displayMode)"
+  }
+}
+
 try {
   New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 
@@ -87,6 +118,7 @@ try {
 
   $version = Assert-VersionMetadata
   Assert-SettingsLauncherUsesActiveInstall
+  Assert-SettingsDisplayModes
 
   $parseErrorsText = @()
   Get-ChildItem -LiteralPath $root -Recurse -Filter "*.ps1" | Where-Object { $_.FullName -notmatch '\\.git\\' } | ForEach-Object {

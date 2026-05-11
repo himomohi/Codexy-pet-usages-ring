@@ -269,6 +269,32 @@
       background: #1e2721;
     }
     button:active { transform: translateY(1px) scale(0.99); }
+    .preset-strip {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .preset-button {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      align-items: center;
+      gap: 8px;
+      min-height: 42px;
+      padding: 7px 9px;
+      text-align: left;
+    }
+    .preset-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      border: 1px solid rgba(244, 241, 232, 0.18);
+      background: linear-gradient(135deg, var(--swatch-a), var(--swatch-b));
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    }
+    .preset-note {
+      margin-top: 10px;
+      font-size: 12px;
+    }
     .preview-panel {
       position: sticky;
       top: 18px;
@@ -308,13 +334,16 @@
       box-shadow: inset 0 1px 0 rgba(244, 241, 232, 0.055);
     }
     .preview[data-visibility-mode="hover"] .preview-gauge,
-    .preview[data-visibility-mode="hover"] .battery-preview {
+    .preview[data-visibility-mode="hover"] .battery-preview,
+    .preview[data-visibility-mode="hover"] .badge-preview {
       opacity: 0.26;
     }
     .preview[data-visibility-mode="hover"]:hover .preview-gauge,
     .preview[data-visibility-mode="hover"]:hover .battery-preview,
+    .preview[data-visibility-mode="hover"]:hover .badge-preview,
     .preview[data-visibility-mode="always"] .preview-gauge,
-    .preview[data-visibility-mode="always"] .battery-preview {
+    .preview[data-visibility-mode="always"] .battery-preview,
+    .preview[data-visibility-mode="always"] .badge-preview {
       opacity: 1;
     }
     .preview[data-visibility-mode="hover"] .tooltip {
@@ -445,6 +474,36 @@
       border-radius: 2px;
       background: rgba(244, 241, 232, 0.18);
     }
+    .badge-preview {
+      position: absolute;
+      left: 50%;
+      top: 156px;
+      width: 152px;
+      height: 28px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4px;
+      padding: 4px 5px;
+      border: 1px solid rgba(244, 241, 232, 0.13);
+      border-radius: 999px;
+      background: rgba(13, 24, 30, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+    .badge-chip {
+      display: grid;
+      place-items: center;
+      min-width: 0;
+      border-radius: 999px;
+      color: rgba(255, 255, 255, 0.94);
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      overflow: hidden;
+      white-space: nowrap;
+    }
     .path-row {
       display: grid;
       gap: 7px;
@@ -510,6 +569,9 @@
         display: grid;
         grid-template-columns: 1fr;
       }
+      .preset-strip {
+        grid-template-columns: 1fr 1fr;
+      }
       button { width: 100%; }
     }
   </style>
@@ -545,9 +607,37 @@
             <select id="displayMode" data-path="displayMode">
               <option value="ring" data-i18n="displayModeRing">Rings</option>
               <option value="battery" data-i18n="displayModeBattery">Battery</option>
+              <option value="badge" data-i18n="displayModeBadge">Badge</option>
             </select>
             <output></output>
           </div>
+        </section>
+
+        <section>
+          <h2 data-i18n="sectionThemePresets">Theme Presets</h2>
+          <div class="preset-strip" id="presetStrip">
+            <button class="preset-button" type="button" data-preset="mochiMint" style="--swatch-a: #2FBF9B; --swatch-b: #4E8FEA;">
+              <span class="preset-swatch" aria-hidden="true"></span>
+              <span data-i18n="presetMochiMint">Mochi Mint</span>
+            </button>
+            <button class="preset-button" type="button" data-preset="berryPop" style="--swatch-a: #D84B8D; --swatch-b: #7C5FD6;">
+              <span class="preset-swatch" aria-hidden="true"></span>
+              <span data-i18n="presetBerryPop">Berry Pop</span>
+            </button>
+            <button class="preset-button" type="button" data-preset="sunnyPixel" style="--swatch-a: #FFD166; --swatch-b: #55DDE0;">
+              <span class="preset-swatch" aria-hidden="true"></span>
+              <span data-i18n="presetSunnyPixel">Sunny Pixel</span>
+            </button>
+            <button class="preset-button" type="button" data-preset="softMono" style="--swatch-a: #E8ECE7; --swatch-b: #8F9A93;">
+              <span class="preset-swatch" aria-hidden="true"></span>
+              <span data-i18n="presetSoftMono">Soft Mono</span>
+            </button>
+            <button class="preset-button" type="button" data-preset="highContrast" style="--swatch-a: #006DFF; --swatch-b: #008A5B;">
+              <span class="preset-swatch" aria-hidden="true"></span>
+              <span data-i18n="presetHighContrast">High Contrast</span>
+            </button>
+          </div>
+          <p class="preset-note" data-i18n="presetHint">Presets update this preview first. Save when it feels right.</p>
         </section>
 
         <div class="grid">
@@ -631,6 +721,10 @@
                 <div class="battery-cap" id="previewBatterySecondaryCap"></div>
               </div>
             </div>
+            <div class="badge-preview" id="previewBadge" aria-hidden="true">
+              <div class="badge-chip" id="previewBadgePrimary">5h 74%</div>
+              <div class="badge-chip" id="previewBadgeSecondary">W 58%</div>
+            </div>
             <div class="tooltip" id="previewTip">5h 90% left<br>Reset 22:27</div>
             <div class="tooltip inner" id="previewInnerTip">Week 64% left<br>Tue 15:24</div>
           </div>
@@ -653,6 +747,7 @@
     const pathEl = document.getElementById('path');
     const saveButton = document.getElementById('save');
     const inputs = Array.from(document.querySelectorAll('[data-path]'));
+    const presetButtons = Array.from(document.querySelectorAll('[data-preset]'));
     const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
     let defaults = null;
@@ -667,13 +762,13 @@
         loading: 'Loading...',
         ready: 'Ready',
         saving: 'Saving...',
-        saved: 'Saved and applied. Running rings will update automatically.',
+        saved: 'Saved and applied. Running displays will update automatically.',
         defaultsLoaded: 'Defaults loaded. Save to apply.',
         serverUnavailable: 'Settings server is not available.',
         launchHint: 'Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.',
         previewLabel: 'Live Preview',
         previewTitle: 'Usage Preview',
-        previewDescription: 'Ring or battery geometry, readout opacity, and alert colors update here as you edit.',
+        previewDescription: 'Ring, battery, or badge geometry, readout opacity, and alert colors update here as you edit.',
         settingsFile: 'Settings File',
         pet: 'PET',
         sectionGeneral: 'General',
@@ -681,6 +776,15 @@
         displayMode: 'Display Mode',
         displayModeRing: 'Rings',
         displayModeBattery: 'Battery',
+        displayModeBadge: 'Badge',
+        sectionThemePresets: 'Theme Presets',
+        presetHint: 'Presets update this preview first. Save when it feels right.',
+        presetLoaded: 'Preset loaded. Save to apply.',
+        presetMochiMint: 'Mochi Mint',
+        presetBerryPop: 'Berry Pop',
+        presetSunnyPixel: 'Sunny Pixel',
+        presetSoftMono: 'Soft Mono',
+        presetHighContrast: 'High Contrast',
         languageAuto: 'Auto',
         languageKo: 'Korean',
         languageEn: 'English',
@@ -731,7 +835,7 @@
         launchHint: 'Settings.bat 또는 bin\\powershell\\Settings.ps1로 이 페이지를 실행하세요.',
         previewLabel: '실시간 미리보기',
         previewTitle: '사용량 프리뷰',
-        previewDescription: '선택한 링 또는 배터리 표시, 사용량 표시 투명도, 경고 색상이 함께 반영됩니다.',
+        previewDescription: '선택한 링, 배터리, 배지 표시와 사용량 표시 투명도, 경고 색상이 함께 반영됩니다.',
         settingsFile: '설정 파일',
         pet: 'PET',
         sectionGeneral: '일반',
@@ -739,6 +843,15 @@
         displayMode: '표시 방식',
         displayModeRing: '링',
         displayModeBattery: '배터리',
+        displayModeBadge: '배지',
+        sectionThemePresets: '테마 프리셋',
+        presetHint: '프리셋은 먼저 미리보기에만 반영됩니다. 마음에 들면 저장하세요.',
+        presetLoaded: '프리셋을 불러왔습니다. 적용하려면 저장하세요.',
+        presetMochiMint: '모찌 민트',
+        presetBerryPop: '베리 팝',
+        presetSunnyPixel: '써니 픽셀',
+        presetSoftMono: '소프트 모노',
+        presetHighContrast: '고대비',
         languageAuto: '자동',
         languageKo: '한국어',
         languageEn: '영어',
@@ -789,7 +902,7 @@
         launchHint: 'Settings.bat または bin\\powershell\\Settings.ps1 でこのページを開いてください。',
         previewLabel: 'ライブプレビュー',
         previewTitle: '使用量プレビュー',
-        previewDescription: '選択したリングまたはバッテリー表示、使用量表示の不透明度、警告色が反映されます。',
+        previewDescription: '選択したリング、バッテリー、バッジ表示、使用量表示の不透明度、警告色が反映されます。',
         settingsFile: '設定ファイル',
         pet: 'PET',
         sectionGeneral: '一般',
@@ -797,6 +910,15 @@
         displayMode: '表示形式',
         displayModeRing: 'リング',
         displayModeBattery: 'バッテリー',
+        displayModeBadge: 'バッジ',
+        sectionThemePresets: 'テーマプリセット',
+        presetHint: 'プリセットはまずプレビューに反映されます。よければ保存してください。',
+        presetLoaded: 'プリセットを読み込みました。適用するには保存してください。',
+        presetMochiMint: 'Mochi Mint',
+        presetBerryPop: 'Berry Pop',
+        presetSunnyPixel: 'Sunny Pixel',
+        presetSoftMono: 'Soft Mono',
+        presetHighContrast: 'High Contrast',
         languageAuto: '自動',
         languageKo: '韓国語',
         languageEn: '英語',
@@ -847,7 +969,7 @@
         launchHint: '请使用 Settings.bat 或 bin\\powershell\\Settings.ps1 打开此页面。',
         previewLabel: '实时预览',
         previewTitle: '使用量预览',
-        previewDescription: '编辑时会同步反映圆环或电池显示、提示透明度和警告颜色。',
+        previewDescription: '编辑时会同步反映圆环、电池或徽章显示、提示透明度和警告颜色。',
         settingsFile: '设置文件',
         pet: 'PET',
         sectionGeneral: '常规',
@@ -855,6 +977,15 @@
         displayMode: '显示模式',
         displayModeRing: '圆环',
         displayModeBattery: '电池',
+        displayModeBadge: '徽章',
+        sectionThemePresets: '主题预设',
+        presetHint: '预设会先更新预览。满意后再保存。',
+        presetLoaded: '已加载预设。保存后应用。',
+        presetMochiMint: 'Mochi Mint',
+        presetBerryPop: 'Berry Pop',
+        presetSunnyPixel: 'Sunny Pixel',
+        presetSoftMono: 'Soft Mono',
+        presetHighContrast: 'High Contrast',
         languageAuto: '自动',
         languageKo: '韩语',
         languageEn: '英语',
@@ -902,6 +1033,139 @@
       node[parts.at(-1)] = value;
     };
     const clone = (value) => JSON.parse(JSON.stringify(value));
+    const themePresets = {
+      mochiMint: {
+        displayMode: 'badge',
+        colors: {
+          primary: '#2FBF9B',
+          secondary: '#4E8FEA',
+          warning: '#FF6B6B',
+          caution: '#FFD166',
+          track: '#FFFFFF',
+          readoutText: '#FFFFFF',
+          outerReadoutBackground: '#14251F',
+          innerReadoutBackground: '#152133'
+        },
+        opacity: {
+          primary: 0.72,
+          secondary: 0.68,
+          warning: 0.78,
+          track: 0.12,
+          readout: 0.78,
+          readoutText: 0.96
+        },
+        text: { fontSize: 11, lineHeight: 13.5 },
+        layout: { ringGap: 20 },
+        behavior: { visibilityMode: 'hover', hoverRange: 28, fadeInMs: 130, fadeOutMs: 180 }
+      },
+      berryPop: {
+        displayMode: 'badge',
+        colors: {
+          primary: '#D84B8D',
+          secondary: '#7C5FD6',
+          warning: '#FF4D6D',
+          caution: '#FFCA7A',
+          track: '#FFF6FB',
+          readoutText: '#FFFFFF',
+          outerReadoutBackground: '#2A1726',
+          innerReadoutBackground: '#201A35'
+        },
+        opacity: {
+          primary: 0.74,
+          secondary: 0.7,
+          warning: 0.78,
+          track: 0.13,
+          readout: 0.8,
+          readoutText: 0.96
+        },
+        text: { fontSize: 11, lineHeight: 13.5 },
+        layout: { ringGap: 18 },
+        behavior: { visibilityMode: 'hover', hoverRange: 30, fadeInMs: 140, fadeOutMs: 190 }
+      },
+      sunnyPixel: {
+        displayMode: 'battery',
+        colors: {
+          primary: '#FFD166',
+          secondary: '#55DDE0',
+          warning: '#FF5A5F',
+          caution: '#F4A261',
+          track: '#FFF7DB',
+          readoutText: '#FFFDF4',
+          outerReadoutBackground: '#2B2412',
+          innerReadoutBackground: '#102629'
+        },
+        opacity: {
+          primary: 0.76,
+          secondary: 0.72,
+          warning: 0.78,
+          track: 0.14,
+          readout: 0.76,
+          readoutText: 0.96
+        },
+        text: { fontSize: 10.5, lineHeight: 13 },
+        layout: { ringGap: 22 },
+        behavior: { visibilityMode: 'hover', hoverRange: 26, fadeInMs: 120, fadeOutMs: 180 }
+      },
+      softMono: {
+        displayMode: 'ring',
+        colors: {
+          primary: '#E8ECE7',
+          secondary: '#AAB4AC',
+          warning: '#F07167',
+          caution: '#E6C15C',
+          track: '#FFFFFF',
+          readoutText: '#F7F7F2',
+          outerReadoutBackground: '#171A18',
+          innerReadoutBackground: '#111614'
+        },
+        opacity: {
+          primary: 0.58,
+          secondary: 0.5,
+          warning: 0.72,
+          track: 0.08,
+          readout: 0.7,
+          readoutText: 0.94
+        },
+        text: { fontSize: 10.5, lineHeight: 13 },
+        layout: { ringGap: 24 },
+        behavior: { visibilityMode: 'hover', hoverRange: 24, fadeInMs: 110, fadeOutMs: 170 }
+      },
+      highContrast: {
+        displayMode: 'badge',
+        colors: {
+          primary: '#006DFF',
+          secondary: '#008A5B',
+          warning: '#FF2E2E',
+          caution: '#FFD400',
+          track: '#FFFFFF',
+          readoutText: '#FFFFFF',
+          outerReadoutBackground: '#080D0F',
+          innerReadoutBackground: '#06171B'
+        },
+        opacity: {
+          primary: 0.92,
+          secondary: 0.88,
+          warning: 0.94,
+          track: 0.22,
+          readout: 0.9,
+          readoutText: 1
+        },
+        text: { fontSize: 12, lineHeight: 14.5 },
+        layout: { ringGap: 22 },
+        behavior: { visibilityMode: 'always', hoverRange: 30, fadeInMs: 80, fadeOutMs: 120 }
+      }
+    };
+    const mergeDeep = (base, patch) => {
+      const next = clone(base || {});
+      for (const [key, value] of Object.entries(patch || {})) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          next[key] = mergeDeep(next[key] || {}, value);
+        } else {
+          next[key] = value;
+        }
+      }
+      return next;
+    };
     const percent = (value) => `${Math.round(Number(value) * 100)}%`;
     const supportedLanguages = ['ko', 'en', 'ja', 'zh'];
     const resolveLanguage = (value) => {
@@ -993,6 +1257,13 @@
       updatePreview();
     }
 
+    function applyPreset(name) {
+      if (!settings || !themePresets[name]) return;
+      settings = mergeDeep(settings, themePresets[name]);
+      bind();
+      showStatus('presetLoaded');
+    }
+
     function updatePreview() {
       if (!settings) return;
       const outerTrack = document.getElementById('previewOuterTrack');
@@ -1008,18 +1279,23 @@
       const batterySecondary = document.getElementById('previewBatterySecondary');
       const batteryPrimaryCap = document.getElementById('previewBatteryPrimaryCap');
       const batterySecondaryCap = document.getElementById('previewBatterySecondaryCap');
+      const badge = document.getElementById('previewBadge');
+      const badgePrimary = document.getElementById('previewBadgePrimary');
+      const badgeSecondary = document.getElementById('previewBadgeSecondary');
       const tip = document.getElementById('previewTip');
       const innerTip = document.getElementById('previewInnerTip');
       const displayMode = valueFor('displayMode') || 'ring';
       const visibilityMode = valueFor('behavior.visibilityMode') || 'hover';
-      const ringDisplay = displayMode === 'battery' ? 'none' : '';
+      const ringDisplay = displayMode === 'ring' ? '' : 'none';
       const batteryDisplay = displayMode === 'battery' ? 'grid' : 'none';
+      const badgeDisplay = displayMode === 'badge' ? 'grid' : 'none';
       previewSurface.dataset.displayMode = displayMode;
       previewSurface.dataset.visibilityMode = visibilityMode;
       for (const element of [outerTrack, innerTrack, outer, inner, warning, caution, hoverRange]) {
         element.style.display = ringDisplay;
       }
       battery.style.display = batteryDisplay;
+      badge.style.display = badgeDisplay;
       const petSize = 78;
       const ringGap = Number(valueFor('layout.ringGap') || 0);
       const hoverRangeValue = Number(valueFor('behavior.hoverRange') || 0);
@@ -1065,6 +1341,12 @@
       batterySecondary.style.background = rgba(settings.colors.secondary, settings.opacity.secondary);
       batteryPrimaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
       batterySecondaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
+      badge.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
+      badge.style.borderColor = rgba(settings.colors.track, Math.max(0.16, settings.opacity.track));
+      badgePrimary.style.background = rgba(settings.colors.primary, settings.opacity.primary);
+      badgeSecondary.style.background = rgba(settings.colors.secondary, settings.opacity.secondary);
+      badgePrimary.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
+      badgeSecondary.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
       tip.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
       tip.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
       tip.style.fontSize = `${settings.text.fontSize}px`;
@@ -1126,6 +1408,9 @@
     for (const input of inputs) {
       input.addEventListener('input', collect);
       input.addEventListener('change', collect);
+    }
+    for (const button of presetButtons) {
+      button.addEventListener('click', () => applyPreset(button.dataset.preset));
     }
     saveButton.addEventListener('click', () => save().catch((error) => showStatus(error.message)));
     document.getElementById('reload').addEventListener('click', () => load().catch((error) => showStatus(error.message)));

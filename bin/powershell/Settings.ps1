@@ -65,7 +65,7 @@ function Normalize-Language {
 function Normalize-DisplayMode {
   param($Value)
   $displayMode = if ($null -eq $Value) { "ring" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($displayMode -in @("ring", "battery")) { return $displayMode }
+  if ($displayMode -in @("ring", "battery", "badge")) { return $displayMode }
   return "ring"
 }
 
