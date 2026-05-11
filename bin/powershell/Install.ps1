@@ -58,6 +58,7 @@ function Test-ProjectPathExcluded {
   $leaf = Split-Path -Leaf $relativePath
   if ($relativePath -in @(
     ".gitignore",
+    "gamification.json",
     "settings.json",
     "docs/assets/current-pet-usage-capture.png",
     "docs/assets/imagegen-hero-background.png"

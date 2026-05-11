@@ -1,15 +1,15 @@
-<p align="center">
+﻿<p align="center">
   <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.8-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.9-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#018"><img alt="Version 0.1.8" src="https://img.shields.io/badge/version-0.1.8-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#019"><img alt="Version 0.1.9" src="https://img.shields.io/badge/version-0.1.9-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -45,7 +45,8 @@ Codexy pet usages ring は、Codex Desktop の `/pet` アバターの周囲に
 
 ## 機能
 
-- 現在の Codex `/pet` アバターの周囲に円形リングまたは小さなバッテリーバーを表示します。
+- 現在の Codex `/pet` アバターの周囲に円形リング、小さなバッテリーバー、バッジチップを表示します。
+- レベル XP、週次リセットシーズン、遊び心のある状態名を備えた任意の使用量ベース pet 成長を追加します。
 - ホバー時に 5h 制限と週間制限の使用量を表示します。
 - readout、tray text、設定 UI を英語、韓国語、日本語、中国語にローカライズします。
 - Codex Desktop を自動検出し、必要に応じて起動できます。

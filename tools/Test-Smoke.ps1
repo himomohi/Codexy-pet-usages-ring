@@ -25,6 +25,7 @@ function Test-ForbiddenPath {
   $leaf = Split-Path -Leaf $normalized
   if ($normalized -in @(
     ".gitignore",
+    "gamification.json",
     "settings.json",
     "docs/assets/current-pet-usage-capture.png",
     "docs/assets/imagegen-hero-background.png"
@@ -93,15 +94,214 @@ function Assert-SettingsDisplayModes {
   if ($defaults.displayMode -ne "ring") {
     throw "Default settings displayMode should remain ring. Found: $($defaults.displayMode)"
   }
+  if ($defaults.gamification.enabled -ne $false) {
+    throw "Default gamification.enabled should remain false."
+  }
+  if ($defaults.gamification.growthMode -ne "balanced") {
+    throw "Default gamification.growthMode should be balanced. Found: $($defaults.gamification.growthMode)"
+  }
+  if ($defaults.gamification.showGrowthChip -ne $true -or $defaults.gamification.showHoverReadout -ne $true) {
+    throw "Default gamification chip/readout settings should remain true."
+  }
 
   $badgeSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "badge" })
   if ($badgeSettings.displayMode -ne "badge") {
     throw "Settings normalizer should preserve displayMode=badge. Found: $($badgeSettings.displayMode)"
   }
+  if ($badgeSettings.gamification.enabled -ne $false) {
+    throw "Settings normalizer should default missing gamification.enabled to false."
+  }
 
   $invalidSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "sparkle" })
   if ($invalidSettings.displayMode -ne "ring") {
     throw "Invalid displayMode should fall back to ring. Found: $($invalidSettings.displayMode)"
+  }
+  $invalidGrowth = Get-NormalizedSettings ([PSCustomObject]@{ gamification = [PSCustomObject]@{ enabled = "maybe"; growthMode = "chaos"; showGrowthChip = "no"; showHoverReadout = "yes" } })
+  if ($invalidGrowth.gamification.enabled -ne $false) {
+    throw "Invalid gamification.enabled should fall back to false."
+  }
+  if ($invalidGrowth.gamification.growthMode -ne "balanced") {
+    throw "Invalid gamification.growthMode should fall back to balanced."
+  }
+  if ($invalidGrowth.gamification.showGrowthChip -ne $false -or $invalidGrowth.gamification.showHoverReadout -ne $true) {
+    throw "Boolean gamification values should normalize from yes/no strings."
+  }
+}
+
+function Assert-PetGrowthCalculations {
+  $growthScriptPath = Join-Path $root "src\PetGrowth.ps1"
+  . $growthScriptPath
+
+  $start = [datetime]"2026-05-11T09:00:00"
+  $state = New-PetGrowthState -Now $start
+  $state.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $result = Update-PetGrowthState `
+    -State $state `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($result.State.totalXp -ne 1 -or $result.State.todayXp -ne 1) {
+    throw "Usage target should award 1 XP per accumulated minute."
+  }
+
+  $low = Update-PetGrowthState `
+    -State $result.State `
+    -PrimaryRemaining 9 `
+    -SecondaryRemaining 70 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(120) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -Enabled $true
+  if ($low.State.totalXp -ne 1 -or $low.State.condition -ne "sleepy") {
+    throw "Low remaining usage should stop XP and mark the pet sleepy."
+  }
+
+  $lightState = New-PetGrowthState -Now $start
+  $lightState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $light = Update-PetGrowthState `
+    -State $lightState `
+    -PrimaryRemaining 75 `
+    -SecondaryRemaining 85 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "conserve" `
+    -Enabled $true
+  if ($light.State.totalXp -ne 1 -or $light.State.condition -ne "healthy") {
+    throw "Light use growth mode should award XP at the light usage threshold."
+  }
+
+  $tooLittleUseState = New-PetGrowthState -Now $start
+  $tooLittleUseState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $tooLittleUse = Update-PetGrowthState `
+    -State $tooLittleUseState `
+    -PrimaryRemaining 90 `
+    -SecondaryRemaining 95 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "conserve" `
+    -Enabled $true
+  if ($tooLittleUse.State.totalXp -ne 0 -or $tooLittleUse.State.condition -ne "stable") {
+    throw "Too little usage should stay stable without XP."
+  }
+
+  $balancedState = New-PetGrowthState -Now $start
+  $balancedState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $balanced = Update-PetGrowthState `
+    -State $balancedState `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($balanced.State.totalXp -ne 1 -or $balanced.State.condition -ne "healthy") {
+    throw "Balanced use growth mode should award XP at the balanced usage threshold."
+  }
+
+  $activeState = New-PetGrowthState -Now $start
+  $activeState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $active = Update-PetGrowthState `
+    -State $activeState `
+    -PrimaryRemaining 35 `
+    -SecondaryRemaining 55 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "active" `
+    -Enabled $true
+  if ($active.State.totalXp -ne 1 -or $active.State.condition -ne "healthy") {
+    throw "Focused use growth mode should award XP at the focused usage threshold."
+  }
+
+  $resetState = New-PetGrowthState -Now $start
+  $resetState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $resetAt = $start.AddSeconds(30)
+  $resetResult = Update-PetGrowthState `
+    -State $resetState `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $resetAt `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($resetResult.State.totalXp -ne 11) {
+    throw "Healthy reset crossing should award 1 minute XP plus one 10 XP reset bonus."
+  }
+  $resetAgain = Update-PetGrowthState `
+    -State $resetResult.State `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $resetAt `
+    -SecondaryResetAt $start.AddDays(3) `
+    -Now $start.AddSeconds(90) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($resetAgain.State.totalXp -ne 11) {
+    throw "Reset bonus should only be awarded once per reset timestamp."
+  }
+
+  $weeklyResetState = New-PetGrowthState -Now $start
+  $weeklyResetState.totalXp = 130
+  $weeklyResetState.level = 3
+  $weeklyResetState.todayXp = 12
+  $weeklyResetState.todayHealthySeconds = 720
+  $weeklyResetState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
+  $weeklyResetAt = $start.AddSeconds(30)
+  $weeklyReset = Update-PetGrowthState `
+    -State $weeklyResetState `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $weeklyResetAt `
+    -Now $start.AddSeconds(60) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($weeklyReset.State.totalXp -ne 0 -or $weeklyReset.State.level -ne 1 -or $weeklyReset.State.todayXp -ne 0) {
+    throw "Weekly reset should restart pet level and XP."
+  }
+  $weeklyResetAgain = Update-PetGrowthState `
+    -State $weeklyReset.State `
+    -PrimaryRemaining 55 `
+    -SecondaryRemaining 75 `
+    -PrimaryResetAt $start.AddHours(5) `
+    -SecondaryResetAt $weeklyResetAt `
+    -Now $start.AddSeconds(120) `
+    -HasUsageSnapshot $true `
+    -PetVisible $true `
+    -GrowthMode "balanced" `
+    -Enabled $true
+  if ($weeklyResetAgain.State.totalXp -ne 1 -or $weeklyResetAgain.State.level -ne 1) {
+    throw "Weekly reset should only restart once per reset timestamp, then allow XP again."
+  }
+
+  if ((Get-PetGrowthLevel -TotalXp 49) -ne 1 -or (Get-PetGrowthLevel -TotalXp 50) -ne 2 -or (Get-PetGrowthLevel -TotalXp 450) -ne 5) {
+    throw "Pet growth level thresholds are incorrect."
   }
 }
 
@@ -112,6 +312,7 @@ try {
   Add-Fixture -RelativePath "qa/smoke.tmp"
   Add-Fixture -RelativePath ".gitignore"
   Add-Fixture -RelativePath "settings.json" -Content "{`"theme`":`"smoke`"}"
+  Add-Fixture -RelativePath "gamification.json" -Content "{`"totalXp`":999}"
   Add-Fixture -RelativePath "docs/assets/current-pet-usage-capture.png"
   Add-Fixture -RelativePath "docs/assets/imagegen-hero-background.png"
   Add-Fixture -RelativePath "smoke.tmp"
@@ -119,6 +320,7 @@ try {
   $version = Assert-VersionMetadata
   Assert-SettingsLauncherUsesActiveInstall
   Assert-SettingsDisplayModes
+  Assert-PetGrowthCalculations
 
   $parseErrorsText = @()
   Get-ChildItem -LiteralPath $root -Recurse -Filter "*.ps1" | Where-Object { $_.FullName -notmatch '\\.git\\' } | ForEach-Object {

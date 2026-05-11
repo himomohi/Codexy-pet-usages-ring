@@ -221,6 +221,12 @@ if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
 }
 $SettingsPath = [System.IO.Path]::GetFullPath($SettingsPath)
 $SettingsDefaultsPath = Join-Path $ProjectRoot "settings.defaults.json"
+$PetGrowthScriptPath = Join-Path $ProjectRoot "src\PetGrowth.ps1"
+if (-not (Test-Path -LiteralPath $PetGrowthScriptPath)) {
+  throw "Missing pet growth helper: $PetGrowthScriptPath"
+}
+. $PetGrowthScriptPath
+$GamificationStatePath = Join-Path $env:LOCALAPPDATA "CodexyPetUsagesRing\gamification.json"
 $StatePath = Join-Path $CodexHome ".codex-global-state.json"
 $AuthPath = Join-Path $CodexHome "auth.json"
 $LogsPath = Join-Path $CodexHome "logs_2.sqlite"
@@ -257,11 +263,14 @@ $script:BatteryPrimaryBounds = $null
 $script:BatterySecondaryBounds = $null
 $script:BadgePrimaryBounds = $null
 $script:BadgeSecondaryBounds = $null
+$script:GrowthChipBounds = $null
 $script:LastReadoutRefreshAt = [datetime]::MinValue
 $script:LastHoverSignature = ""
 $script:RingVisualsVisible = $null
 $script:RingAnimationToken = 0
 $script:SettingsLastWriteTimeUtc = [datetime]::MinValue
+$script:PetGrowthState = New-PetGrowthState
+$script:LastGrowthSaveAt = [datetime]::MinValue
 $script:Style = [ordered]@{
   Language = "auto"
   DisplayMode = "ring"
@@ -286,6 +295,10 @@ $script:Style = [ordered]@{
   HoverRange = 24.0
   FadeInMs = 120.0
   FadeOutMs = 180.0
+  GamificationEnabled = $false
+  GrowthMode = "balanced"
+  ShowGrowthChip = $true
+  ShowGrowthHoverReadout = $true
 }
 $script:RingsEnabled = $true
 
@@ -345,6 +358,16 @@ function Convert-SettingNumber {
   try { return [Math]::Max($Min, [Math]::Min($Max, [double]$Value)) } catch { return $Fallback }
 }
 
+function Convert-SettingBool {
+  param($Value, [bool]$Fallback)
+  if ($null -eq $Value) { return $Fallback }
+  if ($Value -is [bool]) { return [bool]$Value }
+  $text = ([string]$Value).Trim().ToLowerInvariant()
+  if ($text -in @("true", "1", "yes", "on")) { return $true }
+  if ($text -in @("false", "0", "no", "off")) { return $false }
+  return $Fallback
+}
+
 function Ensure-SettingsFile {
   $settingsDirectory = Split-Path -Parent $SettingsPath
   if (-not [string]::IsNullOrWhiteSpace($settingsDirectory)) {
@@ -390,9 +413,52 @@ function Ensure-SettingsFile {
       fadeInMs = 120
       fadeOutMs = 180
     }
+    gamification = [ordered]@{
+      enabled = $false
+      growthMode = "balanced"
+      showGrowthChip = $true
+      showHoverReadout = $true
+    }
   }
   ($fallback | ConvertTo-Json -Depth 6) | Set-Content -LiteralPath $SettingsPath -Encoding UTF8
 }
+
+function Read-PetGrowthState {
+  try {
+    if (-not (Test-Path -LiteralPath $GamificationStatePath)) {
+      return New-PetGrowthState
+    }
+    $raw = Read-Utf8Text -Path $GamificationStatePath
+    if ([string]::IsNullOrWhiteSpace($raw)) {
+      return New-PetGrowthState
+    }
+    return Normalize-PetGrowthState -State ($raw | ConvertFrom-Json)
+  } catch {
+    Write-AppLog "Pet growth state read failed: $($_.Exception.Message)"
+    return New-PetGrowthState
+  }
+}
+
+function Save-PetGrowthState {
+  param([switch]$Force)
+  try {
+    $now = Get-Date
+    if (-not $Force -and ($now - $script:LastGrowthSaveAt).TotalSeconds -lt 30) {
+      return
+    }
+    $stateDirectory = Split-Path -Parent $GamificationStatePath
+    if (-not [string]::IsNullOrWhiteSpace($stateDirectory)) {
+      New-Item -ItemType Directory -Force -Path $stateDirectory | Out-Null
+    }
+    $json = ($script:PetGrowthState | ConvertTo-Json -Depth 8) + [Environment]::NewLine
+    [System.IO.File]::WriteAllText($GamificationStatePath, $json, [System.Text.Encoding]::UTF8)
+    $script:LastGrowthSaveAt = $now
+  } catch {
+    Write-AppLog "Pet growth state save failed: $($_.Exception.Message)"
+  }
+}
+
+$script:PetGrowthState = Read-PetGrowthState
 
 function Update-StyleFromSettings {
   param([switch]$Force)
@@ -408,6 +474,7 @@ function Update-StyleFromSettings {
     $text = Get-PropertyValue $settings "text" $null
     $layout = Get-PropertyValue $settings "layout" $null
     $behavior = Get-PropertyValue $settings "behavior" $null
+    $gamification = Get-PropertyValue $settings "gamification" $null
 
     $language = ([string](Get-PropertyValue $settings "language" "auto")).Trim().ToLowerInvariant()
     if ($language -notin @("auto", "ko", "en", "ja", "zh")) { $language = "auto" }
@@ -438,6 +505,12 @@ function Update-StyleFromSettings {
     $script:Style.HoverRange = Convert-SettingNumber (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
     $script:Style.FadeInMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
     $script:Style.FadeOutMs = Convert-SettingNumber (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
+    $script:Style.GamificationEnabled = Convert-SettingBool (Get-PropertyValue $gamification "enabled" $null) $false
+    $growthMode = ([string](Get-PropertyValue $gamification "growthMode" "balanced")).Trim().ToLowerInvariant()
+    if ($growthMode -notin @("conserve", "balanced", "active")) { $growthMode = "balanced" }
+    $script:Style.GrowthMode = $growthMode
+    $script:Style.ShowGrowthChip = Convert-SettingBool (Get-PropertyValue $gamification "showGrowthChip" $null) $true
+    $script:Style.ShowGrowthHoverReadout = Convert-SettingBool (Get-PropertyValue $gamification "showHoverReadout" $null) $true
     $script:SettingsLastWriteTimeUtc = $item.LastWriteTimeUtc
     return $true
   } catch {
@@ -482,6 +555,16 @@ function Apply-StyleSettings {
       $label.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
     }
   }
+  if ($null -ne $script:GrowthChipBackground) {
+    $script:GrowthChipBackground.Fill = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
+    $script:GrowthChipBackground.Stroke = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 36))) ([int[]]$script:Style.TrackRgb)
+  }
+  if ($null -ne $script:GrowthChipAccent) {
+    $script:GrowthChipAccent.Fill = Get-PetGrowthBrush -Condition ([string]$script:PetGrowthState.condition)
+  }
+  if ($null -ne $script:GrowthChipLabel) {
+    $script:GrowthChipLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+  }
   if ($null -ne $script:OuterReadoutText) {
     $script:OuterReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
     $script:OuterReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
@@ -497,6 +580,14 @@ function Apply-StyleSettings {
   }
   if ($null -ne $script:InnerReadoutBorder) {
     $script:InnerReadoutBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.InnerReadoutBgRgb)
+  }
+  if ($null -ne $script:GrowthReadoutText) {
+    $script:GrowthReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+    $script:GrowthReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
+    $script:GrowthReadoutText.LineHeight = [double]$script:Style.ReadoutLineHeight
+  }
+  if ($null -ne $script:GrowthReadoutBorder) {
+    $script:GrowthReadoutBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
   }
   Update-RingGeometry
   [void](Update-ReadoutText -Force)
@@ -1168,6 +1259,69 @@ function Get-RingReadoutText {
     (Format-ResetDetail $script:UsageState.SecondaryResetAt)
 }
 
+function Get-PetGrowthConditionLabel {
+  param([string]$Condition)
+  $language = Get-EffectiveLanguage
+  switch ($Condition) {
+    "healthy" {
+      if ($language -eq "ko") { return (Expand-UnicodeText "\uC2E0\uB0A8") }
+      if ($language -eq "ja") { return (Expand-UnicodeText "\u3052\u3093\u304D") }
+      if ($language -eq "zh") { return (Expand-UnicodeText "\u5174\u594B") }
+      return "Hyped"
+    }
+    "stable" {
+      if ($language -eq "ko") { return (Expand-UnicodeText "\uBAB8\uD480\uAE30") }
+      if ($language -eq "ja") { return (Expand-UnicodeText "\u30A6\u30A9\u30FC\u30E0\u30A2\u30C3\u30D7") }
+      if ($language -eq "zh") { return (Expand-UnicodeText "\u70ED\u8EAB\u4E2D") }
+      return "Warming Up"
+    }
+    "tired" {
+      if ($language -eq "ko") { return (Expand-UnicodeText "\uACFC\uC5F4") }
+      if ($language -eq "ja") { return (Expand-UnicodeText "\u30AA\u30FC\u30D0\u30FC\u30D2\u30FC\u30C8") }
+      if ($language -eq "zh") { return (Expand-UnicodeText "\u8FC7\u70ED") }
+      return "Overheated"
+    }
+    "sleepy" {
+      if ($language -eq "ko") { return (Expand-UnicodeText "\uCFE8\uB2E4\uC6B4") }
+      if ($language -eq "ja") { return (Expand-UnicodeText "\u30AF\u30FC\u30EB\u30C0\u30A6\u30F3") }
+      if ($language -eq "zh") { return (Expand-UnicodeText "\u51B7\u5374\u4E2D") }
+      return "Cooldown"
+    }
+    default {
+      if ($language -eq "ko") { return (Expand-UnicodeText "\uB300\uAE30\uC911") }
+      if ($language -eq "ja") { return (Expand-UnicodeText "\u5F85\u6A5F\u4E2D") }
+      if ($language -eq "zh") { return (Expand-UnicodeText "\u5F85\u673A\u4E2D") }
+      return "Standby"
+    }
+  }
+}
+
+function Get-PetGrowthChipText {
+  $level = [int]$script:PetGrowthState.level
+  $condition = Get-PetGrowthConditionLabel -Condition ([string]$script:PetGrowthState.condition)
+  return "Lv{0} {1}" -f $level, $condition
+}
+
+function Get-PetGrowthReadoutText {
+  $language = Get-EffectiveLanguage
+  $level = [int]$script:PetGrowthState.level
+  $totalXp = [int]$script:PetGrowthState.totalXp
+  $nextXp = Get-PetGrowthNextLevelXp -TotalXp $totalXp
+  $condition = Get-PetGrowthConditionLabel -Condition ([string]$script:PetGrowthState.condition)
+  $healthyTime = Format-Duration ([double]$script:PetGrowthState.todayHealthySeconds)
+  if ($null -eq $nextXp) {
+    if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uCD5C\uB300 \uB808\uBCA8  XP {2}`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $totalXp, $healthyTime }
+    if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6700\u5927\u30EC\u30D9\u30EB  XP {2}`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $totalXp, $healthyTime }
+    if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u5DF2\u8FBE\u6700\u9AD8\u7B49\u7EA7  XP {2}`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $totalXp, $healthyTime }
+    return "Lv{0} {1}`nMax level  XP {2}`nGrowth today {3}" -f $level, $condition, $totalXp, $healthyTime
+  }
+  $toNext = [Math]::Max(0, [int]$nextXp - $totalXp)
+  if ($language -eq "ko") { return (Expand-UnicodeText "Lv{0} {1}`n\uB2E4\uC74C \uB808\uBCA8\uAE4C\uC9C0 {2} XP`n\uC624\uB298 \uC131\uC7A5 {3}") -f $level, $condition, $toNext, $healthyTime }
+  if ($language -eq "ja") { return (Expand-UnicodeText "Lv{0} {1}`n\u6B21\u306E\u30EC\u30D9\u30EB\u307E\u3067 {2} XP`n\u4ECA\u65E5\u306E\u6210\u9577 {3}") -f $level, $condition, $toNext, $healthyTime }
+  if ($language -eq "zh") { return (Expand-UnicodeText "Lv{0} {1}`n\u8DDD\u4E0B\u4E00\u7EA7 {2} XP`n\u4ECA\u65E5\u6210\u957F {3}") -f $level, $condition, $toNext, $healthyTime }
+  return "Lv{0} {1}`n{2} XP to next`nGrowth today {3}" -f $level, $condition, $toNext, $healthyTime
+}
+
 function Update-ReadoutText {
   param([switch]$Force)
   $now = Get-Date
@@ -1179,6 +1333,9 @@ function Update-ReadoutText {
   }
   if ($null -ne $script:InnerReadoutText) {
     $script:InnerReadoutText.Text = Get-RingReadoutText -Ring "Inner"
+  }
+  if ($null -ne $script:GrowthReadoutText) {
+    $script:GrowthReadoutText.Text = Get-PetGrowthReadoutText
   }
   $script:LastReadoutRefreshAt = $now
   return $true
@@ -1197,6 +1354,12 @@ function Hide-RingReadouts {
   }
   if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
     $script:InnerReadoutWindow.Hide()
+  }
+  if ($null -ne $script:GrowthReadoutBorder) {
+    $script:GrowthReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
+  }
+  if ($null -ne $script:GrowthReadoutWindow -and $script:GrowthReadoutWindow.IsVisible) {
+    $script:GrowthReadoutWindow.Hide()
   }
 }
 
@@ -1220,7 +1383,10 @@ function Set-RingShapesVisibility {
     $script:SecondaryBadgeChip,
     $script:BadgeDivider,
     $script:PrimaryBadgeLabel,
-    $script:SecondaryBadgeLabel
+    $script:SecondaryBadgeLabel,
+    $script:GrowthChipBackground,
+    $script:GrowthChipAccent,
+    $script:GrowthChipLabel
   )) {
     if ($null -ne $shape) {
       $shape.Visibility = $Visibility
@@ -1270,6 +1436,161 @@ function Update-ModeShapeVisibility {
   )) {
     if ($null -ne $shape) { $shape.Visibility = $badgeVisibility }
   }
+  $growthVisibility = if (
+    $script:RingVisualsVisible -and
+    $script:Style.GamificationEnabled -and
+    $script:Style.ShowGrowthChip
+  ) {
+    [System.Windows.Visibility]::Visible
+  } else {
+    [System.Windows.Visibility]::Collapsed
+  }
+  foreach ($shape in @($script:GrowthChipBackground, $script:GrowthChipAccent, $script:GrowthChipLabel)) {
+    if ($null -ne $shape) { $shape.Visibility = $growthVisibility }
+  }
+}
+
+function Get-PetGrowthBrush {
+  param([string]$Condition)
+  switch ($Condition) {
+    "healthy" { return New-StyleBrush ([byte]$script:Style.PrimaryOpacity) ([int[]]$script:Style.PrimaryRgb) }
+    "stable" { return New-StyleBrush ([byte]$script:Style.SecondaryOpacity) ([int[]]$script:Style.SecondaryRgb) }
+    "tired" { return New-StyleBrush ([byte]$script:Style.WarningOpacity) ([int[]]$script:Style.CautionRgb) }
+    "sleepy" { return New-StyleBrush ([byte]$script:Style.WarningOpacity) ([int[]]$script:Style.WarningRgb) }
+    default { return New-StyleBrush ([byte][Math]::Max(32, [Math]::Min(255, [int]$script:Style.TrackOpacity + 42))) ([int[]]$script:Style.TrackRgb) }
+  }
+}
+
+function Update-PetGrowthVisualText {
+  if ($null -ne $script:GrowthChipLabel) {
+    $script:GrowthChipLabel.Text = Get-PetGrowthChipText
+  }
+  if ($null -ne $script:GrowthChipAccent) {
+    $script:GrowthChipAccent.Fill = Get-PetGrowthBrush -Condition ([string]$script:PetGrowthState.condition)
+  }
+  if ($null -ne $script:GrowthReadoutText) {
+    $script:GrowthReadoutText.Text = Get-PetGrowthReadoutText
+  }
+}
+
+function Test-GrowthHudVisible {
+  return ($script:Style.GamificationEnabled -and $script:Style.ShowGrowthChip)
+}
+
+function Update-PetGrowth {
+  param([bool]$PetVisible)
+  if (-not $script:Style.GamificationEnabled) {
+    return
+  }
+  $oldCondition = [string]$script:PetGrowthState.condition
+  $oldLevel = [int]$script:PetGrowthState.level
+  $result = Update-PetGrowthState `
+    -State $script:PetGrowthState `
+    -PrimaryRemaining $script:UsageState.PrimaryRemaining `
+    -SecondaryRemaining $script:UsageState.SecondaryRemaining `
+    -PrimaryResetAt $script:UsageState.PrimaryResetAt `
+    -SecondaryResetAt $script:UsageState.SecondaryResetAt `
+    -Now (Get-Date) `
+    -HasUsageSnapshot ([bool]$script:HasUsageSnapshot) `
+    -PetVisible $PetVisible `
+    -GrowthMode ([string]$script:Style.GrowthMode) `
+    -Enabled ([bool]$script:Style.GamificationEnabled)
+  $script:PetGrowthState = $result.State
+  Update-PetGrowthVisualText
+  $important = ([int]$result.AwardedXp -gt 0) -or ($oldCondition -ne [string]$script:PetGrowthState.condition) -or ($oldLevel -ne [int]$script:PetGrowthState.level)
+  if ($result.Changed) {
+    Save-PetGrowthState -Force:$important
+  }
+}
+
+function Update-GrowthChipGeometry {
+  if ($null -eq $script:Window -or $null -eq $script:LastPetRect) {
+    $script:GrowthChipBounds = $null
+    return
+  }
+  if ($null -eq $script:GrowthChipBackground -or $null -eq $script:GrowthChipLabel) { return }
+
+  $chipWidth = 86.0
+  $chipHeight = 24.0
+  $pet = $script:LastPetRect
+  $petLeft = [double]$pet.X - [double]$script:Window.Left
+  $petTop = [double]$pet.Y - [double]$script:Window.Top
+  $petBottom = $petTop + [double]$pet.Height
+  $mode = [string]$script:Style.DisplayMode
+  $targetX = ([double]$script:Window.Width - $chipWidth) / 2.0
+  $targetY = if ($mode -eq "ring") {
+    $ringBottom = if ($null -ne $script:RingOuterRadius) {
+      ([double]$script:RingOuterRadius + 16.0) * 2.0
+    } else {
+      [Math]::Max([double]$pet.Width, [double]$pet.Height) + ([double]$script:Style.RingGap + 16.0) * 2.0
+    }
+    $ringBottom + 6.0
+  } elseif ($mode -eq "badge") {
+    $petBottom + 41.0
+  } else {
+    $petBottom + 8.0
+  }
+  $x = [Math]::Max(4.0, [Math]::Min($targetX, [double]$script:Window.Width - $chipWidth - 4.0))
+  $y = [Math]::Max(4.0, [Math]::Min($targetY, [double]$script:Window.Height - $chipHeight - 4.0))
+
+  Set-RectangleBounds $script:GrowthChipBackground $x $y $chipWidth $chipHeight
+  Set-RectangleBounds $script:GrowthChipAccent ($x + 5.0) ($y + 6.0) 5.0 ($chipHeight - 12.0)
+  $script:GrowthChipLabel.Width = $chipWidth - 18.0
+  $script:GrowthChipLabel.Height = $chipHeight
+  [System.Windows.Controls.Canvas]::SetLeft($script:GrowthChipLabel, $x + 14.0)
+  [System.Windows.Controls.Canvas]::SetTop($script:GrowthChipLabel, $y + 4.0)
+  $script:GrowthChipBounds = [pscustomobject]@{ X = $x; Y = $y; Width = $chipWidth; Height = $chipHeight }
+  Update-PetGrowthVisualText
+  Update-ModeShapeVisibility
+}
+
+function Test-CursorInGrowthChipRange {
+  param($Cursor)
+  if (
+    $null -eq $script:Window -or
+    $null -eq $Cursor -or
+    $null -eq $script:GrowthChipBounds -or
+    -not $script:Window.IsVisible -or
+    -not $script:Style.GamificationEnabled -or
+    -not $script:Style.ShowGrowthChip
+  ) {
+    return $false
+  }
+
+  $localX = [double]$Cursor.X - [double]$script:Window.Left
+  $localY = [double]$Cursor.Y - [double]$script:Window.Top
+  $padding = [Math]::Max(7.0, [Math]::Min(20.0, [double]$script:Style.HoverRange))
+  $bounds = $script:GrowthChipBounds
+  return (
+    $localX -ge ([double]$bounds.X - $padding) -and
+    $localX -le ([double]$bounds.X + [double]$bounds.Width + $padding) -and
+    $localY -ge ([double]$bounds.Y - $padding) -and
+    $localY -le ([double]$bounds.Y + [double]$bounds.Height + $padding)
+  )
+}
+
+function Show-GrowthReadout {
+  if (
+    -not $script:Style.ShowGrowthHoverReadout -or
+    $null -eq $script:GrowthChipBounds -or
+    $null -eq $script:GrowthReadoutWindow
+  ) {
+    return
+  }
+  if ($null -ne $script:OuterReadoutWindow -and $script:OuterReadoutWindow.IsVisible) {
+    $script:OuterReadoutWindow.Hide()
+  }
+  if ($null -ne $script:InnerReadoutWindow -and $script:InnerReadoutWindow.IsVisible) {
+    $script:InnerReadoutWindow.Hide()
+  }
+  $script:OuterReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
+  $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
+  $script:GrowthReadoutBorder.Visibility = [System.Windows.Visibility]::Visible
+  [void](Update-ReadoutText -Force)
+  $screenX = [double]$script:Window.Left + [double]$script:GrowthChipBounds.X + [double]$script:GrowthChipBounds.Width / 2.0
+  $screenY = [double]$script:Window.Top + [double]$script:GrowthChipBounds.Y + [double]$script:GrowthChipBounds.Height / 2.0
+  Set-ReadoutWindowNearPoint -Window $script:GrowthReadoutWindow -Border $script:GrowthReadoutBorder -ScreenX $screenX -ScreenY $screenY
+  if (-not $script:GrowthReadoutWindow.IsVisible) { $script:GrowthReadoutWindow.Show() }
 }
 
 function Start-RingOpacityAnimation {
@@ -1464,11 +1785,11 @@ function Update-RingHoverVisibility {
 
   $cursor = [System.Windows.Forms.Cursor]::Position
   if ($script:Style.DisplayMode -eq "battery") {
-    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBatteryRange -Cursor $cursor)
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBatteryRange -Cursor $cursor) -or (Test-CursorInGrowthChipRange -Cursor $cursor)
   } elseif ($script:Style.DisplayMode -eq "badge") {
-    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBadgeRange -Cursor $cursor)
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or (Test-CursorInBadgeRange -Cursor $cursor) -or (Test-CursorInGrowthChipRange -Cursor $cursor)
   } else {
-    $showRing = (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and (Test-CursorInRingRange -Cursor $cursor))
+    $showRing = (Test-CursorOverPet -Cursor $cursor) -or ($script:Window.IsVisible -and ((Test-CursorInRingRange -Cursor $cursor) -or (Test-CursorInGrowthChipRange -Cursor $cursor)))
   }
   Set-RingVisualsVisible -Visible $showRing
   Set-FrameTimerInterval -Fast $true
@@ -1636,11 +1957,18 @@ function Update-RingGeometry {
   $secondaryRemaining = Get-RingRemaining `
     -DisplayedValue $script:DisplayedUsageState.SecondaryRemaining `
     -TargetValue $script:UsageState.SecondaryRemaining
+  $petBottom = if ($null -ne $script:LastPetRect) {
+    [double]$script:LastPetRect.Y - [double]$script:Window.Top + [double]$script:LastPetRect.Height
+  } else {
+    [double]$script:Window.Height - 43.0
+  }
+  $growthHudVisible = Test-GrowthHudVisible
   if ($isBattery) {
     $barWidth = [Math]::Min(132.0, [Math]::Max(96.0, [double]$script:Window.Width - 22.0))
     $barHeight = 9.0
     $barX = ([double]$script:Window.Width - $barWidth) / 2.0
-    $barY = [Math]::Max(4.0, [double]$script:Window.Height - 31.0)
+    $barOffset = if ($growthHudVisible) { 39.0 } else { 12.0 }
+    $barY = $petBottom + $barOffset
     $labelWidth = 24.0
     $bodyX = $barX + $labelWidth
     $bodyWidth = $barWidth - $labelWidth - 7.0
@@ -1668,7 +1996,7 @@ function Update-RingGeometry {
     $badgeWidth = [Math]::Min(156.0, [Math]::Max(128.0, [double]$script:Window.Width - 18.0))
     $badgeHeight = 26.0
     $badgeX = ([double]$script:Window.Width - $badgeWidth) / 2.0
-    $badgeY = [Math]::Max(5.0, [double]$script:Window.Height - $badgeHeight - 7.0)
+    $badgeY = $petBottom + 8.0
     $gap = 4.0
     $chipWidth = ($badgeWidth - 12.0 - $gap) / 2.0
     $chipHeight = $badgeHeight - 8.0
@@ -1713,6 +2041,7 @@ function Update-RingGeometry {
     $script:InnerArc.Stroke = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
   }
   Update-ModeShapeVisibility
+  Update-GrowthChipGeometry
 
   [void](Update-ReadoutText)
 }
@@ -1752,6 +2081,7 @@ function Set-FrameTimerActive {
 
 function Update-PetFrame {
   if (-not $script:RingsEnabled) {
+    Update-PetGrowth -PetVisible $false
     if ($script:Window.IsVisible) { $script:Window.Hide() }
     Set-FrameTimerActive -Active $false
     return
@@ -1760,6 +2090,7 @@ function Update-PetFrame {
   $rect = Read-PetRect
   if ($null -eq $rect) {
     Set-PetAutoDetectState -Visible $false
+    Update-PetGrowth -PetVisible $false
     $script:LastPetFrameSignature = ""
     if ($script:Window.IsVisible) { $script:Window.Hide() }
     Set-FrameTimerActive -Active $false
@@ -1769,28 +2100,33 @@ function Update-PetFrame {
   Set-PetAutoDetectState -Visible $true
   $isBattery = $script:Style.DisplayMode -eq "battery"
   $isBadge = $script:Style.DisplayMode -eq "badge"
+  $growthHudVisible = Test-GrowthHudVisible
   if ($isBattery) {
-    $windowWidth = [Math]::Max([double]$rect.Width + 28.0, 148.0)
-    $windowHeight = [double]$rect.Height + 43.0
+    $windowWidth = [Math]::Max([double]$rect.Width + 34.0, 164.0)
+    $batteryHudHeight = if ($growthHudVisible) { 75.0 } else { 43.0 }
+    $windowHeight = [double]$rect.Height + $batteryHudHeight
     $ringSize = [Math]::Max($windowWidth, $windowHeight)
     $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
     $top = [double]$rect.Y
   } elseif ($isBadge) {
-    $windowWidth = [Math]::Max([double]$rect.Width + 34.0, 158.0)
-    $windowHeight = [double]$rect.Height + 40.0
+    $windowWidth = [Math]::Max([double]$rect.Width + 40.0, 164.0)
+    $badgeHudHeight = if ($growthHudVisible) { 73.0 } else { 40.0 }
+    $windowHeight = [double]$rect.Height + $badgeHudHeight
     $ringSize = [Math]::Max($windowWidth, $windowHeight)
     $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
     $top = [double]$rect.Y
   } else {
     $ringPadding = [double]$script:Style.RingGap + 16.0
     $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $ringPadding * 2.0
-    $windowWidth = $ringSize
-    $windowHeight = $ringSize
+    $minimumRingHudWidth = if ($growthHudVisible) { 164.0 } else { $ringSize }
+    $ringHudHeight = if ($growthHudVisible) { 36.0 } else { 0.0 }
+    $windowWidth = [Math]::Max($ringSize, $minimumRingHudWidth)
+    $windowHeight = $ringSize + $ringHudHeight
     $left = [double]$rect.X + [double]$rect.Width / 2.0 - $windowWidth / 2.0
-    $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $windowHeight / 2.0
+    $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $ringSize / 2.0
   }
 
-  $signature = "{0}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}|{6:N1}|{7:N1}" -f `
+  $signature = "{0}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}|{6:N1}|{7:N1}|{8}" -f `
     $script:Style.DisplayMode,
     $left,
     $top,
@@ -1798,7 +2134,8 @@ function Update-PetFrame {
     $windowHeight,
     $rect.X,
     $rect.Y,
-    $ringSize
+    $ringSize,
+    $growthHudVisible
   $changed = $signature -ne $script:LastPetFrameSignature
   if ($changed) {
     $script:LastPetRect = $rect
@@ -1815,6 +2152,8 @@ function Update-PetFrame {
   }
 
   Set-FrameTimerActive -Active $true
+  Update-PetGrowth -PetVisible $true
+  Update-GrowthChipGeometry
   Update-RingHoverVisibility
   Update-HoverReadout
   Move-RingBehindCodex
@@ -1832,6 +2171,13 @@ function Update-HoverReadout {
   $height = [double]$script:Window.Height
   if ($localX -lt 0 -or $localY -lt 0 -or $localX -gt $width -or $localY -gt $height) {
     Hide-RingReadouts
+    return
+  }
+  if ((Test-CursorInGrowthChipRange -Cursor $cursor) -and $script:Style.ShowGrowthHoverReadout) {
+    $hoverSignature = "Growth|{0:N0}|{1:N0}" -f $localX, $localY
+    if ($script:LastHoverSignature -eq $hoverSignature) { return }
+    $script:LastHoverSignature = $hoverSignature
+    Show-GrowthReadout
     return
   }
   if ($script:Style.DisplayMode -in @("battery", "badge")) {
@@ -2068,6 +2414,28 @@ $script:SecondaryBadgeLabel.FontWeight = [System.Windows.FontWeights]::Bold
 $script:SecondaryBadgeLabel.TextAlignment = [System.Windows.TextAlignment]::Center
 $script:SecondaryBadgeLabel.Opacity = 0.96
 
+$script:GrowthChipBackground = [System.Windows.Shapes.Rectangle]::new()
+$script:GrowthChipBackground.RadiusX = 8
+$script:GrowthChipBackground.RadiusY = 8
+$script:GrowthChipBackground.StrokeThickness = 1
+$script:GrowthChipBackground.Fill = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
+$script:GrowthChipBackground.Stroke = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 36))) ([int[]]$script:Style.TrackRgb)
+
+$script:GrowthChipAccent = [System.Windows.Shapes.Rectangle]::new()
+$script:GrowthChipAccent.RadiusX = 2.5
+$script:GrowthChipAccent.RadiusY = 2.5
+$script:GrowthChipAccent.Fill = Get-PetGrowthBrush -Condition ([string]$script:PetGrowthState.condition)
+
+$script:GrowthChipLabel = [System.Windows.Controls.TextBlock]::new()
+$script:GrowthChipLabel.Text = Get-PetGrowthChipText
+$script:GrowthChipLabel.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:GrowthChipLabel.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:GrowthChipLabel.FontSize = 10.0
+$script:GrowthChipLabel.FontWeight = [System.Windows.FontWeights]::Bold
+$script:GrowthChipLabel.TextAlignment = [System.Windows.TextAlignment]::Left
+$script:GrowthChipLabel.Opacity = 0.96
+$script:GrowthChipLabel.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+
 $script:OuterReadoutText = [System.Windows.Controls.TextBlock]::new()
 $script:OuterReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
 $script:OuterReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
@@ -2079,6 +2447,12 @@ $script:InnerReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.Readou
 $script:InnerReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
 $script:InnerReadoutText.LineHeight = [double]$script:Style.ReadoutLineHeight
 $script:InnerReadoutText.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+
+$script:GrowthReadoutText = [System.Windows.Controls.TextBlock]::new()
+$script:GrowthReadoutText.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+$script:GrowthReadoutText.FontSize = [double]$script:Style.ReadoutFontSize
+$script:GrowthReadoutText.LineHeight = [double]$script:Style.ReadoutLineHeight
+$script:GrowthReadoutText.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
 
 $script:OuterReadoutBorder = [System.Windows.Controls.Border]::new()
 $script:OuterReadoutBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
@@ -2094,8 +2468,16 @@ $script:InnerReadoutBorder.Padding = [System.Windows.Thickness]::new(7, 4, 7, 5)
 $script:InnerReadoutBorder.Child = $script:InnerReadoutText
 $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
 
+$script:GrowthReadoutBorder = [System.Windows.Controls.Border]::new()
+$script:GrowthReadoutBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
+$script:GrowthReadoutBorder.CornerRadius = [System.Windows.CornerRadius]::new(7)
+$script:GrowthReadoutBorder.Padding = [System.Windows.Thickness]::new(7, 4, 7, 5)
+$script:GrowthReadoutBorder.Child = $script:GrowthReadoutText
+$script:GrowthReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
+
 $script:OuterReadoutWindow = New-ReadoutWindow -Content $script:OuterReadoutBorder
 $script:InnerReadoutWindow = New-ReadoutWindow -Content $script:InnerReadoutBorder
+$script:GrowthReadoutWindow = New-ReadoutWindow -Content $script:GrowthReadoutBorder
 
 $script:Canvas.Children.Add($script:OuterTrack) | Out-Null
 $script:Canvas.Children.Add($script:InnerTrack) | Out-Null
@@ -2115,6 +2497,9 @@ $script:Canvas.Children.Add($script:SecondaryBadgeChip) | Out-Null
 $script:Canvas.Children.Add($script:BadgeDivider) | Out-Null
 $script:Canvas.Children.Add($script:PrimaryBadgeLabel) | Out-Null
 $script:Canvas.Children.Add($script:SecondaryBadgeLabel) | Out-Null
+$script:Canvas.Children.Add($script:GrowthChipBackground) | Out-Null
+$script:Canvas.Children.Add($script:GrowthChipAccent) | Out-Null
+$script:Canvas.Children.Add($script:GrowthChipLabel) | Out-Null
 Set-RingVisualsVisible -Visible $false
 
 $script:Window.Add_SourceInitialized({
@@ -2239,6 +2624,7 @@ Update-UsageState
 Update-PetFrame
 
 $script:App.Add_Exit({
+  Save-PetGrowthState -Force
   if ($null -ne $script:NotifyIcon) {
     $script:NotifyIcon.Visible = $false
     $script:NotifyIcon.Dispose()

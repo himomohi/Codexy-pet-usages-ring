@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.1.9
+
+### Added
+
+- Added opt-in pet growth gamification tied to the real `/pet` visibility and existing usage snapshots.
+- Added usage-based growth modes for light, balanced, and focused Codex usage, with fun pet states such as Hyped, Warming Up, Overheated, and Cooldown.
+- Added a pixel-art settings page with an animated pet hero, growth rules, and live HUD preview.
+- Added a compact badge display mode and pixel-style theme presets.
+
+### Changed
+
+- Made pet growth respond to Codex usage amount instead of remaining quota, while pausing XP when remaining quota is near depletion.
+- Restarted pet level and XP from Lv1 when the weekly quota resets.
+- Kept growth HUD, badge, battery, and ring layouts from overlapping the real `/pet` avatar.
+
+### Fixed
+
+- Hardened the local settings server response handling for browser refresh and headless capture requests.
+- Kept local `gamification.json` state out of release zips and installs.
+
 ## 0.1.8
 
 ### Fixed

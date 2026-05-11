@@ -32,5 +32,11 @@
     "hoverRange": 24,
     "fadeInMs": 120,
     "fadeOutMs": 180
+  },
+  "gamification": {
+    "enabled": false,
+    "growthMode": "balanced",
+    "showGrowthChip": true,
+    "showHoverReadout": true
   }
 }

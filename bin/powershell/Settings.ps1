@@ -55,6 +55,16 @@ function Normalize-Number {
   try { return [Math]::Round([Math]::Max($Min, [Math]::Min($Max, [double]$Value)), 3) } catch { return $Fallback }
 }
 
+function Normalize-Bool {
+  param($Value, [bool]$Fallback)
+  if ($null -eq $Value) { return $Fallback }
+  if ($Value -is [bool]) { return [bool]$Value }
+  $text = ([string]$Value).Trim().ToLowerInvariant()
+  if ($text -in @("true", "1", "yes", "on")) { return $true }
+  if ($text -in @("false", "0", "no", "off")) { return $false }
+  return $Fallback
+}
+
 function Normalize-Language {
   param($Value)
   $language = if ($null -eq $Value) { "auto" } else { ([string]$Value).Trim().ToLowerInvariant() }
@@ -67,6 +77,13 @@ function Normalize-DisplayMode {
   $displayMode = if ($null -eq $Value) { "ring" } else { ([string]$Value).Trim().ToLowerInvariant() }
   if ($displayMode -in @("ring", "battery", "badge")) { return $displayMode }
   return "ring"
+}
+
+function Normalize-GrowthMode {
+  param($Value)
+  $growthMode = if ($null -eq $Value) { "balanced" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($growthMode -in @("conserve", "balanced", "active")) { return $growthMode }
+  return "balanced"
 }
 
 function Normalize-VisibilityMode {
@@ -93,6 +110,7 @@ function Get-NormalizedSettings {
   $text = Get-PropertyValue $InputObject "text" $null
   $layout = Get-PropertyValue $InputObject "layout" $null
   $behavior = Get-PropertyValue $InputObject "behavior" $null
+  $gamification = Get-PropertyValue $InputObject "gamification" $null
 
   return [ordered]@{
     version = 1
@@ -128,6 +146,12 @@ function Get-NormalizedSettings {
       hoverRange = Normalize-Number (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
       fadeInMs = Normalize-Number (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
       fadeOutMs = Normalize-Number (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
+    }
+    gamification = [ordered]@{
+      enabled = Normalize-Bool (Get-PropertyValue $gamification "enabled" $null) $false
+      growthMode = Normalize-GrowthMode (Get-PropertyValue $gamification "growthMode" $null)
+      showGrowthChip = Normalize-Bool (Get-PropertyValue $gamification "showGrowthChip" $null) $true
+      showHoverReadout = Normalize-Bool (Get-PropertyValue $gamification "showHoverReadout" $null) $true
     }
   }
 }
@@ -165,7 +189,6 @@ function Write-JsonResponse {
   $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
   $Context.Response.StatusCode = $StatusCode
   $Context.Response.ContentType = "application/json; charset=utf-8"
-  $Context.Response.ContentLength64 = $bytes.Length
   $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
@@ -174,7 +197,6 @@ function Write-TextResponse {
   $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
   $Context.Response.StatusCode = $StatusCode
   $Context.Response.ContentType = $ContentType
-  $Context.Response.ContentLength64 = $bytes.Length
   $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
@@ -284,9 +306,13 @@ try {
         Write-TextResponse -Context $context -Text "Not found" -StatusCode 404
       }
     } catch {
-      Write-TextResponse -Context $context -Text $_.Exception.Message -StatusCode 500
+      try {
+        Write-TextResponse -Context $context -Text $_.Exception.Message -StatusCode 500
+      } catch {
+        try { $context.Response.Close() } catch {}
+      }
     } finally {
-      $context.Response.OutputStream.Close()
+      try { $context.Response.OutputStream.Close() } catch {}
     }
   }
 } finally {

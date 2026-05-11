@@ -1,15 +1,15 @@
-<p align="center">
+﻿<p align="center">
   <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.8-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.9-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#018"><img alt="Version 0.1.8" src="https://img.shields.io/badge/version-0.1.8-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#019"><img alt="Version 0.1.9" src="https://img.shields.io/badge/version-0.1.9-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -48,7 +48,8 @@ using PowerShell, WPF, and Win32 window positioning.
 
 ## Features
 
-- Shows circular rings or compact battery bars around the current Codex `/pet` avatar.
+- Shows circular rings, compact battery bars, or badge chips around the current Codex `/pet` avatar.
+- Adds optional usage-based pet growth with level XP, weekly reset seasons, and playful states.
 - Displays 5h and weekly usage readouts on hover.
 - Localizes readouts, tray text, and settings UI for English, Korean, Japanese, and Chinese.
 - Auto-detects and can start Codex Desktop.
