@@ -1876,11 +1876,11 @@ function Get-KeyCounterChipWidth {
   param([string]$Mode = "")
   $digits = ([string]([int]$script:KeyPressCount)).Length
   $status = Get-KeyCounterStatusText
-  $digitWidth = 34.0 + ($digits * 16.0)
-  $statusWidth = if ([string]::IsNullOrWhiteSpace($status)) { 0.0 } else { [Math]::Min(142.0, 34.0 + ([double]$status.Length * 8.8)) }
+  $digitWidth = 42.0 + ($digits * 17.0)
+  $statusWidth = if ([string]::IsNullOrWhiteSpace($status)) { 0.0 } else { [Math]::Min(148.0, 44.0 + ([double]$status.Length * 9.2)) }
   if ($Mode -eq "badge") { return [Math]::Max(72.0, [Math]::Max($digitWidth, $statusWidth)) }
-  if ($Mode -eq "battery") { return [Math]::Max(84.0, [Math]::Max($digitWidth, $statusWidth)) }
-  return [Math]::Max(84.0, [Math]::Max($digitWidth, $statusWidth))
+  if ($Mode -eq "battery") { return [Math]::Max(98.0, [Math]::Max($digitWidth, $statusWidth)) }
+  return [Math]::Max(94.0, [Math]::Max($digitWidth, $statusWidth))
 }
 
 function Get-BatteryHudBarWidth {
@@ -2539,7 +2539,7 @@ function Update-KeyCounterGeometry {
   $chipWidth = Get-KeyCounterChipWidth -Mode $mode
   $hasStatus = -not [string]::IsNullOrWhiteSpace((Get-KeyCounterStatusText))
   $chipHeight = if ($hasStatus) {
-    if ($mode -eq "badge") { 44.0 } else { 48.0 }
+    if ($mode -eq "badge") { 46.0 } else { 52.0 }
   } elseif ($mode -eq "badge") {
     32.0
   } else {
@@ -2581,8 +2581,8 @@ function Update-KeyCounterGeometry {
   $script:KeyCounterLabel.Width = $chipWidth
   $script:KeyCounterLabel.Height = $chipHeight
   [System.Windows.Controls.Canvas]::SetLeft($script:KeyCounterLabel, $x)
-  $script:KeyCounterLabel.LineHeight = if ($hasStatus) { 16.6 } else { [Math]::Max(20.0, $chipHeight - 2.0) }
-  $labelTopOffset = if ($hasStatus) { [Math]::Max(3.0, ($chipHeight - ([double]$script:KeyCounterLabel.LineHeight * 2.0)) / 2.0) } else { 0.0 }
+  $script:KeyCounterLabel.LineHeight = if ($hasStatus) { 18.0 } else { [Math]::Max(20.0, $chipHeight - 2.0) }
+  $labelTopOffset = if ($hasStatus) { [Math]::Max(4.0, ($chipHeight - ([double]$script:KeyCounterLabel.LineHeight * 2.0)) / 2.0) } else { 0.0 }
   [System.Windows.Controls.Canvas]::SetTop($script:KeyCounterLabel, $y + $labelTopOffset)
   $script:KeyCounterBounds = [pscustomobject]@{ X = $x; Y = $y; Width = $chipWidth; Height = $chipHeight }
   $script:KeyCounterBackground.RadiusX = if ($mode -eq "badge") { 9.0 } else { 8.0 }
@@ -2621,8 +2621,8 @@ function Update-InventoryGeometry {
   $iconX = $x + 3.0
   $iconY = $y
   $iconSize = 40.0
-  $badgeX = $x + 28.0
-  $badgeY = $y + 27.0
+  $badgeX = $x + 25.0
+  $badgeY = $y + 25.0
   $badgeWidth = 17.0
   $badgeHeight = 13.0
   $script:InventoryIcon.Width = $iconSize
