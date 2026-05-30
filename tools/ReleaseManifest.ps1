@@ -74,6 +74,7 @@ function Test-CodexPetReleasePathExcluded {
   if ($normalized -like "dist/*" -or $normalized -eq "dist") { return $true }
   if ($normalized -like "logs/*" -or $normalized -eq "logs") { return $true }
   if ($normalized -like "qa/*" -or $normalized -eq "qa") { return $true }
+  if ($normalized -like "skills/*" -or $normalized -eq "skills") { return $true }
   if ($normalized -like "*.log" -or $normalized -like "*.tmp" -or $normalized -like "*.bak" -or $normalized -like "*.zip") { return $true }
   if ($leaf -eq ".DS_Store" -or $leaf -eq "Thumbs.db") { return $true }
   return $false

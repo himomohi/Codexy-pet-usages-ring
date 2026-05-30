@@ -523,6 +523,7 @@ try {
   Add-Fixture -RelativePath ".gitignore"
   Add-Fixture -RelativePath "settings.json" -Content "{`"theme`":`"smoke`"}"
   Add-Fixture -RelativePath "gamification.json" -Content "{`"totalXp`":999}"
+  Add-Fixture -RelativePath "skills/smoke/SKILL.md" -Content "---`nname: smoke`ndescription: forbidden release fixture`n---"
   Add-Fixture -RelativePath "docs/assets/current-pet-usage-capture.png"
   Add-Fixture -RelativePath "docs/assets/imagegen-hero-background.png"
   Add-Fixture -RelativePath "smoke.tmp"
