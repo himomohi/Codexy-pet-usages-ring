@@ -34,6 +34,11 @@ $script:CodexPetRequiredFreshFiles = @(
   "assets/runtime/unlock-font-terminal.png",
   "assets/runtime/unlock-theme-arcane.png",
   "assets/runtime/unlock-theme-royal.png",
+  "assets/runtime/theme-forest-border.png",
+  "assets/runtime/theme-arcane-border.png",
+  "assets/runtime/theme-royal-border.png",
+  "assets/runtime/theme-cyber-border.png",
+  "assets/runtime/theme-celestial-border.png",
   "settings.defaults.json",
   "bin/powershell/Settings.ps1",
   "src/CodexyPetUsagesRing.ps1",
@@ -55,6 +60,11 @@ function Test-CodexPetReleasePathExcluded {
     "settings.json",
     "assets/runtime/inventory-items-source.png",
     "assets/runtime/cosmetic-unlocks-source.png",
+    "assets/runtime/theme-forest-border-source.png",
+    "assets/runtime/theme-arcane-border-source.png",
+    "assets/runtime/theme-royal-border-source.png",
+    "assets/runtime/theme-cyber-border-source.png",
+    "assets/runtime/theme-celestial-border-source.png",
     "docs/assets/current-pet-usage-capture.png",
     "docs/assets/imagegen-hero-background.png"
   )) { return $true }

@@ -532,7 +532,7 @@
     .inventory-summary {
       grid-column: 1 / -1;
       display: grid;
-      gap: 10px;
+      gap: 12px;
       min-width: 0;
       padding: 12px;
       background: rgba(16,20,25,.58);
@@ -561,9 +561,94 @@
       white-space: nowrap;
     }
 
-    .inventory-grid {
+    .reward-loadout {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .loadout-chip {
+      min-width: 0;
+      padding: 9px;
+      background: rgba(0,0,0,.24);
+      border: 2px solid rgba(255,247,223,.12);
+    }
+
+    .loadout-chip span {
+      display: block;
+      color: var(--paper-dim);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .loadout-chip strong {
+      display: block;
+      overflow: hidden;
+      margin-top: 3px;
+      color: var(--paper);
+      font-size: 12px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .reward-selector {
+      display: grid;
+      grid-template-columns: 180px minmax(0, 1fr);
+      gap: 8px;
+    }
+
+    .reward-category-grid {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .reward-category {
+      min-width: 0;
+      min-height: 56px;
+      padding: 10px;
+      color: var(--paper);
+      text-align: left;
+      background: rgba(0,0,0,.24);
+      border: 2px solid rgba(255,247,223,.12);
+      box-shadow: 3px 3px 0 var(--shadow);
+    }
+
+    .reward-category[aria-pressed="true"] {
+      border-color: var(--mint);
+      background: rgba(69,224,186,.13);
+    }
+
+    .reward-category strong,
+    .reward-category span {
+      display: block;
+    }
+
+    .reward-category strong {
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .reward-category span {
+      margin-top: 3px;
+      color: var(--paper-dim);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .reward-panels {
+      min-width: 0;
+    }
+
+    .reward-panel {
+      display: none;
+      min-width: 0;
+    }
+
+    .reward-panel.is-active {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
       gap: 8px;
     }
 
@@ -573,10 +658,48 @@
       gap: 8px;
       align-items: center;
       min-width: 0;
-      min-height: 42px;
+      min-height: 54px;
       padding: 8px;
       background: rgba(0,0,0,.24);
       border: 2px solid rgba(255,247,223,.12);
+    }
+
+    .inventory-item.is-unlocked {
+      border-color: rgba(69,224,186,.48);
+      background: rgba(69,224,186,.08);
+    }
+
+    .inventory-item.is-active {
+      border-color: var(--sun);
+      background: rgba(255,209,92,.1);
+    }
+
+    .inventory-item.is-locked {
+      opacity: .55;
+    }
+
+    .inventory-item[data-rarity="common"] .inventory-icon {
+      background: var(--mint);
+    }
+
+    .inventory-item[data-rarity="rare"] .inventory-icon {
+      background: var(--sky);
+    }
+
+    .inventory-item[data-rarity="epic"] .inventory-icon {
+      background: #c18cff;
+    }
+
+    .inventory-item[data-rarity="legendary"] .inventory-icon {
+      background: #ff66d6;
+    }
+
+    .inventory-item[data-rarity="mythic"] .inventory-icon {
+      color: var(--paper);
+      background: #171a2f;
+      box-shadow:
+        0 0 0 2px #7fe8ff,
+        3px 3px 0 var(--shadow);
     }
 
     .inventory-icon {
@@ -605,6 +728,40 @@
       color: var(--paper);
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .inventory-copy em {
+      display: block;
+      margin-top: 2px;
+      color: var(--paper-dim);
+      font-size: 10px;
+      font-style: normal;
+      text-transform: uppercase;
+    }
+
+    .reward-flow {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .reward-flow span {
+      position: relative;
+      min-height: 28px;
+      padding: 7px 10px;
+      color: var(--paper);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+      background: rgba(0,0,0,.22);
+      border: 2px solid rgba(255,247,223,.12);
+    }
+
+    .reward-flow span + span::before {
+      content: ">";
+      margin-right: 8px;
+      color: var(--mint);
     }
 
     .growth-rules {
@@ -1136,7 +1293,8 @@
       .settings-grid,
       .control-grid,
       .mode-panels,
-      .inventory-grid,
+      .reward-loadout,
+      .reward-selector,
       .preset-grid,
       .actions {
         grid-template-columns: 1fr;
@@ -1342,23 +1500,70 @@
                 <span class="inventory-title" id="inventoryTitle" data-i18n="inventoryTitle">보상 보관함</span>
                 <span class="inventory-total" id="inventoryTotal">0 drops</span>
               </div>
-              <div class="inventory-grid">
-                <div class="inventory-item">
-                  <span class="inventory-icon">F</span>
-                  <span class="inventory-copy"><strong data-i18n="itemFontPixel">픽셀 폰트</strong><span id="inventoryFontPixel">잠김</span></span>
+              <div class="reward-loadout" aria-label="Active reward loadout">
+                <div class="loadout-chip">
+                  <span data-i18n="loadoutActiveFont">적용 폰트</span>
+                  <strong id="activeFontName">-</strong>
                 </div>
-                <div class="inventory-item">
-                  <span class="inventory-icon">T</span>
-                  <span class="inventory-copy"><strong data-i18n="itemFontTerminal">터미널 폰트</strong><span id="inventoryFontTerminal">잠김</span></span>
+                <div class="loadout-chip">
+                  <span data-i18n="loadoutActiveTheme">적용 테마</span>
+                  <strong id="activeThemeName">-</strong>
                 </div>
-                <div class="inventory-item">
-                  <span class="inventory-icon">A</span>
-                  <span class="inventory-copy"><strong data-i18n="itemThemeArcane">아케인 테마</strong><span id="inventoryThemeArcane">잠김</span></span>
+                <div class="loadout-chip">
+                  <span data-i18n="loadoutRewardRolls">보상 시도</span>
+                  <strong id="rewardRollCount">0</strong>
                 </div>
-                <div class="inventory-item">
-                  <span class="inventory-icon">R</span>
-                  <span class="inventory-copy"><strong data-i18n="itemThemeRoyal">로열 테마</strong><span id="inventoryThemeRoyal">잠김</span></span>
+              </div>
+              <div class="reward-selector">
+                <div class="reward-category-grid" aria-label="Reward categories">
+                  <button type="button" class="reward-category" data-reward-tab="fonts" aria-pressed="true">
+                    <strong data-i18n="rewardTabFonts">폰트</strong>
+                    <span id="fontUnlockSummary">0/2</span>
+                  </button>
+                  <button type="button" class="reward-category" data-reward-tab="themes" aria-pressed="false">
+                    <strong data-i18n="rewardTabThemes">테마</strong>
+                    <span id="themeUnlockSummary">0/5</span>
+                  </button>
                 </div>
+                <div class="reward-panels">
+                  <div class="reward-panel is-active" data-reward-panel="fonts">
+                    <div class="inventory-item" data-item-key="fontPixel">
+                      <span class="inventory-icon">F</span>
+                      <span class="inventory-copy"><strong data-i18n="itemFontPixel">픽셀 폰트</strong><span id="inventoryFontPixel">잠김</span><em data-i18n="rewardTypeFont">Font</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="fontTerminal">
+                      <span class="inventory-icon">T</span>
+                      <span class="inventory-copy"><strong data-i18n="itemFontTerminal">터미널 폰트</strong><span id="inventoryFontTerminal">잠김</span><em data-i18n="rewardTypeFont">Font</em></span>
+                    </div>
+                  </div>
+                  <div class="reward-panel" data-reward-panel="themes">
+                    <div class="inventory-item" data-item-key="themeForest" data-rarity="common">
+                      <span class="inventory-icon">C</span>
+                      <span class="inventory-copy"><strong data-i18n="itemThemeForest">민트 회로 테마</strong><span id="inventoryThemeForest">잠김</span><em data-i18n="rarityCommon">Common</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="themeArcane" data-rarity="rare">
+                      <span class="inventory-icon">A</span>
+                      <span class="inventory-copy"><strong data-i18n="itemThemeArcane">아케인 테마</strong><span id="inventoryThemeArcane">잠김</span><em data-i18n="rarityRare">Rare</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="themeRoyal" data-rarity="epic">
+                      <span class="inventory-icon">R</span>
+                      <span class="inventory-copy"><strong data-i18n="itemThemeRoyal">로열 테마</strong><span id="inventoryThemeRoyal">잠김</span><em data-i18n="rarityEpic">Epic</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="themeCyber" data-rarity="legendary">
+                      <span class="inventory-icon">N</span>
+                      <span class="inventory-copy"><strong data-i18n="itemThemeCyber">네온 사이버 테마</strong><span id="inventoryThemeCyber">잠김</span><em data-i18n="rarityLegendary">Legendary</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="themeCelestial" data-rarity="mythic">
+                      <span class="inventory-icon">M</span>
+                      <span class="inventory-copy"><strong data-i18n="itemThemeCelestial">셀레스티얼 테마</strong><span id="inventoryThemeCelestial">잠김</span><em data-i18n="rarityMythic">Mythic</em></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="reward-flow">
+                <span data-i18n="rewardFlowChest">상자</span>
+                <span data-i18n="rewardFlowCategory">폰트/테마</span>
+                <span data-i18n="rewardFlowPicker">선택 팝오버</span>
               </div>
             </div>
           </div>
@@ -1597,6 +1802,8 @@
     const presetButtons = Array.from(document.querySelectorAll('[data-preset]'));
     const segmentGroups = Array.from(document.querySelectorAll('[data-segment-for]'));
     const focusPanels = Array.from(document.querySelectorAll('[data-focus-panel]'));
+    const rewardTabButtons = Array.from(document.querySelectorAll('[data-reward-tab]'));
+    const rewardPanels = Array.from(document.querySelectorAll('[data-reward-panel]'));
     const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
     let defaults = null;
@@ -1661,10 +1868,28 @@
         inventoryTitle: 'Reward Bag',
         itemFontPixel: 'Pixel Font',
         itemFontTerminal: 'Terminal Font',
+        itemThemeForest: 'Mint Circuit Theme',
         itemThemeArcane: 'Arcane Theme',
         itemThemeRoyal: 'Royal Theme',
+        itemThemeCyber: 'Neon Cyber Theme',
+        itemThemeCelestial: 'Celestial Prism Theme',
         inventoryLocked: 'Locked',
         inventoryUnlocked: 'Unlocked',
+        inventoryActive: 'Active',
+        loadoutActiveFont: 'Active Font',
+        loadoutActiveTheme: 'Active Theme',
+        loadoutRewardRolls: 'Reward Rolls',
+        rewardTabFonts: 'Fonts',
+        rewardTabThemes: 'Themes',
+        rewardTypeFont: 'Font',
+        rarityCommon: 'Common',
+        rarityRare: 'Rare',
+        rarityEpic: 'Epic',
+        rarityLegendary: 'Legendary',
+        rarityMythic: 'Mythic',
+        rewardFlowChest: 'Chest',
+        rewardFlowCategory: 'Font / Theme',
+        rewardFlowPicker: 'Picker',
         growthChip: 'Show Growth Chip',
         growthHoverReadout: 'Growth Hover Readout',
         keyCounter: 'Key Counter',
@@ -1765,10 +1990,28 @@
         inventoryTitle: '보상 보관함',
         itemFontPixel: '픽셀 폰트',
         itemFontTerminal: '터미널 폰트',
+        itemThemeForest: '민트 회로 테마',
         itemThemeArcane: '아케인 테마',
         itemThemeRoyal: '로열 테마',
+        itemThemeCyber: '네온 사이버 테마',
+        itemThemeCelestial: '셀레스티얼 테마',
         inventoryLocked: '잠김',
         inventoryUnlocked: '해금',
+        inventoryActive: '적용 중',
+        loadoutActiveFont: '적용 폰트',
+        loadoutActiveTheme: '적용 테마',
+        loadoutRewardRolls: '보상 시도',
+        rewardTabFonts: '폰트',
+        rewardTabThemes: '테마',
+        rewardTypeFont: '폰트',
+        rarityCommon: 'Common',
+        rarityRare: 'Rare',
+        rarityEpic: 'Epic',
+        rarityLegendary: 'Legendary',
+        rarityMythic: 'Mythic',
+        rewardFlowChest: '상자',
+        rewardFlowCategory: '폰트 / 테마',
+        rewardFlowPicker: '선택 팝오버',
         growthChip: '성장 칩 표시',
         growthHoverReadout: '성장 호버 표시',
         keyCounter: '키 카운터',
@@ -1869,10 +2112,28 @@
         inventoryTitle: '報酬バッグ',
         itemFontPixel: 'ピクセルフォント',
         itemFontTerminal: 'ターミナルフォント',
+        itemThemeForest: 'Mint Circuit Theme',
         itemThemeArcane: 'アーケインテーマ',
         itemThemeRoyal: 'ロイヤルテーマ',
+        itemThemeCyber: 'Neon Cyber Theme',
+        itemThemeCelestial: 'Celestial Prism Theme',
         inventoryLocked: '未解放',
         inventoryUnlocked: '解放済み',
+        inventoryActive: '適用中',
+        loadoutActiveFont: 'Active Font',
+        loadoutActiveTheme: 'Active Theme',
+        loadoutRewardRolls: 'Reward Rolls',
+        rewardTabFonts: 'Fonts',
+        rewardTabThemes: 'Themes',
+        rewardTypeFont: 'Font',
+        rarityCommon: 'Common',
+        rarityRare: 'Rare',
+        rarityEpic: 'Epic',
+        rarityLegendary: 'Legendary',
+        rarityMythic: 'Mythic',
+        rewardFlowChest: 'Chest',
+        rewardFlowCategory: 'Font / Theme',
+        rewardFlowPicker: 'Picker',
         growthChip: '成長チップを表示',
         growthHoverReadout: '成長ホバー表示',
         keyCounter: 'キー カウンター',
@@ -1973,10 +2234,28 @@
         inventoryTitle: '奖励背包',
         itemFontPixel: '像素字体',
         itemFontTerminal: '终端字体',
+        itemThemeForest: 'Mint Circuit Theme',
         itemThemeArcane: '秘法主题',
         itemThemeRoyal: '皇家主题',
+        itemThemeCyber: 'Neon Cyber Theme',
+        itemThemeCelestial: 'Celestial Prism Theme',
         inventoryLocked: '未解锁',
         inventoryUnlocked: '已解锁',
+        inventoryActive: '使用中',
+        loadoutActiveFont: 'Active Font',
+        loadoutActiveTheme: 'Active Theme',
+        loadoutRewardRolls: 'Reward Rolls',
+        rewardTabFonts: 'Fonts',
+        rewardTabThemes: 'Themes',
+        rewardTypeFont: 'Font',
+        rarityCommon: 'Common',
+        rarityRare: 'Rare',
+        rarityEpic: 'Epic',
+        rarityLegendary: 'Legendary',
+        rarityMythic: 'Mythic',
+        rewardFlowChest: 'Chest',
+        rewardFlowCategory: 'Font / Theme',
+        rewardFlowPicker: 'Picker',
         growthChip: '显示成长标签',
         growthHoverReadout: '成长悬停提示',
         keyCounter: '按键计数器',
@@ -2147,6 +2426,18 @@
       return supportedLanguages.includes(configured) ? configured : autoLanguage();
     };
     const t = (key) => (translations[activeLanguage()] || translations.en)[key] || translations.en[key] || key;
+    const rewardFonts = [
+      ['fontPixel', 'itemFontPixel'],
+      ['fontTerminal', 'itemFontTerminal']
+    ];
+    const rewardThemes = [
+      ['themeForest', 'itemThemeForest'],
+      ['themeArcane', 'itemThemeArcane'],
+      ['themeRoyal', 'itemThemeRoyal'],
+      ['themeCyber', 'itemThemeCyber'],
+      ['themeCelestial', 'itemThemeCelestial']
+    ];
+    const rewardItems = [...rewardFonts, ...rewardThemes];
     const valueFor = (path) => {
       const value = get(settings, path);
       return value ?? get(defaults, path);
@@ -2194,21 +2485,60 @@
         panel.dataset.active = active ? 'true' : 'false';
       }
     };
+    const syncRewardPanels = (tab = 'fonts') => {
+      const activeTab = tab === 'themes' ? 'themes' : 'fonts';
+      for (const button of rewardTabButtons) {
+        button.setAttribute('aria-pressed', button.dataset.rewardTab === activeTab ? 'true' : 'false');
+      }
+      for (const panel of rewardPanels) {
+        panel.classList.toggle('is-active', panel.dataset.rewardPanel === activeTab);
+      }
+    };
     const updateInventorySummary = () => {
       const inventory = gamificationState && gamificationState.inventory ? gamificationState.inventory : {};
       const totalDrops = Number(inventory.totalDrops || 0);
       const totalEl = document.getElementById('inventoryTotal');
       const unlockedText = t('inventoryUnlocked');
       const lockedText = t('inventoryLocked');
-      const status = (id, unlocked) => {
+      const activeText = t('inventoryActive');
+      const getRewardName = (key, fallback = '-') => {
+        const entry = rewardItems.find(([itemKey]) => itemKey === key);
+        return entry ? t(entry[1]) : fallback;
+      };
+      const status = (id, key, activeKey) => {
         const el = document.getElementById(id);
-        if (el) el.textContent = unlocked ? unlockedText : lockedText;
+        const item = document.querySelector(`[data-item-key="${key}"]`);
+        const unlocked = Boolean(inventory[key]);
+        const active = unlocked && activeKey === key;
+        if (el) el.textContent = active ? activeText : (unlocked ? unlockedText : lockedText);
+        if (item) {
+          item.classList.toggle('is-unlocked', unlocked);
+          item.classList.toggle('is-active', active);
+          item.classList.toggle('is-locked', !unlocked);
+        }
       };
       if (totalEl) totalEl.textContent = `${totalDrops} unlocks`;
-      status('inventoryFontPixel', Boolean(inventory.fontPixel));
-      status('inventoryFontTerminal', Boolean(inventory.fontTerminal));
-      status('inventoryThemeArcane', Boolean(inventory.themeArcane));
-      status('inventoryThemeRoyal', Boolean(inventory.themeRoyal));
+      const activeFont = String(inventory.activeFont || '');
+      const activeTheme = String(inventory.activeTheme || '');
+      const activeFontName = document.getElementById('activeFontName');
+      const activeThemeName = document.getElementById('activeThemeName');
+      const rewardRollCount = document.getElementById('rewardRollCount');
+      const fontUnlockSummary = document.getElementById('fontUnlockSummary');
+      const themeUnlockSummary = document.getElementById('themeUnlockSummary');
+      if (activeFontName) activeFontName.textContent = getRewardName(activeFont);
+      if (activeThemeName) activeThemeName.textContent = getRewardName(activeTheme);
+      if (rewardRollCount) rewardRollCount.textContent = `${Number(inventory.rewardRolls || 0)}`;
+      const unlockedFonts = rewardFonts.filter(([key]) => Boolean(inventory[key])).length;
+      const unlockedThemes = rewardThemes.filter(([key]) => Boolean(inventory[key])).length;
+      if (fontUnlockSummary) fontUnlockSummary.textContent = `${unlockedFonts}/${rewardFonts.length}`;
+      if (themeUnlockSummary) themeUnlockSummary.textContent = `${unlockedThemes}/${rewardThemes.length}`;
+      status('inventoryFontPixel', 'fontPixel', activeFont);
+      status('inventoryFontTerminal', 'fontTerminal', activeFont);
+      status('inventoryThemeForest', 'themeForest', activeTheme);
+      status('inventoryThemeArcane', 'themeArcane', activeTheme);
+      status('inventoryThemeRoyal', 'themeRoyal', activeTheme);
+      status('inventoryThemeCyber', 'themeCyber', activeTheme);
+      status('inventoryThemeCelestial', 'themeCelestial', activeTheme);
     };
     const applyLanguage = () => {
       const lang = activeLanguage();
@@ -2248,6 +2578,7 @@
       }
       syncSegments();
       syncFocusPanels();
+      syncRewardPanels();
       updateInventorySummary();
       updatePreview();
     }
@@ -2490,6 +2821,9 @@
           collect();
         });
       }
+    }
+    for (const button of rewardTabButtons) {
+      button.addEventListener('click', () => syncRewardPanels(button.dataset.rewardTab));
     }
     for (const button of saveButtons) {
       button.addEventListener('click', () => save().catch((error) => showStatus(error.message)));

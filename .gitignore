@@ -1,0 +1,17 @@
+dist/
+logs/
+promo-video/
+수동커밋/
+배포용/
+settings.json
+AGENTS.md
+qa/
+docs/assets/current-pet-usage-capture.png
+docs/assets/imagegen-hero-background.png
+assets/runtime/*-source.png
+*.log
+*.tmp
+*.bak
+*.zip
+.DS_Store
+Thumbs.db

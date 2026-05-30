@@ -99,8 +99,11 @@ function New-PetGrowthState {
       patch = 0
       fontPixel = $false
       fontTerminal = $false
+      themeForest = $false
       themeArcane = $false
       themeRoyal = $false
+      themeCyber = $false
+      themeCelestial = $false
       activeFont = ""
       activeTheme = ""
       rewardRolls = 0
@@ -162,16 +165,21 @@ function Normalize-PetGrowthState {
   $inventory = & $get $State "inventory" $null
   $fontPixel = [bool](& $get $inventory "fontPixel" $false)
   $fontTerminal = [bool](& $get $inventory "fontTerminal" $false)
+  $themeForest = [bool](& $get $inventory "themeForest" $false)
   $themeArcane = [bool](& $get $inventory "themeArcane" $false)
   $themeRoyal = [bool](& $get $inventory "themeRoyal" $false)
-  $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeArcane, $themeRoyal).Where({ $_ }).Count
+  $themeCyber = [bool](& $get $inventory "themeCyber" $false)
+  $themeCelestial = [bool](& $get $inventory "themeCelestial" $false)
+  $themeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
+  $unlockKeys = @("fontPixel", "fontTerminal") + $themeKeys
+  $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeForest, $themeArcane, $themeRoyal, $themeCyber, $themeCelestial).Where({ $_ }).Count
   $activeFont = [string](& $get $inventory "activeFont" "")
   if ($activeFont -notin @("fontPixel", "fontTerminal") -or -not [bool](& $get $inventory $activeFont $false)) { $activeFont = "" }
   $activeTheme = [string](& $get $inventory "activeTheme" "")
-  if ($activeTheme -notin @("themeArcane", "themeRoyal") -or -not [bool](& $get $inventory $activeTheme $false)) { $activeTheme = "" }
+  if ($activeTheme -notin $themeKeys -or -not [bool](& $get $inventory $activeTheme $false)) { $activeTheme = "" }
   $lastDropItem = [string](& $get $inventory "lastDropItem" "")
   $lastDropAt = & $get $inventory "lastDropAt" $null
-  if ($lastDropItem -notin @("fontPixel", "fontTerminal", "themeArcane", "themeRoyal")) {
+  if ($lastDropItem -notin $unlockKeys) {
     $lastDropItem = ""
     $lastDropAt = $null
   }
@@ -199,8 +207,11 @@ function Normalize-PetGrowthState {
       patch = [Math]::Max(0, [int][double](& $get $inventory "patch" 0))
       fontPixel = $fontPixel
       fontTerminal = $fontTerminal
+      themeForest = $themeForest
       themeArcane = $themeArcane
       themeRoyal = $themeRoyal
+      themeCyber = $themeCyber
+      themeCelestial = $themeCelestial
       activeFont = $activeFont
       activeTheme = $activeTheme
       rewardRolls = $rewardRolls

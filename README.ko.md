@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.11-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.12-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#0111"><img alt="Version 0.1.11" src="https://img.shields.io/badge/version-0.1.11-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#0112"><img alt="Version 0.1.12" src="https://img.shields.io/badge/version-0.1.12-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -47,6 +47,7 @@ Codexy pet usages ring은 Codex Desktop `/pet` 아바타 주변에 반투명
 
 - 현재 Codex `/pet` 아바타 주변에 원형 링, 작은 배터리 바, 배지 칩을 표시합니다.
 - 오늘 XP가 5h 사용량 진행률로 차오르는 선택형 펫 성장과 주간 리셋 시즌, 재미있는 상태명을 제공합니다.
+- 실시간 키보드 카운트, 낮은 확률의 보상 드롭, 클릭 가능한 보상 상자, 폰트/테마 꾸미기 해금을 제공합니다.
 - 5h 한도와 주간 한도를 hover readout으로 보여줍니다.
 - 영어, 한국어, 일본어, 중국어로 readout, tray text, 설정 UI를 현지화합니다.
 - Codex Desktop을 자동 감지하고 필요하면 실행합니다.
@@ -147,6 +148,10 @@ PowerShell:
 크기를 바꿀 수 있습니다. 펫 성장은 언제든지 끌 수 있고, 성장 방식은 오늘 XP의
 5h 사용량 목표를 정합니다: 가벼운 사용형 20%, 균형 사용형 40%, 집중 사용형 60%.
 주간 사용량은 일반 XP 조건이 아니라 리셋과 고갈 방지 판단에만 사용됩니다.
+
+게이미피케이션 패널에서는 키보드 카운터와 보상 표시 방식을 조정할 수 있습니다.
+보상 드롭은 의도적으로 낮은 확률이며, 획득한 꾸미기만 상자 인벤토리에 나타나
+폰트 스타일 또는 테마형 키 카운터 테두리로 적용할 수 있습니다.
 
 실행 중인 helper는 설정 파일 변경을 자동으로 다시 읽습니다.
 

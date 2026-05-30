@@ -203,8 +203,11 @@ function Read-GamificationStateSummary {
       patch = 0
       fontPixel = $false
       fontTerminal = $false
+      themeForest = $false
       themeArcane = $false
       themeRoyal = $false
+      themeCyber = $false
+      themeCelestial = $false
       activeFont = ""
       activeTheme = ""
       rewardRolls = 0
@@ -221,16 +224,21 @@ function Read-GamificationStateSummary {
     if ($null -eq $inventory) { return $empty }
     $fontPixel = [bool](Get-PropertyValue $inventory "fontPixel" $false)
     $fontTerminal = [bool](Get-PropertyValue $inventory "fontTerminal" $false)
+    $themeForest = [bool](Get-PropertyValue $inventory "themeForest" $false)
     $themeArcane = [bool](Get-PropertyValue $inventory "themeArcane" $false)
     $themeRoyal = [bool](Get-PropertyValue $inventory "themeRoyal" $false)
-    $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeArcane, $themeRoyal).Where({ $_ }).Count
+    $themeCyber = [bool](Get-PropertyValue $inventory "themeCyber" $false)
+    $themeCelestial = [bool](Get-PropertyValue $inventory "themeCelestial" $false)
+    $themeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
+    $unlockKeys = @("fontPixel", "fontTerminal") + $themeKeys
+    $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeForest, $themeArcane, $themeRoyal, $themeCyber, $themeCelestial).Where({ $_ }).Count
     $activeFont = [string](Get-PropertyValue $inventory "activeFont" "")
     if ($activeFont -notin @("fontPixel", "fontTerminal") -or -not [bool](Get-PropertyValue $inventory $activeFont $false)) { $activeFont = "" }
     $activeTheme = [string](Get-PropertyValue $inventory "activeTheme" "")
-    if ($activeTheme -notin @("themeArcane", "themeRoyal") -or -not [bool](Get-PropertyValue $inventory $activeTheme $false)) { $activeTheme = "" }
+    if ($activeTheme -notin $themeKeys -or -not [bool](Get-PropertyValue $inventory $activeTheme $false)) { $activeTheme = "" }
     $lastDropItem = [string](Get-PropertyValue $inventory "lastDropItem" "")
     $lastDropAt = Get-PropertyValue $inventory "lastDropAt" $null
-    if ($lastDropItem -notin @("fontPixel", "fontTerminal", "themeArcane", "themeRoyal")) {
+    if ($lastDropItem -notin $unlockKeys) {
       $lastDropItem = ""
       $lastDropAt = $null
     }
@@ -244,8 +252,11 @@ function Read-GamificationStateSummary {
         patch = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "patch" 0))
         fontPixel = $fontPixel
         fontTerminal = $fontTerminal
+        themeForest = $themeForest
         themeArcane = $themeArcane
         themeRoyal = $themeRoyal
+        themeCyber = $themeCyber
+        themeCelestial = $themeCelestial
         activeFont = $activeFont
         activeTheme = $activeTheme
         rewardRolls = $rewardRolls

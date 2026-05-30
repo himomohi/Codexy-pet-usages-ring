@@ -413,11 +413,23 @@ $SettingsPath = [System.IO.Path]::GetFullPath($SettingsPath)
 $SettingsDefaultsPath = Join-Path $ProjectRoot "settings.defaults.json"
 $PetGrowthScriptPath = Join-Path $ProjectRoot "src\PetGrowth.ps1"
 $RewardChestIconPath = Join-Path $ProjectRoot "assets\runtime\reward-chest.png"
+$CosmeticThemeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
+$CosmeticUnlockKeys = @("fontPixel", "fontTerminal") + $CosmeticThemeKeys
+$ThemeBorderPaths = @{
+  themeForest = Join-Path $ProjectRoot "assets\runtime\theme-forest-border.png"
+  themeArcane = Join-Path $ProjectRoot "assets\runtime\theme-arcane-border.png"
+  themeRoyal = Join-Path $ProjectRoot "assets\runtime\theme-royal-border.png"
+  themeCyber = Join-Path $ProjectRoot "assets\runtime\theme-cyber-border.png"
+  themeCelestial = Join-Path $ProjectRoot "assets\runtime\theme-celestial-border.png"
+}
 $InventoryIconPaths = @{
   fontPixel = Join-Path $ProjectRoot "assets\runtime\unlock-font-pixel.png"
   fontTerminal = Join-Path $ProjectRoot "assets\runtime\unlock-font-terminal.png"
+  themeForest = Join-Path $ProjectRoot "assets\runtime\theme-forest-border.png"
   themeArcane = Join-Path $ProjectRoot "assets\runtime\unlock-theme-arcane.png"
   themeRoyal = Join-Path $ProjectRoot "assets\runtime\unlock-theme-royal.png"
+  themeCyber = Join-Path $ProjectRoot "assets\runtime\theme-cyber-border.png"
+  themeCelestial = Join-Path $ProjectRoot "assets\runtime\theme-celestial-border.png"
 }
 if (-not (Test-Path -LiteralPath $PetGrowthScriptPath)) {
   throw "Missing pet growth helper: $PetGrowthScriptPath"
@@ -494,6 +506,7 @@ $script:InventoryMouseWasDown = $false
 $script:InventoryItemLabelBlocks = @{}
 $script:InventoryItemCountBlocks = @{}
 $script:InventoryItemBorders = @{}
+$script:InventoryPickerKind = ""
 $script:HudCenterX = $null
 $script:HudRingSize = $null
 $script:Style = [ordered]@{
@@ -564,6 +577,19 @@ function New-RuntimeImageSource {
 
 function New-RewardChestImageSource {
   return New-RuntimeImageSource -Path $RewardChestIconPath -Name "Reward chest" -DecodePixelWidth 64
+}
+
+function Get-ActiveThemeBorderPath {
+  $inventory = Get-InventoryState
+  $theme = [string]$inventory.activeTheme
+  if ([string]::IsNullOrWhiteSpace($theme) -or -not $ThemeBorderPaths.ContainsKey($theme)) { return "" }
+  return [string]$ThemeBorderPaths[$theme]
+}
+
+function New-ActiveThemeBorderImageSource {
+  $path = Get-ActiveThemeBorderPath
+  if ([string]::IsNullOrWhiteSpace($path)) { return $null }
+  return New-RuntimeImageSource -Path $path -Name "Theme counter border" -DecodePixelWidth 192
 }
 
 function Get-PropertyValue {
@@ -1683,6 +1709,12 @@ function Set-InventoryHoverHighlight {
 function Hide-InventoryReadout {
   param([switch]$ResetPinned)
   if ($ResetPinned) { $script:InventoryReadoutPinned = $false }
+  if ($null -ne $script:InventoryPickerBorder) {
+    $script:InventoryPickerBorder.Visibility = [System.Windows.Visibility]::Collapsed
+  }
+  if ($null -ne $script:InventoryPickerWindow -and $script:InventoryPickerWindow.IsVisible) {
+    $script:InventoryPickerWindow.Hide()
+  }
   if ($null -ne $script:InventoryReadoutBorder) {
     $script:InventoryReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
   }
@@ -1741,6 +1773,7 @@ function Set-RingShapesVisibility {
     $script:GrowthChipAccent,
     $script:GrowthChipLabel,
     $script:KeyCounterBackground,
+    $script:KeyCounterThemeBorder,
     $script:KeyCounterLabel,
     $script:InventoryBackground,
     $script:InventoryIcon,
@@ -1818,6 +1851,16 @@ function Update-ModeShapeVisibility {
   foreach ($shape in @($script:KeyCounterBackground, $script:KeyCounterLabel)) {
     if ($null -ne $shape) { $shape.Visibility = $keyCounterVisibility }
   }
+  if ($null -ne $script:KeyCounterThemeBorder) {
+    $script:KeyCounterThemeBorder.Visibility = if (
+      $keyCounterVisibility -eq [System.Windows.Visibility]::Visible -and
+      -not [string]::IsNullOrWhiteSpace((Get-ActiveThemeBorderPath))
+    ) {
+      [System.Windows.Visibility]::Visible
+    } else {
+      [System.Windows.Visibility]::Collapsed
+    }
+  }
   if ($null -ne $script:KeyCounterAccent) { $script:KeyCounterAccent.Visibility = [System.Windows.Visibility]::Collapsed }
   $inventoryVisibility = if (
     $script:RingVisualsVisible -and
@@ -1883,6 +1926,17 @@ function Get-KeyCounterChipWidth {
   return [Math]::Max(94.0, [Math]::Max($digitWidth, $statusWidth))
 }
 
+function Get-KeyCounterChipHeight {
+  param([string]$Mode = "")
+  $hasStatus = -not [string]::IsNullOrWhiteSpace((Get-KeyCounterStatusText))
+  if ($hasStatus) {
+    if ($Mode -eq "badge") { return 46.0 }
+    return 52.0
+  }
+  if ($Mode -eq "badge") { return 32.0 }
+  return 38.0
+}
+
 function Get-BatteryHudBarWidth {
   $baseWidth = if ($null -ne $script:HudCenterX) { [double]$script:HudCenterX * 2.0 } elseif ($null -ne $script:Window) { [double]$script:Window.Width } else { 164.0 }
   return [Math]::Min(132.0, [Math]::Max(96.0, $baseWidth - 22.0))
@@ -1932,7 +1986,7 @@ function Get-InventoryUnlockCount {
   param($Inventory)
   if ($null -eq $Inventory) { return 0 }
   $count = 0
-  foreach ($key in @("fontPixel", "fontTerminal", "themeArcane", "themeRoyal")) {
+  foreach ($key in $CosmeticUnlockKeys) {
     try {
       if ([bool]$Inventory.$key) { $count++ }
     } catch {}
@@ -1949,17 +2003,71 @@ function Get-CosmeticFontFamily {
   }
 }
 
+function Get-ActiveCosmeticKey {
+  $inventory = Get-InventoryState
+  if (-not [string]::IsNullOrWhiteSpace([string]$inventory.activeTheme)) { return [string]$inventory.activeTheme }
+  if (-not [string]::IsNullOrWhiteSpace([string]$inventory.activeFont)) { return [string]$inventory.activeFont }
+  return ""
+}
+
 function Get-CosmeticAccentRgb {
   $inventory = Get-InventoryState
   switch ([string]$inventory.activeTheme) {
+    "themeForest" { return @(96, 232, 190) }
     "themeArcane" { return @(92, 184, 255) }
     "themeRoyal" { return @(255, 202, 64) }
+    "themeCyber" { return @(51, 235, 255) }
+    "themeCelestial" { return @(184, 142, 255) }
+  }
+  switch ([string]$inventory.activeFont) {
+    "fontPixel" { return @(255, 210, 84) }
+    "fontTerminal" { return @(94, 255, 166) }
     default { return [int[]]$script:Style.PrimaryRgb }
+  }
+}
+
+function Get-CosmeticTextRgb {
+  param([switch]$Secondary)
+  switch (Get-ActiveCosmeticKey) {
+    "fontPixel" { if ($Secondary) { return @(116, 226, 255) }; return @(255, 235, 154) }
+    "fontTerminal" { if ($Secondary) { return @(184, 255, 211) }; return @(102, 255, 156) }
+    "themeForest" { if ($Secondary) { return @(198, 255, 236) }; return @(118, 255, 207) }
+    "themeArcane" { if ($Secondary) { return @(205, 235, 255) }; return @(112, 202, 255) }
+    "themeRoyal" { if ($Secondary) { return @(255, 238, 178) }; return @(255, 210, 84) }
+    "themeCyber" { if ($Secondary) { return @(255, 154, 238) }; return @(91, 245, 255) }
+    "themeCelestial" { if ($Secondary) { return @(210, 244, 255) }; return @(213, 181, 255) }
+    default { return [int[]]$script:Style.ReadoutTextRgb }
+  }
+}
+
+function New-CosmeticGlowEffect {
+  param([double]$Radius = 9.0, [double]$Opacity = 0.46)
+  $key = Get-ActiveCosmeticKey
+  if ([string]::IsNullOrWhiteSpace($key)) { return $null }
+  $effect = [System.Windows.Media.Effects.DropShadowEffect]::new()
+  $effect.BlurRadius = $Radius
+  $effect.ShadowDepth = 0
+  $effect.Opacity = $Opacity
+  $rgb = Get-CosmeticAccentRgb
+  $effect.Color = [System.Windows.Media.Color]::FromRgb([byte]$rgb[0], [byte]$rgb[1], [byte]$rgb[2])
+  return $effect
+}
+
+function Set-KeyCounterBaseBorderVisibility {
+  if ($null -eq $script:KeyCounterBackground) { return }
+  if (-not [string]::IsNullOrWhiteSpace((Get-ActiveThemeBorderPath))) {
+    $script:KeyCounterBackground.Stroke = New-Brush 0 0 0 0
+    $script:KeyCounterBackground.StrokeThickness = 0.0
   }
 }
 
 function Apply-CosmeticUnlockVisuals {
   $font = Get-CosmeticFontFamily
+  $hasCosmetic = -not [string]::IsNullOrWhiteSpace((Get-ActiveCosmeticKey))
+  $primaryTextRgb = Get-CosmeticTextRgb
+  $secondaryTextRgb = Get-CosmeticTextRgb -Secondary
+  $primaryTextBrush = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$primaryTextRgb)
+  $secondaryTextBrush = New-StyleBrush ([byte][Math]::Max(150, [Math]::Min(255, [int]$script:Style.ReadoutTextOpacity - 8))) ([int[]]$secondaryTextRgb)
   foreach ($text in @(
     $script:PrimaryBatteryLabel,
     $script:SecondaryBatteryLabel,
@@ -1978,6 +2086,12 @@ function Apply-CosmeticUnlockVisuals {
   )) {
     if ($null -ne $text) { $text.FontFamily = $font }
   }
+  foreach ($text in @($script:KeyCounterLabel, $script:InventoryLabel, $script:InventoryReadoutTitle)) {
+    if ($null -ne $text) { $text.Foreground = $primaryTextBrush }
+  }
+  foreach ($text in @($script:InventoryReadoutHint, $script:InventoryReadoutStats)) {
+    if ($null -ne $text) { $text.Foreground = $secondaryTextBrush }
+  }
   foreach ($label in $script:InventoryItemLabelBlocks.Values) { $label.FontFamily = $font }
   foreach ($count in $script:InventoryItemCountBlocks.Values) { $count.FontFamily = $font }
 
@@ -1989,8 +2103,36 @@ function Apply-CosmeticUnlockVisuals {
     $script:InventoryHoverBorder.Stroke = New-StyleBrush 236 ([int[]]$accent)
     $script:InventoryHoverBorder.Fill = New-StyleBrush 24 ([int[]]$accent)
   }
+  if ($null -ne $script:KeyCounterBackground) {
+    $script:KeyCounterBackground.Fill = New-StyleBrush ([byte][Math]::Min(230, [int]$script:Style.ReadoutOpacity + $(if ($hasCosmetic) { 16 } else { 0 }))) ([int[]]$script:Style.OuterReadoutBgRgb)
+    if ($hasCosmetic) {
+      $script:KeyCounterBackground.Stroke = New-StyleBrush 230 ([int[]]$accent)
+      $script:KeyCounterBackground.StrokeThickness = 1.8
+    }
+    Set-KeyCounterBaseBorderVisibility
+  }
+  if ($null -ne $script:KeyCounterThemeBorder) {
+    $hasThemeBorder = -not [string]::IsNullOrWhiteSpace((Get-ActiveThemeBorderPath))
+    if ($hasThemeBorder) {
+      $script:KeyCounterThemeBorder.Source = New-ActiveThemeBorderImageSource
+    }
+    $script:KeyCounterThemeBorder.Opacity = if ($hasThemeBorder) { 0.94 } else { 0.0 }
+    $script:KeyCounterThemeBorder.Visibility = if ($hasThemeBorder -and $script:RingVisualsVisible -and (Test-KeyCounterHudVisible)) {
+      [System.Windows.Visibility]::Visible
+    } else {
+      [System.Windows.Visibility]::Collapsed
+    }
+  }
+  if ($null -ne $script:KeyCounterAccent) {
+    $script:KeyCounterAccent.Fill = New-StyleBrush ([byte]$script:Style.PrimaryOpacity) ([int[]]$accent)
+  }
   foreach ($count in $script:InventoryItemCountBlocks.Values) {
     $count.Foreground = New-StyleBrush ([byte]$script:Style.PrimaryOpacity) ([int[]]$accent)
+  }
+  foreach ($target in @($script:KeyCounterLabel, $script:InventoryLabel, $script:InventoryReadoutTitle)) {
+    if ($null -ne $target) {
+      $target.Effect = if ($hasCosmetic) { New-CosmeticGlowEffect -Radius 8.0 -Opacity 0.42 } else { $null }
+    }
   }
 }
 
@@ -2018,10 +2160,19 @@ function Get-InventoryUiText {
       "None" { return (Expand-UnicodeText "\uC5C6\uC74C") }
       "Locked" { return (Expand-UnicodeText "\uC7A0\uAE40") }
       "Unlocked" { return (Expand-UnicodeText "\uD574\uAE08") }
+      "Active" { return (Expand-UnicodeText "\uC801\uC6A9 \uC911") }
+      "Select" { return (Expand-UnicodeText "\uC120\uD0DD") }
+      "FontCategory" { return (Expand-UnicodeText "\uD3F0\uD2B8 \uC120\uD0DD") }
+      "ThemeCategory" { return (Expand-UnicodeText "\uD14C\uB9C8 \uC120\uD0DD") }
+      "PickerHintFont" { return (Expand-UnicodeText "\uD574\uAE08\uB41C \uD3F0\uD2B8\uB97C \uC120\uD0DD\uD558\uC138\uC694") }
+      "PickerHintTheme" { return (Expand-UnicodeText "\uD574\uAE08\uB41C \uD14C\uB9C8\uB97C \uC120\uD0DD\uD558\uC138\uC694") }
       "fontPixel" { return (Expand-UnicodeText "\uD53D\uC140 \uD3F0\uD2B8") }
       "fontTerminal" { return (Expand-UnicodeText "\uD130\uBBF8\uB110 \uD3F0\uD2B8") }
+      "themeForest" { return (Expand-UnicodeText "\uBBFC\uD2B8 \uD68C\uB85C \uD14C\uB9C8") }
       "themeArcane" { return (Expand-UnicodeText "\uC544\uCF00\uC778 \uD14C\uB9C8") }
       "themeRoyal" { return (Expand-UnicodeText "\uB85C\uC5F4 \uD14C\uB9C8") }
+      "themeCyber" { return (Expand-UnicodeText "\uB124\uC628 \uC0AC\uC774\uBC84 \uD14C\uB9C8") }
+      "themeCelestial" { return (Expand-UnicodeText "\uC140\uB808\uC2A4\uD2F0\uC5BC \uD14C\uB9C8") }
     }
   }
   if ($language -eq "ja") {
@@ -2034,10 +2185,19 @@ function Get-InventoryUiText {
       "None" { return (Expand-UnicodeText "\u306A\u3057") }
       "Locked" { return (Expand-UnicodeText "\u672A\u89E3\u653E") }
       "Unlocked" { return (Expand-UnicodeText "\u89E3\u653E\u6E08\u307F") }
+      "Active" { return (Expand-UnicodeText "\u9069\u7528\u4E2D") }
+      "Select" { return (Expand-UnicodeText "\u9078\u629E") }
+      "FontCategory" { return "Fonts" }
+      "ThemeCategory" { return "Themes" }
+      "PickerHintFont" { return "Choose an unlocked font" }
+      "PickerHintTheme" { return "Choose an unlocked theme" }
       "fontPixel" { return (Expand-UnicodeText "\u30D4\u30AF\u30BB\u30EB\u30D5\u30A9\u30F3\u30C8") }
       "fontTerminal" { return (Expand-UnicodeText "\u30BF\u30FC\u30DF\u30CA\u30EB\u30D5\u30A9\u30F3\u30C8") }
+      "themeForest" { return "Mint Circuit Theme" }
       "themeArcane" { return (Expand-UnicodeText "\u30A2\u30FC\u30B1\u30A4\u30F3\u30C6\u30FC\u30DE") }
       "themeRoyal" { return (Expand-UnicodeText "\u30ED\u30A4\u30E4\u30EB\u30C6\u30FC\u30DE") }
+      "themeCyber" { return "Neon Cyber Theme" }
+      "themeCelestial" { return "Celestial Prism Theme" }
     }
   }
   if ($language -eq "zh") {
@@ -2050,10 +2210,19 @@ function Get-InventoryUiText {
       "None" { return (Expand-UnicodeText "\u65E0") }
       "Locked" { return (Expand-UnicodeText "\u672A\u89E3\u9501") }
       "Unlocked" { return (Expand-UnicodeText "\u5DF2\u89E3\u9501") }
+      "Active" { return (Expand-UnicodeText "\u4F7F\u7528\u4E2D") }
+      "Select" { return (Expand-UnicodeText "\u9009\u62E9") }
+      "FontCategory" { return "Fonts" }
+      "ThemeCategory" { return "Themes" }
+      "PickerHintFont" { return "Choose an unlocked font" }
+      "PickerHintTheme" { return "Choose an unlocked theme" }
       "fontPixel" { return (Expand-UnicodeText "\u50CF\u7D20\u5B57\u4F53") }
       "fontTerminal" { return (Expand-UnicodeText "\u7EC8\u7AEF\u5B57\u4F53") }
+      "themeForest" { return "Mint Circuit Theme" }
       "themeArcane" { return (Expand-UnicodeText "\u79D8\u6CD5\u4E3B\u9898") }
       "themeRoyal" { return (Expand-UnicodeText "\u7687\u5BB6\u4E3B\u9898") }
+      "themeCyber" { return "Neon Cyber Theme" }
+      "themeCelestial" { return "Celestial Prism Theme" }
     }
   }
   switch ($Key) {
@@ -2065,12 +2234,50 @@ function Get-InventoryUiText {
     "None" { return "None" }
     "Locked" { return "Locked" }
     "Unlocked" { return "Unlocked" }
+    "Active" { return "Active" }
+    "Select" { return "Select" }
+    "FontCategory" { return "Fonts" }
+    "ThemeCategory" { return "Themes" }
+    "PickerHintFont" { return "Choose an unlocked font" }
+    "PickerHintTheme" { return "Choose an unlocked theme" }
     "fontPixel" { return "Pixel Font" }
     "fontTerminal" { return "Terminal Font" }
+    "themeForest" { return "Mint Circuit Theme" }
     "themeArcane" { return "Arcane Theme" }
     "themeRoyal" { return "Royal Theme" }
+    "themeCyber" { return "Neon Cyber Theme" }
+    "themeCelestial" { return "Celestial Prism Theme" }
   }
   return $Key
+}
+
+function Test-InventoryUnlockActive {
+  param($Inventory, [string]$ItemKey)
+  if ($ItemKey -like "font*") { return ([string]$Inventory.activeFont -eq $ItemKey) }
+  if ($ItemKey -like "theme*") { return ([string]$Inventory.activeTheme -eq $ItemKey) }
+  return $false
+}
+
+function Set-ActiveInventoryUnlock {
+  param([string]$ItemKey)
+  if ([string]::IsNullOrWhiteSpace($ItemKey)) { return }
+  if ($ItemKey -notin $CosmeticUnlockKeys) { return }
+  $inventory = Get-InventoryState
+  if (-not [bool]$inventory.$ItemKey) { return }
+  if ($ItemKey -like "font*") {
+    if ([string]$inventory.activeFont -eq $ItemKey) { return }
+    $inventory.activeFont = $ItemKey
+  } elseif ($ItemKey -like "theme*") {
+    if ([string]$inventory.activeTheme -eq $ItemKey) { return }
+    $inventory.activeTheme = $ItemKey
+  } else {
+    return
+  }
+  Save-PetGrowthState -Force
+  Apply-CosmeticUnlockVisuals
+  Update-InventoryReadoutContent
+  Update-KeyCounterGeometry
+  Update-PetFrame
 }
 
 function Get-InventoryReadoutText {
@@ -2091,18 +2298,39 @@ function Update-InventoryReadoutContent {
   $unlocks = @{
     fontPixel = [bool]$inventory.fontPixel
     fontTerminal = [bool]$inventory.fontTerminal
-    themeArcane = [bool]$inventory.themeArcane
-    themeRoyal = [bool]$inventory.themeRoyal
   }
-  foreach ($key in @("fontPixel", "fontTerminal", "themeArcane", "themeRoyal")) {
+  foreach ($key in $CosmeticThemeKeys) {
+    $unlocks[$key] = [bool]$inventory.$key
+  }
+  foreach ($key in $CosmeticUnlockKeys) {
+    $unlocked = [bool]$unlocks[$key]
+    $active = $unlocked -and (Test-InventoryUnlockActive -Inventory $inventory -ItemKey $key)
     if ($script:InventoryItemLabelBlocks.ContainsKey($key)) {
       $script:InventoryItemLabelBlocks[$key].Text = Get-InventoryUiText -Key $key
     }
     if ($script:InventoryItemCountBlocks.ContainsKey($key)) {
-      $script:InventoryItemCountBlocks[$key].Text = if ($unlocks[$key]) { Get-InventoryUiText -Key "Unlocked" } else { Get-InventoryUiText -Key "Locked" }
+      $script:InventoryItemCountBlocks[$key].Text = if ($active) {
+        Get-InventoryUiText -Key "Active"
+      } elseif ($unlocked) {
+        Get-InventoryUiText -Key "Select"
+      } else {
+        Get-InventoryUiText -Key "Locked"
+      }
     }
     if ($script:InventoryItemBorders.ContainsKey($key)) {
-      $script:InventoryItemBorders[$key].Opacity = if ($unlocks[$key]) { 1.0 } else { 0.45 }
+      $border = $script:InventoryItemBorders[$key]
+      $border.Opacity = if ($unlocked) { 1.0 } else { 0.42 }
+      $border.Cursor = if ($unlocked) { [System.Windows.Input.Cursors]::Hand } else { [System.Windows.Input.Cursors]::Arrow }
+      if ($active) {
+        $accent = Get-CosmeticAccentRgb
+        $border.BorderBrush = New-StyleBrush 246 ([int[]]$accent)
+        $border.BorderThickness = [System.Windows.Thickness]::new(2)
+        $border.Background = New-StyleBrush 42 ([int[]]$accent)
+      } else {
+        $border.BorderBrush = New-Brush 92 255 255 255
+        $border.BorderThickness = [System.Windows.Thickness]::new(1)
+        $border.Background = New-Brush 86 10 17 24
+      }
     }
   }
 
@@ -2134,13 +2362,35 @@ function Update-InventoryReadoutContent {
 
 function Get-RandomDropItem {
   $inventory = Get-InventoryState
-  $candidates = @()
-  if (-not [bool]$inventory.fontPixel) { $candidates += "fontPixel" }
-  if (-not [bool]$inventory.fontTerminal) { $candidates += "fontTerminal" }
-  if (-not [bool]$inventory.themeArcane) { $candidates += "themeArcane" }
-  if (-not [bool]$inventory.themeRoyal) { $candidates += "themeRoyal" }
-  if ($candidates.Count -le 0) { return "" }
-  return $candidates[(Get-Random -Minimum 0 -Maximum $candidates.Count)]
+  $weightedCandidates = @()
+  $themeWeights = [ordered]@{
+    themeForest = 55
+    themeArcane = 25
+    themeRoyal = 13
+    themeCyber = 5
+    themeCelestial = 2
+  }
+  foreach ($key in $themeWeights.Keys) {
+    if (-not [bool]$inventory.$key) {
+      $weightedCandidates += [pscustomobject]@{ Key = $key; Weight = [int]$themeWeights[$key] }
+    }
+  }
+  foreach ($key in @("fontPixel", "fontTerminal")) {
+    if (-not [bool]$inventory.$key) {
+      $weightedCandidates += [pscustomobject]@{ Key = $key; Weight = 12 }
+    }
+  }
+  if ($weightedCandidates.Count -le 0) { return "" }
+  $totalWeight = 0
+  foreach ($candidate in $weightedCandidates) { $totalWeight += [int]$candidate.Weight }
+  if ($totalWeight -le 0) { return "" }
+  $roll = Get-Random -Minimum 1 -Maximum ($totalWeight + 1)
+  $cursor = 0
+  foreach ($candidate in $weightedCandidates) {
+    $cursor += [int]$candidate.Weight
+    if ($roll -le $cursor) { return [string]$candidate.Key }
+  }
+  return [string]$weightedCandidates[-1].Key
 }
 
 function Add-InventoryDrop {
@@ -2184,8 +2434,7 @@ function Get-DropItemLabel {
   switch ($Item) {
     "fontPixel" { return (Get-InventoryUiText -Key "fontPixel") }
     "fontTerminal" { return (Get-InventoryUiText -Key "fontTerminal") }
-    "themeArcane" { return (Get-InventoryUiText -Key "themeArcane") }
-    "themeRoyal" { return (Get-InventoryUiText -Key "themeRoyal") }
+    { $_ -in $CosmeticThemeKeys } { return (Get-InventoryUiText -Key $Item) }
     default { return "" }
   }
 }
@@ -2250,12 +2499,14 @@ function Update-KeyCounterVisualText {
     $countRun = [System.Windows.Documents.Run]::new(("{0}" -f ([int]$script:KeyPressCount)))
     $countRun.FontSize = 20.0
     $countRun.FontWeight = [System.Windows.FontWeights]::Black
+    $countRun.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]](Get-CosmeticTextRgb))
     $script:KeyCounterLabel.Inlines.Add($countRun) | Out-Null
     if (-not [string]::IsNullOrWhiteSpace($status)) {
       $script:KeyCounterLabel.Inlines.Add([System.Windows.Documents.LineBreak]::new()) | Out-Null
       $statusRun = [System.Windows.Documents.Run]::new($status)
       $statusRun.FontSize = 13.2
       $statusRun.FontWeight = [System.Windows.FontWeights]::Bold
+      $statusRun.Foreground = New-StyleBrush ([byte][Math]::Max(150, [Math]::Min(255, [int]$script:Style.ReadoutTextOpacity - 8))) ([int[]](Get-CosmeticTextRgb -Secondary))
       $script:KeyCounterLabel.Inlines.Add($statusRun) | Out-Null
     }
   }
@@ -2274,6 +2525,11 @@ function Update-KeyCounterVisualText {
       $script:KeyCounterBackground.Stroke = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 42))) ([int[]]$script:Style.TrackRgb)
       $script:KeyCounterBackground.StrokeThickness = 1.0
     }
+    if (-not [string]::IsNullOrWhiteSpace((Get-ActiveCosmeticKey))) {
+      $script:KeyCounterBackground.Stroke = New-StyleBrush 230 ([int[]](Get-CosmeticAccentRgb))
+      $script:KeyCounterBackground.StrokeThickness = [Math]::Max(1.8, [double]$script:KeyCounterBackground.StrokeThickness)
+    }
+    Set-KeyCounterBaseBorderVisibility
   }
 }
 
@@ -2394,10 +2650,10 @@ function New-KeyBurstParticle {
   $particle = if ($Index % 4 -eq 0 -or -not [string]::IsNullOrWhiteSpace($MilestoneText)) {
     $text = [System.Windows.Controls.TextBlock]::new()
     $text.Text = if ([string]::IsNullOrWhiteSpace($MilestoneText)) { "+1" } else { $MilestoneText }
-    $text.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+    $text.FontFamily = Get-CosmeticFontFamily
     $text.FontWeight = [System.Windows.FontWeights]::Black
     $text.FontSize = 11.0 * $scale
-    $text.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]]$script:Style.ReadoutTextRgb)
+    $text.Foreground = New-StyleBrush ([byte]$script:Style.ReadoutTextOpacity) ([int[]](Get-CosmeticTextRgb))
     $text
   } else {
     $dot = [System.Windows.Shapes.Ellipse]::new()
@@ -2538,13 +2794,7 @@ function Update-KeyCounterGeometry {
   $mode = [string]$script:Style.DisplayMode
   $chipWidth = Get-KeyCounterChipWidth -Mode $mode
   $hasStatus = -not [string]::IsNullOrWhiteSpace((Get-KeyCounterStatusText))
-  $chipHeight = if ($hasStatus) {
-    if ($mode -eq "badge") { 46.0 } else { 52.0 }
-  } elseif ($mode -eq "badge") {
-    32.0
-  } else {
-    38.0
-  }
+  $chipHeight = Get-KeyCounterChipHeight -Mode $mode
   $center = if ($null -ne $script:HudCenterX) { [double]$script:HudCenterX } else { [double]$script:Window.Width / 2.0 }
   $ringSize = if ($null -ne $script:HudRingSize) { [double]$script:HudRingSize } else { [Math]::Min([double]$script:Window.Width, [double]$script:Window.Height) }
   $pet = $script:LastPetRect
@@ -2575,6 +2825,14 @@ function Update-KeyCounterGeometry {
   $y = [Math]::Max(4.0, [Math]::Min($targetY, [double]$script:Window.Height - $chipHeight - 4.0))
 
   Set-RectangleBounds $script:KeyCounterBackground $x $y $chipWidth $chipHeight
+  if ($null -ne $script:KeyCounterThemeBorder) {
+    $borderPadX = if ($mode -eq "badge") { 7.0 } else { 8.0 }
+    $borderPadY = if ($hasStatus) { 8.0 } else { 7.0 }
+    $script:KeyCounterThemeBorder.Width = $chipWidth + ($borderPadX * 2.0)
+    $script:KeyCounterThemeBorder.Height = $chipHeight + ($borderPadY * 2.0)
+    [System.Windows.Controls.Canvas]::SetLeft($script:KeyCounterThemeBorder, $x - $borderPadX)
+    [System.Windows.Controls.Canvas]::SetTop($script:KeyCounterThemeBorder, $y - $borderPadY)
+  }
   if ($null -ne $script:KeyCounterAccent) {
     Set-RectangleBounds $script:KeyCounterAccent $x $y 0.0 0.0
   }
@@ -2661,6 +2919,10 @@ function Update-KeyCounter {
   $comboTier = [Math]::Max(0, [int]$script:KeyComboMultiplier - 1)
   $effectTier = [Math]::Max([int]$tier, [Math]::Min(2, $comboTier))
   $dropItem = Add-InventoryDrop -Delta $delta
+  if (-not [string]::IsNullOrWhiteSpace([string]$dropItem)) {
+    Apply-CosmeticUnlockVisuals
+    Update-KeyCounterGeometry
+  }
   $dropText = Get-DropItemLabel -Item ([string]$dropItem)
   $milestoneText = if (-not [string]::IsNullOrWhiteSpace($dropText)) {
     "+ {0}" -f $dropText
@@ -2923,6 +3185,51 @@ function Show-InventoryReadout {
   $screenY = [double]$script:Window.Top + [double]$script:InventoryHitBounds.Y + [double]$script:InventoryHitBounds.Height / 2.0
   Set-ReadoutWindowNearPoint -Window $script:InventoryReadoutWindow -Border $script:InventoryReadoutBorder -ScreenX $screenX -ScreenY $screenY
   if (-not $script:InventoryReadoutWindow.IsVisible) { $script:InventoryReadoutWindow.Show() }
+}
+
+function Show-InventoryPicker {
+  param([string]$Kind)
+  if ($Kind -notin @("font", "theme")) { return }
+  if (-not (Test-InventoryReadoutOpen)) { Show-InventoryReadout }
+  if ($null -eq $script:InventoryPickerWindow -or $null -eq $script:InventoryPickerBorder) { return }
+
+  $script:InventoryPickerKind = $Kind
+  $keys = if ($Kind -eq "font") { @("fontPixel", "fontTerminal") } else { $CosmeticThemeKeys }
+  $index = 0
+  foreach ($key in $CosmeticUnlockKeys) {
+    if (-not $script:InventoryItemBorders.ContainsKey($key)) { continue }
+    $cell = $script:InventoryItemBorders[$key]
+    if ($key -in $keys) {
+      [System.Windows.Controls.Grid]::SetColumn($cell, $index % 2)
+      [System.Windows.Controls.Grid]::SetRow($cell, [Math]::Floor($index / 2.0))
+      $cell.Visibility = [System.Windows.Visibility]::Visible
+      $index++
+    } else {
+      $cell.Visibility = [System.Windows.Visibility]::Collapsed
+    }
+  }
+
+  if ($null -ne $script:InventoryPickerTitle) {
+    $script:InventoryPickerTitle.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "FontCategory" } else { Get-InventoryUiText -Key "ThemeCategory" }
+  }
+  if ($null -ne $script:InventoryPickerHint) {
+    $script:InventoryPickerHint.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "PickerHintFont" } else { Get-InventoryUiText -Key "PickerHintTheme" }
+  }
+
+  Update-InventoryReadoutContent
+  $script:InventoryPickerBorder.Visibility = [System.Windows.Visibility]::Visible
+  $screenX = if ($null -ne $script:InventoryReadoutWindow -and $script:InventoryReadoutWindow.IsVisible) {
+    [double]$script:InventoryReadoutWindow.Left + 360.0
+  } else {
+    [double]$script:Window.Left + [double]$script:InventoryHitBounds.X + [double]$script:InventoryHitBounds.Width + 140.0
+  }
+  $screenY = if ($null -ne $script:InventoryReadoutWindow -and $script:InventoryReadoutWindow.IsVisible) {
+    [double]$script:InventoryReadoutWindow.Top + 50.0
+  } else {
+    [double]$script:Window.Top + [double]$script:InventoryHitBounds.Y
+  }
+  Set-ReadoutWindowNearPoint -Window $script:InventoryPickerWindow -Border $script:InventoryPickerBorder -ScreenX $screenX -ScreenY $screenY
+  if (-not $script:InventoryPickerWindow.IsVisible) { $script:InventoryPickerWindow.Show() }
 }
 
 function Toggle-InventoryReadout {
@@ -3318,7 +3625,20 @@ function Update-RingGeometry {
     $barWidth = Get-BatteryHudBarWidth
     $barHeight = 10.0
     $barX = $center - $barWidth / 2.0
-    $barOffset = if ($keyCounterHudVisible) { 66.0 } elseif ($growthHudVisible) { 45.0 } else { 14.0 }
+    $batteryHudRowHeight = if ($keyCounterHudVisible) {
+      [Math]::Max((Get-KeyCounterChipHeight -Mode "battery"), $(if ((Test-InventoryHudVisible)) { 42.0 } else { 0.0 }))
+    } elseif ($growthHudVisible) {
+      26.0
+    } else {
+      0.0
+    }
+    $barOffset = if ($keyCounterHudVisible) {
+      12.0 + $batteryHudRowHeight + 8.0
+    } elseif ($growthHudVisible) {
+      8.0 + $batteryHudRowHeight + 11.0
+    } else {
+      14.0
+    }
     $barY = $petBottom + $barOffset
     $labelWidth = 24.0
     $bodyX = $barX + $labelWidth
@@ -3451,15 +3771,19 @@ function Update-PetFrame {
   $keyCounterHudVisible = Test-KeyCounterHudVisible
   $hudRowVisible = $growthHudVisible -or $keyCounterHudVisible
   $keyChipWidth = if ($keyCounterHudVisible) { Get-KeyCounterChipWidth -Mode ([string]$script:Style.DisplayMode) } else { 0.0 }
+  $keyChipHeight = if ($keyCounterHudVisible) { Get-KeyCounterChipHeight -Mode ([string]$script:Style.DisplayMode) } else { 0.0 }
   $growthChipWidth = if ($growthHudVisible) { Get-GrowthChipWidth } else { 0.0 }
   $inventoryChipWidth = if ((Test-InventoryHudVisible)) { Get-InventoryHudWidth } else { 0.0 }
+  $inventoryChipHeight = if ((Test-InventoryHudVisible)) { 42.0 } else { 0.0 }
+  $growthChipHeight = if ($growthHudVisible) { 26.0 } else { 0.0 }
   $hudRowGap = if ($growthHudVisible -and $keyCounterHudVisible -and -not $isBadge) { 6.0 } else { 0.0 }
   $inventoryGap = if ($inventoryChipWidth -gt 0.0 -and -not $isBadge) { 6.0 } else { 0.0 }
   $hudRowWidth = $growthChipWidth + $hudRowGap + $(if ($isBadge) { 0.0 } else { $keyChipWidth + $inventoryGap + $inventoryChipWidth })
+  $hudRowHeight = [Math]::Max($growthChipHeight, [Math]::Max($keyChipHeight, $inventoryChipHeight))
   if ($isBattery) {
     $baseWindowWidth = [Math]::Max([double]$rect.Width + 34.0, [Math]::Max(164.0, $hudRowWidth + 24.0))
     $windowWidth = $baseWindowWidth
-    $batteryHudHeight = if ($keyCounterHudVisible) { 108.0 } elseif ($growthHudVisible) { 84.0 } else { 47.0 }
+    $batteryHudHeight = if ($keyCounterHudVisible) { [Math]::Max(108.0, $hudRowHeight + 56.0) } elseif ($growthHudVisible) { 84.0 } else { 47.0 }
     $windowHeight = [double]$rect.Height + $batteryHudHeight
     $ringSize = [Math]::Max($baseWindowWidth, $windowHeight)
     $hudCenterX = $baseWindowWidth / 2.0
@@ -3479,7 +3803,7 @@ function Update-PetFrame {
     $ringPadding = [double]$script:Style.RingGap + 16.0
     $ringSize = [Math]::Max([double]$rect.Width, [double]$rect.Height) + $ringPadding * 2.0
     $minimumRingHudWidth = if ($hudRowVisible) { [Math]::Max(164.0, $hudRowWidth + 24.0) } else { $ringSize }
-    $ringHudHeight = if ($hudRowVisible) { 36.0 } else { 0.0 }
+    $ringHudHeight = if ($hudRowVisible) { [Math]::Max(40.0, $hudRowHeight + 12.0) } else { 0.0 }
     $baseWindowWidth = [Math]::Max($ringSize, $minimumRingHudWidth)
     $windowWidth = $baseWindowWidth
     $windowHeight = $ringSize + $ringHudHeight
@@ -3488,7 +3812,7 @@ function Update-PetFrame {
     $top = [double]$rect.Y + [double]$rect.Height / 2.0 - $ringSize / 2.0
   }
 
-  $signature = "{0}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}|{6:N1}|{7:N1}|{8}|{9}|{10:N1}|{11:N1}" -f `
+  $signature = "{0}|{1:N1}|{2:N1}|{3:N1}|{4:N1}|{5:N1}|{6:N1}|{7:N1}|{8}|{9}|{10:N1}|{11:N1}|{12:N1}|{13:N1}" -f `
     $script:Style.DisplayMode,
     $left,
     $top,
@@ -3500,7 +3824,9 @@ function Update-PetFrame {
     $growthHudVisible,
     $keyCounterHudVisible,
     $hudCenterX,
-    $keyChipWidth
+    $keyChipWidth,
+    $keyChipHeight,
+    $hudRowHeight
   $changed = $signature -ne $script:LastPetFrameSignature
   if ($changed) {
     $script:LastPetRect = $rect
@@ -3725,7 +4051,7 @@ $script:Canvas = [System.Windows.Controls.Canvas]::new()
 $script:Window.Content = $script:Canvas
 
 function New-ReadoutWindow {
-  param($Content)
+  param($Content, [bool]$ClickThrough = $true)
   $window = [System.Windows.Window]::new()
   $window.WindowStyle = [System.Windows.WindowStyle]::None
   $window.AllowsTransparency = $true
@@ -3735,11 +4061,13 @@ function New-ReadoutWindow {
   $window.ResizeMode = [System.Windows.ResizeMode]::NoResize
   $window.WindowStartupLocation = [System.Windows.WindowStartupLocation]::Manual
   $window.Content = $Content
-  $window.Add_SourceInitialized({
-    param($Sender, $EventArgs)
-    $handle = (New-Object System.Windows.Interop.WindowInteropHelper($Sender)).Handle
-    [CodexPetLimitRingNative]::MakeClickThrough($handle)
-  })
+  if ($ClickThrough) {
+    $window.Add_SourceInitialized({
+      param($Sender, $EventArgs)
+      $handle = (New-Object System.Windows.Interop.WindowInteropHelper($Sender)).Handle
+      [CodexPetLimitRingNative]::MakeClickThrough($handle)
+    })
+  }
   return $window
 }
 
@@ -3753,6 +4081,7 @@ function New-InventoryItemCell {
   $border.CornerRadius = [System.Windows.CornerRadius]::new(7)
   $border.Padding = [System.Windows.Thickness]::new(6, 5, 6, 5)
   $border.Margin = [System.Windows.Thickness]::new(3)
+  $border.Cursor = [System.Windows.Input.Cursors]::Hand
 
   $panel = [System.Windows.Controls.StackPanel]::new()
   $panel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
@@ -3778,7 +4107,7 @@ function New-InventoryItemCell {
   $label.FontSize = 9.5
   $label.FontWeight = [System.Windows.FontWeights]::SemiBold
   $label.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
-  $label.Width = 62.0
+  $label.Width = 74.0
 
   $count = [System.Windows.Controls.TextBlock]::new()
   $count.Text = "x0"
@@ -3797,6 +4126,56 @@ function New-InventoryItemCell {
   $script:InventoryItemLabelBlocks[$ItemKey] = $label
   $script:InventoryItemCountBlocks[$ItemKey] = $count
   $script:InventoryItemBorders[$ItemKey] = $border
+  $border.Add_MouseLeftButtonUp({
+    param($Sender, $EventArgs)
+    Set-ActiveInventoryUnlock -ItemKey $ItemKey
+    $EventArgs.Handled = $true
+  }.GetNewClosure())
+  return $border
+}
+
+function New-InventoryCategoryCell {
+  param([string]$Kind, [string]$LabelKey)
+
+  $border = [System.Windows.Controls.Border]::new()
+  $border.Background = New-Brush 98 10 17 24
+  $border.BorderBrush = New-StyleBrush 160 ([int[]](Get-CosmeticAccentRgb))
+  $border.BorderThickness = [System.Windows.Thickness]::new(1.5)
+  $border.CornerRadius = [System.Windows.CornerRadius]::new(7)
+  $border.Padding = [System.Windows.Thickness]::new(9, 8, 9, 8)
+  $border.Margin = [System.Windows.Thickness]::new(3)
+  $border.Cursor = [System.Windows.Input.Cursors]::Hand
+
+  $panel = [System.Windows.Controls.StackPanel]::new()
+  $panel.Orientation = [System.Windows.Controls.Orientation]::Vertical
+  $panel.VerticalAlignment = [System.Windows.VerticalAlignment]::Center
+
+  $title = [System.Windows.Controls.TextBlock]::new()
+  $title.Text = Get-InventoryUiText -Key $LabelKey
+  $title.Foreground = New-Brush 242 255 255 255
+  $title.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+  $title.FontSize = 12.5
+  $title.FontWeight = [System.Windows.FontWeights]::Bold
+  $title.TextAlignment = [System.Windows.TextAlignment]::Center
+  $title.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+
+  $hint = [System.Windows.Controls.TextBlock]::new()
+  $hint.Text = Get-InventoryUiText -Key "Select"
+  $hint.Foreground = New-StyleBrush 210 ([int[]](Get-CosmeticAccentRgb))
+  $hint.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+  $hint.FontSize = 9.5
+  $hint.FontWeight = [System.Windows.FontWeights]::SemiBold
+  $hint.TextAlignment = [System.Windows.TextAlignment]::Center
+  $hint.Margin = [System.Windows.Thickness]::new(0, 2, 0, 0)
+
+  $panel.Children.Add($title) | Out-Null
+  $panel.Children.Add($hint) | Out-Null
+  $border.Child = $panel
+  $border.Add_MouseLeftButtonUp({
+    param($Sender, $EventArgs)
+    Show-InventoryPicker -Kind $Kind
+    $EventArgs.Handled = $true
+  }.GetNewClosure())
   return $border
 }
 
@@ -3933,6 +4312,15 @@ $script:KeyCounterBackground.StrokeThickness = 1
 $script:KeyCounterBackground.Fill = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
 $script:KeyCounterBackground.Stroke = New-StyleBrush ([byte][Math]::Max(24, [Math]::Min(255, [int]$script:Style.TrackOpacity + 42))) ([int[]]$script:Style.TrackRgb)
 
+$script:KeyCounterThemeBorder = [System.Windows.Controls.Image]::new()
+$script:KeyCounterThemeBorder.Source = New-ActiveThemeBorderImageSource
+$script:KeyCounterThemeBorder.Stretch = [System.Windows.Media.Stretch]::Fill
+$script:KeyCounterThemeBorder.SnapsToDevicePixels = $true
+$script:KeyCounterThemeBorder.UseLayoutRounding = $true
+$script:KeyCounterThemeBorder.IsHitTestVisible = $false
+$script:KeyCounterThemeBorder.Visibility = [System.Windows.Visibility]::Collapsed
+$script:KeyCounterThemeBorder.Opacity = 0.94
+
 $script:KeyCounterAccent = [System.Windows.Shapes.Rectangle]::new()
 $script:KeyCounterAccent.RadiusX = 2.5
 $script:KeyCounterAccent.RadiusY = 2.5
@@ -4019,7 +4407,7 @@ $script:InventoryReadoutText.Visibility = [System.Windows.Visibility]::Collapsed
 
 $script:InventoryReadoutPanel = [System.Windows.Controls.StackPanel]::new()
 $script:InventoryReadoutPanel.Orientation = [System.Windows.Controls.Orientation]::Vertical
-$script:InventoryReadoutPanel.Width = 250.0
+$script:InventoryReadoutPanel.Width = 220.0
 
 $script:InventoryReadoutTitle = [System.Windows.Controls.TextBlock]::new()
 $script:InventoryReadoutTitle.Text = Get-InventoryUiText -Key "Title"
@@ -4043,27 +4431,19 @@ for ($i = 0; $i -lt 2; $i++) {
   $column = [System.Windows.Controls.ColumnDefinition]::new()
   $column.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
   $script:InventoryReadoutGrid.ColumnDefinitions.Add($column)
-  $row = [System.Windows.Controls.RowDefinition]::new()
-  $row.Height = [System.Windows.GridLength]::new(48.0)
-  $script:InventoryReadoutGrid.RowDefinitions.Add($row)
 }
+$row = [System.Windows.Controls.RowDefinition]::new()
+$row.Height = [System.Windows.GridLength]::new(58.0)
+$script:InventoryReadoutGrid.RowDefinitions.Add($row)
 
-$fontPixelCell = New-InventoryItemCell -ItemKey "fontPixel" -IconPath $InventoryIconPaths.fontPixel
-[System.Windows.Controls.Grid]::SetColumn($fontPixelCell, 0)
-[System.Windows.Controls.Grid]::SetRow($fontPixelCell, 0)
-$fontTerminalCell = New-InventoryItemCell -ItemKey "fontTerminal" -IconPath $InventoryIconPaths.fontTerminal
-[System.Windows.Controls.Grid]::SetColumn($fontTerminalCell, 1)
-[System.Windows.Controls.Grid]::SetRow($fontTerminalCell, 0)
-$themeArcaneCell = New-InventoryItemCell -ItemKey "themeArcane" -IconPath $InventoryIconPaths.themeArcane
-[System.Windows.Controls.Grid]::SetColumn($themeArcaneCell, 0)
-[System.Windows.Controls.Grid]::SetRow($themeArcaneCell, 1)
-$themeRoyalCell = New-InventoryItemCell -ItemKey "themeRoyal" -IconPath $InventoryIconPaths.themeRoyal
-[System.Windows.Controls.Grid]::SetColumn($themeRoyalCell, 1)
-[System.Windows.Controls.Grid]::SetRow($themeRoyalCell, 1)
-$script:InventoryReadoutGrid.Children.Add($fontPixelCell) | Out-Null
-$script:InventoryReadoutGrid.Children.Add($fontTerminalCell) | Out-Null
-$script:InventoryReadoutGrid.Children.Add($themeArcaneCell) | Out-Null
-$script:InventoryReadoutGrid.Children.Add($themeRoyalCell) | Out-Null
+$fontCategoryCell = New-InventoryCategoryCell -Kind "font" -LabelKey "FontCategory"
+[System.Windows.Controls.Grid]::SetColumn($fontCategoryCell, 0)
+[System.Windows.Controls.Grid]::SetRow($fontCategoryCell, 0)
+$themeCategoryCell = New-InventoryCategoryCell -Kind "theme" -LabelKey "ThemeCategory"
+[System.Windows.Controls.Grid]::SetColumn($themeCategoryCell, 1)
+[System.Windows.Controls.Grid]::SetRow($themeCategoryCell, 0)
+$script:InventoryReadoutGrid.Children.Add($fontCategoryCell) | Out-Null
+$script:InventoryReadoutGrid.Children.Add($themeCategoryCell) | Out-Null
 
 $script:InventoryReadoutStats = [System.Windows.Controls.TextBlock]::new()
 $script:InventoryReadoutStats.Foreground = New-Brush 202 220 236 244
@@ -4078,6 +4458,47 @@ $script:InventoryReadoutPanel.Children.Add($script:InventoryReadoutGrid) | Out-N
 $script:InventoryReadoutPanel.Children.Add($script:InventoryReadoutStats) | Out-Null
 $script:InventoryReadoutPanel.Children.Add($script:InventoryReadoutText) | Out-Null
 [void](Update-InventoryReadoutContent)
+
+$script:InventoryPickerPanel = [System.Windows.Controls.StackPanel]::new()
+$script:InventoryPickerPanel.Orientation = [System.Windows.Controls.Orientation]::Vertical
+$script:InventoryPickerPanel.Width = 260.0
+
+$script:InventoryPickerTitle = [System.Windows.Controls.TextBlock]::new()
+$script:InventoryPickerTitle.Text = Get-InventoryUiText -Key "ThemeCategory"
+$script:InventoryPickerTitle.Foreground = New-Brush 248 255 255 255
+$script:InventoryPickerTitle.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:InventoryPickerTitle.FontSize = 13.0
+$script:InventoryPickerTitle.FontWeight = [System.Windows.FontWeights]::Bold
+$script:InventoryPickerTitle.Margin = [System.Windows.Thickness]::new(3, 0, 3, 2)
+
+$script:InventoryPickerHint = [System.Windows.Controls.TextBlock]::new()
+$script:InventoryPickerHint.Text = Get-InventoryUiText -Key "PickerHintTheme"
+$script:InventoryPickerHint.Foreground = New-Brush 190 220 236 244
+$script:InventoryPickerHint.FontFamily = [System.Windows.Media.FontFamily]::new("Segoe UI")
+$script:InventoryPickerHint.FontSize = 9.5
+$script:InventoryPickerHint.TextTrimming = [System.Windows.TextTrimming]::CharacterEllipsis
+$script:InventoryPickerHint.Margin = [System.Windows.Thickness]::new(3, 0, 3, 5)
+
+$script:InventoryPickerGrid = [System.Windows.Controls.Grid]::new()
+$script:InventoryPickerGrid.Margin = [System.Windows.Thickness]::new(0, 0, 0, 2)
+for ($i = 0; $i -lt 2; $i++) {
+  $column = [System.Windows.Controls.ColumnDefinition]::new()
+  $column.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
+  $script:InventoryPickerGrid.ColumnDefinitions.Add($column)
+}
+for ($i = 0; $i -lt 3; $i++) {
+  $row = [System.Windows.Controls.RowDefinition]::new()
+  $row.Height = [System.Windows.GridLength]::new(50.0)
+  $script:InventoryPickerGrid.RowDefinitions.Add($row)
+}
+foreach ($itemKey in $CosmeticUnlockKeys) {
+  $itemCell = New-InventoryItemCell -ItemKey $itemKey -IconPath $InventoryIconPaths[$itemKey]
+  $itemCell.Visibility = [System.Windows.Visibility]::Collapsed
+  $script:InventoryPickerGrid.Children.Add($itemCell) | Out-Null
+}
+$script:InventoryPickerPanel.Children.Add($script:InventoryPickerTitle) | Out-Null
+$script:InventoryPickerPanel.Children.Add($script:InventoryPickerHint) | Out-Null
+$script:InventoryPickerPanel.Children.Add($script:InventoryPickerGrid) | Out-Null
 
 $script:OuterReadoutBorder = [System.Windows.Controls.Border]::new()
 $script:OuterReadoutBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.OuterReadoutBgRgb)
@@ -4107,10 +4528,18 @@ $script:InventoryReadoutBorder.Padding = [System.Windows.Thickness]::new(8, 7, 8
 $script:InventoryReadoutBorder.Child = $script:InventoryReadoutPanel
 $script:InventoryReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
 
+$script:InventoryPickerBorder = [System.Windows.Controls.Border]::new()
+$script:InventoryPickerBorder.Background = New-StyleBrush ([byte]$script:Style.ReadoutOpacity) ([int[]]$script:Style.InnerReadoutBgRgb)
+$script:InventoryPickerBorder.CornerRadius = [System.Windows.CornerRadius]::new(7)
+$script:InventoryPickerBorder.Padding = [System.Windows.Thickness]::new(8, 7, 8, 7)
+$script:InventoryPickerBorder.Child = $script:InventoryPickerPanel
+$script:InventoryPickerBorder.Visibility = [System.Windows.Visibility]::Collapsed
+
 $script:OuterReadoutWindow = New-ReadoutWindow -Content $script:OuterReadoutBorder
 $script:InnerReadoutWindow = New-ReadoutWindow -Content $script:InnerReadoutBorder
 $script:GrowthReadoutWindow = New-ReadoutWindow -Content $script:GrowthReadoutBorder
-$script:InventoryReadoutWindow = New-ReadoutWindow -Content $script:InventoryReadoutBorder
+$script:InventoryReadoutWindow = New-ReadoutWindow -Content $script:InventoryReadoutBorder -ClickThrough $false
+$script:InventoryPickerWindow = New-ReadoutWindow -Content $script:InventoryPickerBorder -ClickThrough $false
 
 $script:Canvas.Children.Add($script:OuterTrack) | Out-Null
 $script:Canvas.Children.Add($script:InnerTrack) | Out-Null
@@ -4134,6 +4563,7 @@ $script:Canvas.Children.Add($script:GrowthChipBackground) | Out-Null
 $script:Canvas.Children.Add($script:GrowthChipAccent) | Out-Null
 $script:Canvas.Children.Add($script:GrowthChipLabel) | Out-Null
 $script:Canvas.Children.Add($script:KeyCounterBackground) | Out-Null
+$script:Canvas.Children.Add($script:KeyCounterThemeBorder) | Out-Null
 $script:Canvas.Children.Add($script:KeyCounterAccent) | Out-Null
 $script:Canvas.Children.Add($script:KeyCounterLabel) | Out-Null
 $script:Canvas.Children.Add($script:InventoryBackground) | Out-Null

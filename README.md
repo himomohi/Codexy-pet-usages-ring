@@ -4,12 +4,12 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.11-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.12-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#0111"><img alt="Version 0.1.11" src="https://img.shields.io/badge/version-0.1.11-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#0112"><img alt="Version 0.1.12" src="https://img.shields.io/badge/version-0.1.12-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -50,6 +50,7 @@ using PowerShell, WPF, and Win32 window positioning.
 
 - Shows circular rings, compact battery bars, or badge chips around the current Codex `/pet` avatar.
 - Adds optional pet growth where today's XP fills from 5h usage progress, with weekly reset seasons and playful states.
+- Adds realtime typing-count gamification, rare reward drops, a clickable reward chest, and unlockable font/theme cosmetics.
 - Displays 5h and weekly usage readouts on hover.
 - Localizes readouts, tray text, and settings UI for English, Korean, Japanese, and Chinese.
 - Auto-detects and can start Codex Desktop.
@@ -151,6 +152,10 @@ colors, opacity, readout colors, and hover text size. Pet growth can be turned
 off at any time, and the growth mode chooses the 5h usage target for today's XP:
 Light 20%, Balanced 40%, or Focused 60%. Weekly usage is used for reset and
 depletion guard behavior, not as the normal XP gate.
+
+The gamification panel controls the keyboard counter and reward display mode.
+Reward drops are intentionally rare; acquired cosmetics appear in the chest
+inventory and can unlock font styles or themed key-counter borders.
 
 The running helper reloads the settings file automatically.
 

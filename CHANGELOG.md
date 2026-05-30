@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.1.12
+
+### Added
+
+- Added realtime keyboard-count gamification with larger HUD feedback, delayed burst text, and low-probability reward drops.
+- Added a clickable reward chest inventory with localized popover flows for fonts and theme cosmetics.
+- Added five unlockable theme tiers: Forest, Arcane, Royal, Cyber, and Celestial, each with runtime border assets.
+- Added a redesigned settings reward section that previews active loadout, locked/unlocked cosmetics, and the chest-to-picker flow.
+
+### Changed
+
+- Kept locked cosmetic themes unavailable until directly acquired through reward drops.
+- Improved ring, battery, and badge layout spacing so key counters, reward chests, and usage readouts stay clear of the pet.
+- Reduced key-count feedback latency while keeping the counter lightweight and event-driven.
+- Excluded local reward state, source art, QA captures, and deployment staging files from release zips.
+
+### Fixed
+
+- Fixed reward chest hit testing so hover highlights, hand cursor, rapid clicks, and popover toggles behave consistently.
+- Fixed key counter centering and themed-border rendering when the count grows or status text changes.
+- Fixed settings and release smoke checks to cover reward assets, theme state, and deployment freshness.
+
 ## 0.1.11
 
 ### Added

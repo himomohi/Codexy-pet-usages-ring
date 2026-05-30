@@ -180,7 +180,7 @@ function Assert-SettingsDisplayModes {
       throw "Key counter combo runtime marker is missing: $needle"
     }
   }
-  foreach ($needle in @("function Add-InventoryDrop", "function Get-InventoryHudText", "function Get-InventoryReadoutText", "function Get-InventoryUiText", "function Update-InventoryReadoutContent", "function Show-InventoryReadout", "function Toggle-InventoryReadout", "function Hide-InventoryReadout", "function Test-InventoryReadoutOpen", "function Set-InventoryHoverHighlight", "function Test-CursorInInventoryRange", "function Update-MouseClickHook", "function Get-ConsumedLeftMouseClickCursor", "function Invoke-InventoryToggle", "SetWindowsHookExMouse", "InstallMouseClickCounter", "UninstallMouseClickCounter", "ConsumeLeftMouseClick", "MouseHookCallback", "WH_MOUSE_LL", "WM_LBUTTONDOWN", "IsLeftMouseButtonDown", "ConsumeLeftMouseButtonClick", '0x0001', "ShowHandCursor", "IDC_HAND", "handCursor", "InventoryHitBounds", "InventoryHoverBorder", "InventoryReadoutPinned", "InventoryReadoutWindow", "InventoryReadoutGrid", "InventoryIcon", "InventoryCountBackground", "reward-chest.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png", "rewardRolls", "activeTheme")) {
+  foreach ($needle in @("function Add-InventoryDrop", "function Get-InventoryHudText", "function Get-InventoryReadoutText", "function Get-InventoryUiText", "function Update-InventoryReadoutContent", "function Set-ActiveInventoryUnlock", "function Test-InventoryUnlockActive", "function Set-KeyCounterBaseBorderVisibility", "function Show-InventoryReadout", "function Show-InventoryPicker", "function New-InventoryCategoryCell", "function Toggle-InventoryReadout", "function Hide-InventoryReadout", "function Test-InventoryReadoutOpen", "function Set-InventoryHoverHighlight", "function Test-CursorInInventoryRange", "function Update-MouseClickHook", "function Get-ConsumedLeftMouseClickCursor", "function Invoke-InventoryToggle", "SetWindowsHookExMouse", "InstallMouseClickCounter", "UninstallMouseClickCounter", "ConsumeLeftMouseClick", "MouseHookCallback", "WH_KEYBOARD_LL", "WH_MOUSE_LL", "WM_LBUTTONDOWN", "IsLeftMouseButtonDown", "ConsumeLeftMouseButtonClick", '0x0001', "ShowHandCursor", "IDC_HAND", "handCursor", "InventoryHitBounds", "InventoryHoverBorder", "InventoryReadoutPinned", "InventoryReadoutWindow", "InventoryPickerWindow", "InventoryReadoutGrid", "InventoryPickerGrid", "InventoryIcon", "InventoryCountBackground", "Add_MouseLeftButtonUp", 'New-ReadoutWindow -Content $script:InventoryReadoutBorder -ClickThrough $false', 'New-ReadoutWindow -Content $script:InventoryPickerBorder -ClickThrough $false', "FontCategory", "ThemeCategory", "PickerHintTheme", "Active", "Select", "reward-chest.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png", "theme-forest-border.png", "theme-arcane-border.png", "theme-royal-border.png", "theme-cyber-border.png", "theme-celestial-border.png", "ThemeBorderPaths", "KeyCounterThemeBorder", "themeForest", "themeCyber", "themeCelestial", "rewardRolls", "activeTheme")) {
     if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Inventory reward runtime marker is missing: $needle"
     }
@@ -196,7 +196,7 @@ function Assert-SettingsDisplayModes {
     }
   }
   $growthScript = Get-Content -Raw -LiteralPath (Join-Path $root "src\PetGrowth.ps1")
-  foreach ($needle in @("inventory = [ordered]@", "fontPixel", "fontTerminal", "themeArcane", "themeRoyal", "activeFont", "activeTheme", "rewardRolls", "totalDrops", "totalKeys", "lastDropItem")) {
+  foreach ($needle in @("inventory = [ordered]@", "fontPixel", "fontTerminal", "themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial", "activeFont", "activeTheme", "rewardRolls", "totalDrops", "totalKeys", "lastDropItem")) {
     if ($growthScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Inventory state marker is missing: $needle"
     }
@@ -206,7 +206,7 @@ function Assert-SettingsDisplayModes {
       throw "Gamification HUD focus marker is missing: $needle"
     }
   }
-  foreach ($needle in @('if ($keyCounterHudVisible) { 66.0 }', 'if ($keyCounterHudVisible) { 108.0 }')) {
+  foreach ($needle in @('$batteryHudRowHeight', '12.0 + $batteryHudRowHeight + 8.0', 'Get-KeyCounterChipHeight', '$hudRowHeight + 56.0')) {
     if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Battery key counter spacing marker is missing: $needle"
     }
@@ -216,7 +216,7 @@ function Assert-SettingsDisplayModes {
   }
 
   $settingsHtml = Get-Content -Raw -LiteralPath (Join-Path $root "settings\index.html")
-  foreach ($needle in @("focus-control", "data-focus-panel=`"growth`"", "data-focus-panel=`"combo`"", "syncFocusPanels", "hudFocusNote", "inventory-summary", "inventoryFontPixel", "inventoryThemeArcane")) {
+  foreach ($needle in @("focus-control", "data-focus-panel=`"growth`"", "data-focus-panel=`"combo`"", "syncFocusPanels", "hudFocusNote", "inventory-summary", "reward-loadout", "reward-selector", "data-reward-tab=`"fonts`"", "data-reward-panel=`"themes`"", "syncRewardPanels", "activeFontName", "activeThemeName", "rewardRollCount", "inventoryFontPixel", "inventoryThemeForest", "inventoryThemeArcane", "inventoryThemeCyber", "inventoryThemeCelestial")) {
     if ($settingsHtml.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Settings HUD focus UI marker is missing: $needle"
     }
@@ -226,13 +226,13 @@ function Assert-SettingsDisplayModes {
       throw "Settings inventory API marker is missing: $needle"
     }
   }
-  foreach ($asset in @("reward-chest.png", "inventory-snack.png", "inventory-gem.png", "inventory-ticket.png", "inventory-patch.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png")) {
+  foreach ($asset in @("reward-chest.png", "inventory-snack.png", "inventory-gem.png", "inventory-ticket.png", "inventory-patch.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png", "theme-forest-border.png", "theme-arcane-border.png", "theme-royal-border.png", "theme-cyber-border.png", "theme-celestial-border.png")) {
     if (-not (Test-Path -LiteralPath (Join-Path $root "assets\runtime\$asset") -PathType Leaf)) {
       throw "Inventory runtime asset is missing: $asset"
     }
   }
   $releaseManifest = Get-Content -Raw -LiteralPath (Join-Path $root "tools\ReleaseManifest.ps1")
-  foreach ($needle in @('"assets"', '"assets/runtime/reward-chest.png"', '"assets/runtime/unlock-font-pixel.png"', '"assets/runtime/unlock-font-terminal.png"', '"assets/runtime/unlock-theme-arcane.png"', '"assets/runtime/unlock-theme-royal.png"')) {
+  foreach ($needle in @('"assets"', '"assets/runtime/reward-chest.png"', '"assets/runtime/unlock-font-pixel.png"', '"assets/runtime/unlock-font-terminal.png"', '"assets/runtime/unlock-theme-arcane.png"', '"assets/runtime/unlock-theme-royal.png"', '"assets/runtime/theme-forest-border.png"', '"assets/runtime/theme-arcane-border.png"', '"assets/runtime/theme-royal-border.png"', '"assets/runtime/theme-cyber-border.png"', '"assets/runtime/theme-celestial-border.png"')) {
     if ($releaseManifest.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Reward chest release manifest marker is missing: $needle"
     }
