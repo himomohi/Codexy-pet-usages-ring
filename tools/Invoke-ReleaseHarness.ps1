@@ -356,6 +356,13 @@ function Convert-ChangelogBodyToAnnouncementLines {
 function Get-ReleaseAnnouncement {
   param([string]$TargetVersion)
 
+  $parts = Get-ReleaseAnnouncementParts -TargetVersion $TargetVersion
+  return ([string]$parts.Korean + "`r`n`r`n" + [string]$parts.English)
+}
+
+function Get-ReleaseAnnouncementParts {
+  param([string]$TargetVersion)
+
   $displayVersion = "v$TargetVersion"
   $fenceStart = (([string][char]96) * 3) + "text"
   $fenceEnd = ([string][char]96) * 3
@@ -395,7 +402,42 @@ function Get-ReleaseAnnouncement {
   )
   $english = $englishLines -join "`r`n"
 
-  return ($korean + "`r`n`r`n" + $english)
+  return [PSCustomObject]@{
+    Korean = $korean
+    English = $english
+    Combined = ($korean + "`r`n`r`n" + $english)
+  }
+}
+
+function Write-ReleaseAnnouncementFiles {
+  param([string]$TargetVersion, [string]$OutputDirectory)
+
+  $resolvedOutput = [System.IO.Path]::GetFullPath($OutputDirectory)
+  if (-not (Test-Path -LiteralPath $resolvedOutput -PathType Container)) {
+    New-Item -ItemType Directory -Force -Path $resolvedOutput | Out-Null
+  }
+
+  $parts = Get-ReleaseAnnouncementParts -TargetVersion $TargetVersion
+  $combinedPath = Join-Path $resolvedOutput "RELEASE_ANNOUNCEMENT_COPY_THIS.md"
+  $koPath = Join-Path $resolvedOutput "RELEASE_ANNOUNCEMENT.ko.md"
+  $enPath = Join-Path $resolvedOutput "RELEASE_ANNOUNCEMENT.en.md"
+  $mustIncludePath = Join-Path $resolvedOutput "FINAL_REPLY_MUST_INCLUDE_RELEASE_ANNOUNCEMENT.txt"
+
+  Set-Content -LiteralPath $combinedPath -Value ([string]$parts.Combined) -Encoding UTF8
+  Set-Content -LiteralPath $koPath -Value ([string]$parts.Korean) -Encoding UTF8
+  Set-Content -LiteralPath $enPath -Value ([string]$parts.English) -Encoding UTF8
+  Set-Content -LiteralPath $mustIncludePath -Encoding UTF8 -Value @(
+    "After running the release harness, include the Korean and English release announcement code blocks in the final user-facing reply.",
+    "Copy them from RELEASE_ANNOUNCEMENT_COPY_THIS.md.",
+    "Do not only summarize the release upload."
+  )
+
+  return [PSCustomObject]@{
+    CombinedPath = $combinedPath
+    KoreanPath = $koPath
+    EnglishPath = $enPath
+    ReminderPath = $mustIncludePath
+  }
 }
 
 function Publish-GitHubRelease {
@@ -454,6 +496,8 @@ if ($PublishGitHub) {
   Publish-GitHubRelease -TargetVersion $Version -ZipPath $deploy.ZipPath -Sha256 $deploy.Sha256
 }
 
+$announcementFiles = Write-ReleaseAnnouncementFiles -TargetVersion $Version -OutputDirectory $DeployDirectory
+
 Write-Step "Release harness completed"
 [PSCustomObject]@{
   Version = $Version
@@ -462,7 +506,11 @@ Write-Step "Release harness completed"
   ExtractPath = $deploy.ExtractPath
   ExtractedFileCount = $deploy.FileCount
   Published = [bool]$PublishGitHub
+  AnnouncementPath = $announcementFiles.CombinedPath
+  AnnouncementKoPath = $announcementFiles.KoreanPath
+  AnnouncementEnPath = $announcementFiles.EnglishPath
+  FinalReplyReminderPath = $announcementFiles.ReminderPath
 } | Format-List
 
 Write-Step "Release announcement"
-Write-Output (Get-ReleaseAnnouncement -TargetVersion $Version)
+Write-Output (Get-Content -Raw -LiteralPath $announcementFiles.CombinedPath)

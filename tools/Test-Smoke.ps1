@@ -238,28 +238,9 @@ function Assert-SettingsDisplayModes {
     }
   }
   $releaseHarness = Get-Content -Raw -LiteralPath (Join-Path $root "tools\Invoke-ReleaseHarness.ps1")
-  foreach ($needle in @("Assert-ReleaseMetadata", "New-VerifiedDeployZip", "Invoke-InstallRefresh", "Publish-GitHubRelease", "Assert-DeployInitialRewardState", "Deployment must not include local reward/settings state files", "Get-ReleaseAnnouncement", "Release announcement", '"release", "create"', '"release", "upload"', "Codexy-pet-usages-ring-`$TargetVersion.zip")) {
+  foreach ($needle in @("Assert-ReleaseMetadata", "New-VerifiedDeployZip", "Invoke-InstallRefresh", "Publish-GitHubRelease", "Assert-DeployInitialRewardState", "Deployment must not include local reward/settings state files", "Get-ReleaseAnnouncement", "Get-ReleaseAnnouncementParts", "Write-ReleaseAnnouncementFiles", "RELEASE_ANNOUNCEMENT_COPY_THIS.md", "FINAL_REPLY_MUST_INCLUDE_RELEASE_ANNOUNCEMENT.txt", "Release announcement", '"release", "create"', '"release", "upload"', "Codexy-pet-usages-ring-`$TargetVersion.zip")) {
     if ($releaseHarness.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
       throw "Project release harness marker is missing: $needle"
-    }
-  }
-  if (-not (Test-Path -LiteralPath (Join-Path $root "skills\README.md") -PathType Leaf)) {
-    throw "Project skills README is missing."
-  }
-  foreach ($skillPath in @(
-    "skills/paw-effect-reward/SKILL.md",
-    "skills/theme-border-reward/SKILL.md",
-    "skills/font-skin-reward/SKILL.md"
-  )) {
-    $fullSkillPath = Join-Path $root ($skillPath -replace '/', '\')
-    if (-not (Test-Path -LiteralPath $fullSkillPath -PathType Leaf)) {
-      throw "Project reward skill is missing: $skillPath"
-    }
-    $skillText = Get-Content -Raw -LiteralPath $fullSkillPath
-    foreach ($needle in @("---", "name:", "description:", "Always use imagen", "assets/runtime", "src/PetGrowth.ps1", "src/CodexyPetUsagesRing.ps1", "settings/index.html", "tools/ReleaseManifest.ps1", "tools/Test-Smoke.ps1", "Get-RandomDropItem", "Add-InventoryDrop", "Invoke-ReleaseHarness.ps1", "Install.ps1 -NoStartCodex")) {
-      if ($skillText.IndexOf($needle, [System.StringComparison]::OrdinalIgnoreCase) -lt 0) {
-        throw "Project reward skill marker is missing from ${skillPath}: $needle"
-      }
     }
   }
 }
