@@ -414,7 +414,8 @@ $SettingsDefaultsPath = Join-Path $ProjectRoot "settings.defaults.json"
 $PetGrowthScriptPath = Join-Path $ProjectRoot "src\PetGrowth.ps1"
 $RewardChestIconPath = Join-Path $ProjectRoot "assets\runtime\reward-chest.png"
 $CosmeticThemeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
-$CosmeticUnlockKeys = @("fontPixel", "fontTerminal") + $CosmeticThemeKeys
+$CosmeticEffectKeys = @("effectPawBurst", "effectBearPaw", "effectDogPaw")
+$CosmeticUnlockKeys = @("fontPixel", "fontTerminal") + $CosmeticThemeKeys + $CosmeticEffectKeys
 $ThemeBorderPaths = @{
   themeForest = Join-Path $ProjectRoot "assets\runtime\theme-forest-border.png"
   themeArcane = Join-Path $ProjectRoot "assets\runtime\theme-arcane-border.png"
@@ -430,6 +431,9 @@ $InventoryIconPaths = @{
   themeRoyal = Join-Path $ProjectRoot "assets\runtime\unlock-theme-royal.png"
   themeCyber = Join-Path $ProjectRoot "assets\runtime\theme-cyber-border.png"
   themeCelestial = Join-Path $ProjectRoot "assets\runtime\theme-celestial-border.png"
+  effectPawBurst = Join-Path $ProjectRoot "assets\runtime\effect-paw-burst.png"
+  effectBearPaw = Join-Path $ProjectRoot "assets\runtime\effect-bear-paw-burst.png"
+  effectDogPaw = Join-Path $ProjectRoot "assets\runtime\effect-dog-paw-burst.png"
 }
 if (-not (Test-Path -LiteralPath $PetGrowthScriptPath)) {
   throw "Missing pet growth helper: $PetGrowthScriptPath"
@@ -492,6 +496,9 @@ $script:KeyFlowState = ""
 $script:KeyFlowStateUntil = [datetime]::MinValue
 $script:LastKeyInputAt = [datetime]::MinValue
 $script:LastKeyBurstAt = [datetime]::MinValue
+$script:LastPawBurstAt = [datetime]::MinValue
+$script:PawBurstImageSource = $null
+$script:PawBurstImageSources = @{}
 $script:LastKeyCounterDigits = 1
 $script:LastKeyCounterVisualSignature = ""
 $script:LastKeyCounterIdleSyncAt = [datetime]::MinValue
@@ -2164,8 +2171,10 @@ function Get-InventoryUiText {
       "Select" { return (Expand-UnicodeText "\uC120\uD0DD") }
       "FontCategory" { return (Expand-UnicodeText "\uD3F0\uD2B8 \uC120\uD0DD") }
       "ThemeCategory" { return (Expand-UnicodeText "\uD14C\uB9C8 \uC120\uD0DD") }
+      "EffectCategory" { return (Expand-UnicodeText "\uC774\uD399\uD2B8 \uC120\uD0DD") }
       "PickerHintFont" { return (Expand-UnicodeText "\uD574\uAE08\uB41C \uD3F0\uD2B8\uB97C \uC120\uD0DD\uD558\uC138\uC694") }
       "PickerHintTheme" { return (Expand-UnicodeText "\uD574\uAE08\uB41C \uD14C\uB9C8\uB97C \uC120\uD0DD\uD558\uC138\uC694") }
+      "PickerHintEffect" { return (Expand-UnicodeText "\uD574\uAE08\uB41C \uC774\uD399\uD2B8\uB97C \uC120\uD0DD\uD558\uC138\uC694") }
       "fontPixel" { return (Expand-UnicodeText "\uD53D\uC140 \uD3F0\uD2B8") }
       "fontTerminal" { return (Expand-UnicodeText "\uD130\uBBF8\uB110 \uD3F0\uD2B8") }
       "themeForest" { return (Expand-UnicodeText "\uBBFC\uD2B8 \uD68C\uB85C \uD14C\uB9C8") }
@@ -2173,6 +2182,9 @@ function Get-InventoryUiText {
       "themeRoyal" { return (Expand-UnicodeText "\uB85C\uC5F4 \uD14C\uB9C8") }
       "themeCyber" { return (Expand-UnicodeText "\uB124\uC628 \uC0AC\uC774\uBC84 \uD14C\uB9C8") }
       "themeCelestial" { return (Expand-UnicodeText "\uC140\uB808\uC2A4\uD2F0\uC5BC \uD14C\uB9C8") }
+      "effectPawBurst" { return (Expand-UnicodeText "\uACE0\uC591\uC774 \uBC1C\uBC14\uB2E5 \uD30C\uD30C\uD321") }
+      "effectBearPaw" { return (Expand-UnicodeText "\uACF0 \uBC1C\uBC14\uB2E5 \uD30C\uD30C\uD321") }
+      "effectDogPaw" { return (Expand-UnicodeText "\uAC15\uC544\uC9C0 \uBC1C\uBC14\uB2E5 \uD30C\uD30C\uD321") }
     }
   }
   if ($language -eq "ja") {
@@ -2189,8 +2201,10 @@ function Get-InventoryUiText {
       "Select" { return (Expand-UnicodeText "\u9078\u629E") }
       "FontCategory" { return "Fonts" }
       "ThemeCategory" { return "Themes" }
+      "EffectCategory" { return "Effects" }
       "PickerHintFont" { return "Choose an unlocked font" }
       "PickerHintTheme" { return "Choose an unlocked theme" }
+      "PickerHintEffect" { return "Choose an unlocked effect" }
       "fontPixel" { return (Expand-UnicodeText "\u30D4\u30AF\u30BB\u30EB\u30D5\u30A9\u30F3\u30C8") }
       "fontTerminal" { return (Expand-UnicodeText "\u30BF\u30FC\u30DF\u30CA\u30EB\u30D5\u30A9\u30F3\u30C8") }
       "themeForest" { return "Mint Circuit Theme" }
@@ -2198,6 +2212,9 @@ function Get-InventoryUiText {
       "themeRoyal" { return (Expand-UnicodeText "\u30ED\u30A4\u30E4\u30EB\u30C6\u30FC\u30DE") }
       "themeCyber" { return "Neon Cyber Theme" }
       "themeCelestial" { return "Celestial Prism Theme" }
+      "effectPawBurst" { return "Cat Paw Papapang" }
+      "effectBearPaw" { return "Bear Paw Papapang" }
+      "effectDogPaw" { return "Puppy Paw Papapang" }
     }
   }
   if ($language -eq "zh") {
@@ -2214,8 +2231,10 @@ function Get-InventoryUiText {
       "Select" { return (Expand-UnicodeText "\u9009\u62E9") }
       "FontCategory" { return "Fonts" }
       "ThemeCategory" { return "Themes" }
+      "EffectCategory" { return "Effects" }
       "PickerHintFont" { return "Choose an unlocked font" }
       "PickerHintTheme" { return "Choose an unlocked theme" }
+      "PickerHintEffect" { return "Choose an unlocked effect" }
       "fontPixel" { return (Expand-UnicodeText "\u50CF\u7D20\u5B57\u4F53") }
       "fontTerminal" { return (Expand-UnicodeText "\u7EC8\u7AEF\u5B57\u4F53") }
       "themeForest" { return "Mint Circuit Theme" }
@@ -2223,6 +2242,9 @@ function Get-InventoryUiText {
       "themeRoyal" { return (Expand-UnicodeText "\u7687\u5BB6\u4E3B\u9898") }
       "themeCyber" { return "Neon Cyber Theme" }
       "themeCelestial" { return "Celestial Prism Theme" }
+      "effectPawBurst" { return "Cat Paw Papapang" }
+      "effectBearPaw" { return "Bear Paw Papapang" }
+      "effectDogPaw" { return "Puppy Paw Papapang" }
     }
   }
   switch ($Key) {
@@ -2238,8 +2260,10 @@ function Get-InventoryUiText {
     "Select" { return "Select" }
     "FontCategory" { return "Fonts" }
     "ThemeCategory" { return "Themes" }
+    "EffectCategory" { return "Effects" }
     "PickerHintFont" { return "Choose an unlocked font" }
     "PickerHintTheme" { return "Choose an unlocked theme" }
+    "PickerHintEffect" { return "Choose an unlocked effect" }
     "fontPixel" { return "Pixel Font" }
     "fontTerminal" { return "Terminal Font" }
     "themeForest" { return "Mint Circuit Theme" }
@@ -2247,6 +2271,9 @@ function Get-InventoryUiText {
     "themeRoyal" { return "Royal Theme" }
     "themeCyber" { return "Neon Cyber Theme" }
     "themeCelestial" { return "Celestial Prism Theme" }
+    "effectPawBurst" { return "Cat Paw Papapang" }
+    "effectBearPaw" { return "Bear Paw Papapang" }
+    "effectDogPaw" { return "Puppy Paw Papapang" }
   }
   return $Key
 }
@@ -2255,6 +2282,7 @@ function Test-InventoryUnlockActive {
   param($Inventory, [string]$ItemKey)
   if ($ItemKey -like "font*") { return ([string]$Inventory.activeFont -eq $ItemKey) }
   if ($ItemKey -like "theme*") { return ([string]$Inventory.activeTheme -eq $ItemKey) }
+  if ($ItemKey -like "effect*") { return ([string]$Inventory.activeEffect -eq $ItemKey) }
   return $false
 }
 
@@ -2270,6 +2298,9 @@ function Set-ActiveInventoryUnlock {
   } elseif ($ItemKey -like "theme*") {
     if ([string]$inventory.activeTheme -eq $ItemKey) { return }
     $inventory.activeTheme = $ItemKey
+  } elseif ($ItemKey -like "effect*") {
+    if ([string]$inventory.activeEffect -eq $ItemKey) { return }
+    $inventory.activeEffect = $ItemKey
   } else {
     return
   }
@@ -2300,6 +2331,9 @@ function Update-InventoryReadoutContent {
     fontTerminal = [bool]$inventory.fontTerminal
   }
   foreach ($key in $CosmeticThemeKeys) {
+    $unlocks[$key] = [bool]$inventory.$key
+  }
+  foreach ($key in $CosmeticEffectKeys) {
     $unlocks[$key] = [bool]$inventory.$key
   }
   foreach ($key in $CosmeticUnlockKeys) {
@@ -2380,6 +2414,11 @@ function Get-RandomDropItem {
       $weightedCandidates += [pscustomobject]@{ Key = $key; Weight = 12 }
     }
   }
+  foreach ($key in $CosmeticEffectKeys) {
+    if (-not [bool]$inventory.$key) {
+      $weightedCandidates += [pscustomobject]@{ Key = $key; Weight = 10 }
+    }
+  }
   if ($weightedCandidates.Count -le 0) { return "" }
   $totalWeight = 0
   foreach ($candidate in $weightedCandidates) { $totalWeight += [int]$candidate.Weight }
@@ -2422,6 +2461,7 @@ function Add-InventoryDrop {
   $inventory.$item = $true
   if ($item -like "font*") { $inventory.activeFont = $item }
   if ($item -like "theme*") { $inventory.activeTheme = $item }
+  if ($item -like "effect*") { $inventory.activeEffect = $item }
   $inventory.totalDrops = [Math]::Max(0, [int]$inventory.totalDrops) + 1
   $inventory.lastDropItem = $item
   $inventory.lastDropAt = (Get-Date).ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
@@ -2435,6 +2475,7 @@ function Get-DropItemLabel {
     "fontPixel" { return (Get-InventoryUiText -Key "fontPixel") }
     "fontTerminal" { return (Get-InventoryUiText -Key "fontTerminal") }
     { $_ -in $CosmeticThemeKeys } { return (Get-InventoryUiText -Key $Item) }
+    { $_ -in $CosmeticEffectKeys } { return (Get-InventoryUiText -Key $Item) }
     default { return "" }
   }
 }
@@ -2698,8 +2739,68 @@ function New-KeyBurstParticle {
   $particle.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $opacityAnimation)
 }
 
+function New-PawBurstParticle {
+  param([double]$X, [double]$Y, [int]$Index, [int]$Tier = 0, [double]$ScaleMultiplier = 1.0, [switch]$Force)
+  if ($null -eq $script:Canvas -or -not $script:Style.ShowKeyEffects) { return }
+  $inventory = Get-InventoryState
+  $activeEffect = [string]$inventory.activeEffect
+  if ($activeEffect -notin $CosmeticEffectKeys) { return }
+  if (-not $InventoryIconPaths.ContainsKey($activeEffect)) { return }
+  $effectPath = [string]$InventoryIconPaths[$activeEffect]
+  if (-not (Test-Path -LiteralPath $effectPath -PathType Leaf)) { return }
+
+  $tierValue = [Math]::Max(0, [int]$Tier)
+  $size = (28.0 + ($tierValue * 8.0) + (($Index % 2) * 5.0)) * [Math]::Max(0.4, [double]$ScaleMultiplier)
+  if (-not $script:PawBurstImageSources.ContainsKey($activeEffect) -or $null -eq $script:PawBurstImageSources[$activeEffect]) {
+    $script:PawBurstImageSources[$activeEffect] = New-RuntimeImageSource -Path $effectPath -Name "$activeEffect effect" -DecodePixelWidth 96
+  }
+  if ($null -eq $script:PawBurstImageSources[$activeEffect]) { return }
+  $paw = [System.Windows.Controls.Image]::new()
+  $paw.Tag = "paw-burst"
+  $paw.Source = $script:PawBurstImageSources[$activeEffect]
+  $paw.Width = $size
+  $paw.Height = $size
+  $paw.Stretch = [System.Windows.Media.Stretch]::Uniform
+  $paw.SnapsToDevicePixels = $true
+  $paw.UseLayoutRounding = $true
+  $paw.RenderTransformOrigin = [System.Windows.Point]::new(0.5, 0.5)
+  $paw.RenderTransform = [System.Windows.Media.RotateTransform]::new((($Index * 31) % 42) - 21)
+
+  $angle = ((($Index * 49) % 140) - 70) * [Math]::PI / 180.0
+  $distance = (24.0 + (($Index * 7) % 18) + ($tierValue * 14.0)) * [Math]::Min(1.7, [Math]::Max(1.0, [double]$ScaleMultiplier))
+  $fromLeft = $X - ($size / 2.0)
+  $fromTop = $Y - ($size / 2.0)
+  $toLeft = $fromLeft + [Math]::Cos($angle) * $distance
+  $toTop = $fromTop + [Math]::Sin($angle) * $distance - (16.0 + ($tierValue * 9.0))
+  [System.Windows.Controls.Canvas]::SetLeft($paw, $fromLeft)
+  [System.Windows.Controls.Canvas]::SetTop($paw, $fromTop)
+  $paw.Opacity = 0.96
+  $script:Canvas.Children.Add($paw) | Out-Null
+
+  $durationMs = if ($Force) {
+    (760 + ($tierValue * 120)) * [Math]::Min(1.35, [Math]::Max(1.0, [double]$ScaleMultiplier))
+  } else {
+    420 + ($tierValue * 36)
+  }
+  $duration = [System.Windows.Duration]::new([TimeSpan]::FromMilliseconds($durationMs))
+  $ease = [System.Windows.Media.Animation.CubicEase]::new()
+  $ease.EasingMode = [System.Windows.Media.Animation.EasingMode]::EaseOut
+  $leftAnimation = [System.Windows.Media.Animation.DoubleAnimation]::new($fromLeft, $toLeft, $duration)
+  $topAnimation = [System.Windows.Media.Animation.DoubleAnimation]::new($fromTop, $toTop, $duration)
+  $fadeOut = [System.Windows.Media.Animation.DoubleAnimation]::new(0.96, 0.0, $duration)
+  $leftAnimation.EasingFunction = $ease
+  $topAnimation.EasingFunction = $ease
+  $fadeOut.EasingFunction = $ease
+  $fadeOut.Add_Completed({
+    try { [void]$script:Canvas.Children.Remove($paw) } catch {}
+  }.GetNewClosure())
+  $paw.BeginAnimation([System.Windows.Controls.Canvas]::LeftProperty, $leftAnimation)
+  $paw.BeginAnimation([System.Windows.Controls.Canvas]::TopProperty, $topAnimation)
+  $paw.BeginAnimation([System.Windows.UIElement]::OpacityProperty, $fadeOut)
+}
+
 function Start-KeyBurstEffect {
-  param([int]$Count, [int]$Tier = 0, [string]$MilestoneText = "")
+  param([int]$Count, [int]$Tier = 0, [int]$MilestoneTier = 0, [string]$MilestoneText = "")
   if (
     -not $script:Style.ShowKeyEffects -or
     -not $script:RingVisualsVisible -or
@@ -2718,6 +2819,16 @@ function Start-KeyBurstEffect {
   $y = [double]$script:KeyCounterBounds.Y + 4.0
   if ($Tier -gt 0) {
     New-KeyBurstParticle -X $x -Y $y -Index $script:KeyPressCount -Tier $Tier -MilestoneText $MilestoneText
+  }
+  $milestoneTierValue = [Math]::Max(0, [int]$MilestoneTier)
+  if ($milestoneTierValue -gt 0) {
+    New-PawBurstParticle -X $x -Y $y -Index $script:KeyPressCount -Tier $milestoneTierValue -ScaleMultiplier 2.0 -Force
+    New-KeyBurstParticle -X ($x + 8.0) -Y ($y - 10.0) -Index ($script:KeyPressCount + 11) -Tier $milestoneTierValue -MilestoneText "PUNG!"
+  }
+  $script:LastPawBurstAt = $now
+  $smallPawCount = [Math]::Max(1, [Math]::Min(24, [int]$Count))
+  for ($i = 0; $i -lt $smallPawCount; $i++) {
+    New-PawBurstParticle -X $x -Y $y -Index ($script:KeyPressCount + $i) -Tier 0
   }
   for ($i = 0; $i -lt $particles; $i++) {
     New-KeyBurstParticle -X $x -Y $y -Index ($script:KeyPressCount + $i) -Tier $Tier
@@ -2939,7 +3050,7 @@ function Update-KeyCounter {
   Update-InventoryGeometry
   Start-KeyCounterPulse -Tier $effectTier
   if ($script:RingVisualsVisible) {
-    Start-KeyBurstEffect -Count $delta -Tier $effectTier -MilestoneText $milestoneText
+    Start-KeyBurstEffect -Count $delta -Tier $effectTier -MilestoneTier $tier -MilestoneText $milestoneText
   }
 }
 
@@ -3189,12 +3300,12 @@ function Show-InventoryReadout {
 
 function Show-InventoryPicker {
   param([string]$Kind)
-  if ($Kind -notin @("font", "theme")) { return }
+  if ($Kind -notin @("font", "theme", "effect")) { return }
   if (-not (Test-InventoryReadoutOpen)) { Show-InventoryReadout }
   if ($null -eq $script:InventoryPickerWindow -or $null -eq $script:InventoryPickerBorder) { return }
 
   $script:InventoryPickerKind = $Kind
-  $keys = if ($Kind -eq "font") { @("fontPixel", "fontTerminal") } else { $CosmeticThemeKeys }
+  $keys = if ($Kind -eq "font") { @("fontPixel", "fontTerminal") } elseif ($Kind -eq "effect") { $CosmeticEffectKeys } else { $CosmeticThemeKeys }
   $index = 0
   foreach ($key in $CosmeticUnlockKeys) {
     if (-not $script:InventoryItemBorders.ContainsKey($key)) { continue }
@@ -3210,10 +3321,10 @@ function Show-InventoryPicker {
   }
 
   if ($null -ne $script:InventoryPickerTitle) {
-    $script:InventoryPickerTitle.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "FontCategory" } else { Get-InventoryUiText -Key "ThemeCategory" }
+    $script:InventoryPickerTitle.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "FontCategory" } elseif ($Kind -eq "effect") { Get-InventoryUiText -Key "EffectCategory" } else { Get-InventoryUiText -Key "ThemeCategory" }
   }
   if ($null -ne $script:InventoryPickerHint) {
-    $script:InventoryPickerHint.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "PickerHintFont" } else { Get-InventoryUiText -Key "PickerHintTheme" }
+    $script:InventoryPickerHint.Text = if ($Kind -eq "font") { Get-InventoryUiText -Key "PickerHintFont" } elseif ($Kind -eq "effect") { Get-InventoryUiText -Key "PickerHintEffect" } else { Get-InventoryUiText -Key "PickerHintTheme" }
   }
 
   Update-InventoryReadoutContent
@@ -4427,7 +4538,7 @@ $script:InventoryReadoutHint.Margin = [System.Windows.Thickness]::new(3, 0, 3, 5
 
 $script:InventoryReadoutGrid = [System.Windows.Controls.Grid]::new()
 $script:InventoryReadoutGrid.Margin = [System.Windows.Thickness]::new(0, 0, 0, 5)
-for ($i = 0; $i -lt 2; $i++) {
+for ($i = 0; $i -lt 3; $i++) {
   $column = [System.Windows.Controls.ColumnDefinition]::new()
   $column.Width = [System.Windows.GridLength]::new(1, [System.Windows.GridUnitType]::Star)
   $script:InventoryReadoutGrid.ColumnDefinitions.Add($column)
@@ -4442,8 +4553,12 @@ $fontCategoryCell = New-InventoryCategoryCell -Kind "font" -LabelKey "FontCatego
 $themeCategoryCell = New-InventoryCategoryCell -Kind "theme" -LabelKey "ThemeCategory"
 [System.Windows.Controls.Grid]::SetColumn($themeCategoryCell, 1)
 [System.Windows.Controls.Grid]::SetRow($themeCategoryCell, 0)
+$effectCategoryCell = New-InventoryCategoryCell -Kind "effect" -LabelKey "EffectCategory"
+[System.Windows.Controls.Grid]::SetColumn($effectCategoryCell, 2)
+[System.Windows.Controls.Grid]::SetRow($effectCategoryCell, 0)
 $script:InventoryReadoutGrid.Children.Add($fontCategoryCell) | Out-Null
 $script:InventoryReadoutGrid.Children.Add($themeCategoryCell) | Out-Null
+$script:InventoryReadoutGrid.Children.Add($effectCategoryCell) | Out-Null
 
 $script:InventoryReadoutStats = [System.Windows.Controls.TextBlock]::new()
 $script:InventoryReadoutStats.Foreground = New-Brush 202 220 236 244

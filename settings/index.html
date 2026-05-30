@@ -1510,6 +1510,10 @@
                   <strong id="activeThemeName">-</strong>
                 </div>
                 <div class="loadout-chip">
+                  <span data-i18n="loadoutActiveEffect">적용 이펙트</span>
+                  <strong id="activeEffectName">-</strong>
+                </div>
+                <div class="loadout-chip">
                   <span data-i18n="loadoutRewardRolls">보상 시도</span>
                   <strong id="rewardRollCount">0</strong>
                 </div>
@@ -1523,6 +1527,10 @@
                   <button type="button" class="reward-category" data-reward-tab="themes" aria-pressed="false">
                     <strong data-i18n="rewardTabThemes">테마</strong>
                     <span id="themeUnlockSummary">0/5</span>
+                  </button>
+                  <button type="button" class="reward-category" data-reward-tab="effects" aria-pressed="false">
+                    <strong data-i18n="rewardTabEffects">이펙트</strong>
+                    <span id="effectUnlockSummary">0/3</span>
                   </button>
                 </div>
                 <div class="reward-panels">
@@ -1558,11 +1566,25 @@
                       <span class="inventory-copy"><strong data-i18n="itemThemeCelestial">셀레스티얼 테마</strong><span id="inventoryThemeCelestial">잠김</span><em data-i18n="rarityMythic">Mythic</em></span>
                     </div>
                   </div>
+                  <div class="reward-panel" data-reward-panel="effects">
+                    <div class="inventory-item" data-item-key="effectPawBurst" data-rarity="rare">
+                      <span class="inventory-icon">P</span>
+                      <span class="inventory-copy"><strong data-i18n="itemEffectPawBurst">고양이 발바닥 파파팡</strong><span id="inventoryEffectPawBurst">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="effectBearPaw" data-rarity="rare">
+                      <span class="inventory-icon">B</span>
+                      <span class="inventory-copy"><strong data-i18n="itemEffectBearPaw">곰 발바닥 파파팡</strong><span id="inventoryEffectBearPaw">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
+                    </div>
+                    <div class="inventory-item" data-item-key="effectDogPaw" data-rarity="rare">
+                      <span class="inventory-icon">D</span>
+                      <span class="inventory-copy"><strong data-i18n="itemEffectDogPaw">강아지 발바닥 파파팡</strong><span id="inventoryEffectDogPaw">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div class="reward-flow">
                 <span data-i18n="rewardFlowChest">상자</span>
-                <span data-i18n="rewardFlowCategory">폰트/테마</span>
+                <span data-i18n="rewardFlowCategory">폰트/테마/이펙트</span>
                 <span data-i18n="rewardFlowPicker">선택 팝오버</span>
               </div>
             </div>
@@ -1873,22 +1895,28 @@
         itemThemeRoyal: 'Royal Theme',
         itemThemeCyber: 'Neon Cyber Theme',
         itemThemeCelestial: 'Celestial Prism Theme',
+        itemEffectPawBurst: 'Cat Paw Papapang',
+        itemEffectBearPaw: 'Bear Paw Papapang',
+        itemEffectDogPaw: 'Puppy Paw Papapang',
         inventoryLocked: 'Locked',
         inventoryUnlocked: 'Unlocked',
         inventoryActive: 'Active',
         loadoutActiveFont: 'Active Font',
         loadoutActiveTheme: 'Active Theme',
+        loadoutActiveEffect: 'Active Effect',
         loadoutRewardRolls: 'Reward Rolls',
         rewardTabFonts: 'Fonts',
         rewardTabThemes: 'Themes',
+        rewardTabEffects: 'Effects',
         rewardTypeFont: 'Font',
+        rewardTypeEffect: 'Effect',
         rarityCommon: 'Common',
         rarityRare: 'Rare',
         rarityEpic: 'Epic',
         rarityLegendary: 'Legendary',
         rarityMythic: 'Mythic',
         rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme',
+        rewardFlowCategory: 'Font / Theme / Effect',
         rewardFlowPicker: 'Picker',
         growthChip: 'Show Growth Chip',
         growthHoverReadout: 'Growth Hover Readout',
@@ -1995,22 +2023,28 @@
         itemThemeRoyal: '로열 테마',
         itemThemeCyber: '네온 사이버 테마',
         itemThemeCelestial: '셀레스티얼 테마',
+        itemEffectPawBurst: '고양이 발바닥 파파팡',
+        itemEffectBearPaw: '곰 발바닥 파파팡',
+        itemEffectDogPaw: '강아지 발바닥 파파팡',
         inventoryLocked: '잠김',
         inventoryUnlocked: '해금',
         inventoryActive: '적용 중',
         loadoutActiveFont: '적용 폰트',
         loadoutActiveTheme: '적용 테마',
+        loadoutActiveEffect: '적용 이펙트',
         loadoutRewardRolls: '보상 시도',
         rewardTabFonts: '폰트',
         rewardTabThemes: '테마',
+        rewardTabEffects: '이펙트',
         rewardTypeFont: '폰트',
+        rewardTypeEffect: '이펙트',
         rarityCommon: 'Common',
         rarityRare: 'Rare',
         rarityEpic: 'Epic',
         rarityLegendary: 'Legendary',
         rarityMythic: 'Mythic',
         rewardFlowChest: '상자',
-        rewardFlowCategory: '폰트 / 테마',
+        rewardFlowCategory: '폰트 / 테마 / 이펙트',
         rewardFlowPicker: '선택 팝오버',
         growthChip: '성장 칩 표시',
         growthHoverReadout: '성장 호버 표시',
@@ -2117,22 +2151,28 @@
         itemThemeRoyal: 'ロイヤルテーマ',
         itemThemeCyber: 'Neon Cyber Theme',
         itemThemeCelestial: 'Celestial Prism Theme',
+        itemEffectPawBurst: 'Cat Paw Papapang',
+        itemEffectBearPaw: 'Bear Paw Papapang',
+        itemEffectDogPaw: 'Puppy Paw Papapang',
         inventoryLocked: '未解放',
         inventoryUnlocked: '解放済み',
         inventoryActive: '適用中',
         loadoutActiveFont: 'Active Font',
         loadoutActiveTheme: 'Active Theme',
+        loadoutActiveEffect: 'Active Effect',
         loadoutRewardRolls: 'Reward Rolls',
         rewardTabFonts: 'Fonts',
         rewardTabThemes: 'Themes',
+        rewardTabEffects: 'Effects',
         rewardTypeFont: 'Font',
+        rewardTypeEffect: 'Effect',
         rarityCommon: 'Common',
         rarityRare: 'Rare',
         rarityEpic: 'Epic',
         rarityLegendary: 'Legendary',
         rarityMythic: 'Mythic',
         rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme',
+        rewardFlowCategory: 'Font / Theme / Effect',
         rewardFlowPicker: 'Picker',
         growthChip: '成長チップを表示',
         growthHoverReadout: '成長ホバー表示',
@@ -2239,22 +2279,28 @@
         itemThemeRoyal: '皇家主题',
         itemThemeCyber: 'Neon Cyber Theme',
         itemThemeCelestial: 'Celestial Prism Theme',
+        itemEffectPawBurst: 'Cat Paw Papapang',
+        itemEffectBearPaw: 'Bear Paw Papapang',
+        itemEffectDogPaw: 'Puppy Paw Papapang',
         inventoryLocked: '未解锁',
         inventoryUnlocked: '已解锁',
         inventoryActive: '使用中',
         loadoutActiveFont: 'Active Font',
         loadoutActiveTheme: 'Active Theme',
+        loadoutActiveEffect: 'Active Effect',
         loadoutRewardRolls: 'Reward Rolls',
         rewardTabFonts: 'Fonts',
         rewardTabThemes: 'Themes',
+        rewardTabEffects: 'Effects',
         rewardTypeFont: 'Font',
+        rewardTypeEffect: 'Effect',
         rarityCommon: 'Common',
         rarityRare: 'Rare',
         rarityEpic: 'Epic',
         rarityLegendary: 'Legendary',
         rarityMythic: 'Mythic',
         rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme',
+        rewardFlowCategory: 'Font / Theme / Effect',
         rewardFlowPicker: 'Picker',
         growthChip: '显示成长标签',
         growthHoverReadout: '成长悬停提示',
@@ -2437,7 +2483,12 @@
       ['themeCyber', 'itemThemeCyber'],
       ['themeCelestial', 'itemThemeCelestial']
     ];
-    const rewardItems = [...rewardFonts, ...rewardThemes];
+    const rewardEffects = [
+      ['effectPawBurst', 'itemEffectPawBurst'],
+      ['effectBearPaw', 'itemEffectBearPaw'],
+      ['effectDogPaw', 'itemEffectDogPaw']
+    ];
+    const rewardItems = [...rewardFonts, ...rewardThemes, ...rewardEffects];
     const valueFor = (path) => {
       const value = get(settings, path);
       return value ?? get(defaults, path);
@@ -2486,7 +2537,7 @@
       }
     };
     const syncRewardPanels = (tab = 'fonts') => {
-      const activeTab = tab === 'themes' ? 'themes' : 'fonts';
+      const activeTab = ['fonts', 'themes', 'effects'].includes(tab) ? tab : 'fonts';
       for (const button of rewardTabButtons) {
         button.setAttribute('aria-pressed', button.dataset.rewardTab === activeTab ? 'true' : 'false');
       }
@@ -2520,18 +2571,24 @@
       if (totalEl) totalEl.textContent = `${totalDrops} unlocks`;
       const activeFont = String(inventory.activeFont || '');
       const activeTheme = String(inventory.activeTheme || '');
+      const activeEffect = String(inventory.activeEffect || '');
       const activeFontName = document.getElementById('activeFontName');
       const activeThemeName = document.getElementById('activeThemeName');
+      const activeEffectName = document.getElementById('activeEffectName');
       const rewardRollCount = document.getElementById('rewardRollCount');
       const fontUnlockSummary = document.getElementById('fontUnlockSummary');
       const themeUnlockSummary = document.getElementById('themeUnlockSummary');
+      const effectUnlockSummary = document.getElementById('effectUnlockSummary');
       if (activeFontName) activeFontName.textContent = getRewardName(activeFont);
       if (activeThemeName) activeThemeName.textContent = getRewardName(activeTheme);
+      if (activeEffectName) activeEffectName.textContent = getRewardName(activeEffect);
       if (rewardRollCount) rewardRollCount.textContent = `${Number(inventory.rewardRolls || 0)}`;
       const unlockedFonts = rewardFonts.filter(([key]) => Boolean(inventory[key])).length;
       const unlockedThemes = rewardThemes.filter(([key]) => Boolean(inventory[key])).length;
+      const unlockedEffects = rewardEffects.filter(([key]) => Boolean(inventory[key])).length;
       if (fontUnlockSummary) fontUnlockSummary.textContent = `${unlockedFonts}/${rewardFonts.length}`;
       if (themeUnlockSummary) themeUnlockSummary.textContent = `${unlockedThemes}/${rewardThemes.length}`;
+      if (effectUnlockSummary) effectUnlockSummary.textContent = `${unlockedEffects}/${rewardEffects.length}`;
       status('inventoryFontPixel', 'fontPixel', activeFont);
       status('inventoryFontTerminal', 'fontTerminal', activeFont);
       status('inventoryThemeForest', 'themeForest', activeTheme);
@@ -2539,6 +2596,9 @@
       status('inventoryThemeRoyal', 'themeRoyal', activeTheme);
       status('inventoryThemeCyber', 'themeCyber', activeTheme);
       status('inventoryThemeCelestial', 'themeCelestial', activeTheme);
+      status('inventoryEffectPawBurst', 'effectPawBurst', activeEffect);
+      status('inventoryEffectBearPaw', 'effectBearPaw', activeEffect);
+      status('inventoryEffectDogPaw', 'effectDogPaw', activeEffect);
     };
     const applyLanguage = () => {
       const lang = activeLanguage();

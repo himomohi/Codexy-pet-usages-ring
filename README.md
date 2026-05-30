@@ -231,3 +231,13 @@ Build a release zip:
 
 Feature and bug-fix releases should update `VERSION`, the README badge, and the
 top `CHANGELOG.md` section together.
+
+Run the project release harness:
+
+```powershell
+.\tools\Invoke-ReleaseHarness.ps1
+```
+
+The harness checks version metadata, runs smoke tests, rebuilds `배포용`,
+verifies release zip freshness, refreshes the installed helper, and can publish
+the tag plus GitHub Release when `-PublishGitHub` is supplied.

@@ -34,6 +34,9 @@ $script:CodexPetRequiredFreshFiles = @(
   "assets/runtime/unlock-font-terminal.png",
   "assets/runtime/unlock-theme-arcane.png",
   "assets/runtime/unlock-theme-royal.png",
+  "assets/runtime/effect-paw-burst.png",
+  "assets/runtime/effect-bear-paw-burst.png",
+  "assets/runtime/effect-dog-paw-burst.png",
   "assets/runtime/theme-forest-border.png",
   "assets/runtime/theme-arcane-border.png",
   "assets/runtime/theme-royal-border.png",
@@ -42,6 +45,7 @@ $script:CodexPetRequiredFreshFiles = @(
   "settings.defaults.json",
   "bin/powershell/Settings.ps1",
   "src/CodexyPetUsagesRing.ps1",
+  "tools/Invoke-ReleaseHarness.ps1",
   "README.md",
   "README.ko.md",
   "README.ja.md",
@@ -55,7 +59,6 @@ function Test-CodexPetReleasePathExcluded {
   $normalized = ($RelativePath -replace '\\', '/').TrimStart("/")
   $leaf = Split-Path -Leaf $normalized
   if ($normalized -in @(
-    ".gitignore",
     "gamification.json",
     "settings.json",
     "assets/runtime/inventory-items-source.png",

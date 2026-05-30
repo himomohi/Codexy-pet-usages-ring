@@ -104,8 +104,12 @@ function New-PetGrowthState {
       themeRoyal = $false
       themeCyber = $false
       themeCelestial = $false
+      effectPawBurst = $false
+      effectBearPaw = $false
+      effectDogPaw = $false
       activeFont = ""
       activeTheme = ""
+      activeEffect = ""
       rewardRolls = 0
       totalDrops = 0
       totalKeys = 0
@@ -170,13 +174,19 @@ function Normalize-PetGrowthState {
   $themeRoyal = [bool](& $get $inventory "themeRoyal" $false)
   $themeCyber = [bool](& $get $inventory "themeCyber" $false)
   $themeCelestial = [bool](& $get $inventory "themeCelestial" $false)
+  $effectPawBurst = [bool](& $get $inventory "effectPawBurst" $false)
+  $effectBearPaw = [bool](& $get $inventory "effectBearPaw" $false)
+  $effectDogPaw = [bool](& $get $inventory "effectDogPaw" $false)
   $themeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
-  $unlockKeys = @("fontPixel", "fontTerminal") + $themeKeys
-  $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeForest, $themeArcane, $themeRoyal, $themeCyber, $themeCelestial).Where({ $_ }).Count
+  $effectKeys = @("effectPawBurst", "effectBearPaw", "effectDogPaw")
+  $unlockKeys = @("fontPixel", "fontTerminal") + $themeKeys + $effectKeys
+  $cosmeticDropCount = @($fontPixel, $fontTerminal, $themeForest, $themeArcane, $themeRoyal, $themeCyber, $themeCelestial, $effectPawBurst, $effectBearPaw, $effectDogPaw).Where({ $_ }).Count
   $activeFont = [string](& $get $inventory "activeFont" "")
   if ($activeFont -notin @("fontPixel", "fontTerminal") -or -not [bool](& $get $inventory $activeFont $false)) { $activeFont = "" }
   $activeTheme = [string](& $get $inventory "activeTheme" "")
   if ($activeTheme -notin $themeKeys -or -not [bool](& $get $inventory $activeTheme $false)) { $activeTheme = "" }
+  $activeEffect = [string](& $get $inventory "activeEffect" "")
+  if ($activeEffect -notin $effectKeys -or -not [bool](& $get $inventory $activeEffect $false)) { $activeEffect = "" }
   $lastDropItem = [string](& $get $inventory "lastDropItem" "")
   $lastDropAt = & $get $inventory "lastDropAt" $null
   if ($lastDropItem -notin $unlockKeys) {
@@ -212,8 +222,12 @@ function Normalize-PetGrowthState {
       themeRoyal = $themeRoyal
       themeCyber = $themeCyber
       themeCelestial = $themeCelestial
+      effectPawBurst = $effectPawBurst
+      effectBearPaw = $effectBearPaw
+      effectDogPaw = $effectDogPaw
       activeFont = $activeFont
       activeTheme = $activeTheme
+      activeEffect = $activeEffect
       rewardRolls = $rewardRolls
       totalDrops = $cosmeticDropCount
       totalKeys = [Math]::Max(0, [int][double](& $get $inventory "totalKeys" 0))
