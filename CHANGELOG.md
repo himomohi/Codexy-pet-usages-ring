@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.13
+
+### Changed
+
+- Replaced cat, dog, and bear paw reward effect sprites with cleaner animal-specific paws and no surrounding particle clutter.
+- Changed the keyboard counter hook to count only the first key-down event for each held key, preventing OS key-repeat from inflating counts.
+
+### Fixed
+
+- Added key-up state tracking and hook reset cleanup so held keys cannot remain stuck as already counted after visibility or hook changes.
+- Updated smoke checks to guard the no-repeat keyboard counter behavior and the refreshed reward effect assets.
+
 ## 0.1.12
 
 ### Added

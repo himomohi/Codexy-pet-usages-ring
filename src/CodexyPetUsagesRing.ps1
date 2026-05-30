@@ -89,7 +89,9 @@ public static class CodexPetLimitRingNative {
     private const int WH_KEYBOARD_LL = 13;
     private const int WH_MOUSE_LL = 14;
     private const int WM_KEYDOWN = 0x0100;
+    private const int WM_KEYUP = 0x0101;
     private const int WM_SYSKEYDOWN = 0x0104;
+    private const int WM_SYSKEYUP = 0x0105;
     private const int WM_LBUTTONDOWN = 0x0201;
     private const int VK_LBUTTON = 0x01;
     private static readonly IntPtr IDC_HAND = new IntPtr(32649);
@@ -99,6 +101,7 @@ public static class CodexPetLimitRingNative {
     private static LowLevelKeyboardProc keyboardProc = KeyboardHookCallback;
     private static LowLevelMouseProc mouseProc = MouseHookCallback;
     private static int pendingKeyPresses = 0;
+    private static readonly int[] keyDownStates = new int[256];
     private static int pendingLeftMouseClicks = 0;
     private static int lastLeftClickX = 0;
     private static int lastLeftClickY = 0;
@@ -119,6 +122,15 @@ public static class CodexPetLimitRingNative {
     private struct POINT {
         public int X;
         public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct KBDLLHOOKSTRUCT {
+        public uint VkCode;
+        public uint ScanCode;
+        public uint Flags;
+        public uint Time;
+        public IntPtr ExtraInfo;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -220,6 +232,7 @@ public static class CodexPetLimitRingNative {
             keyboardHook = IntPtr.Zero;
         }
         Interlocked.Exchange(ref pendingKeyPresses, 0);
+        ResetKeyboardDownStates();
     }
 
     public static int ConsumeKeyPresses() {
@@ -279,10 +292,30 @@ public static class CodexPetLimitRingNative {
     }
 
     private static IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
-        if (nCode >= 0 && (wParam.ToInt32() == WM_KEYDOWN || wParam.ToInt32() == WM_SYSKEYDOWN)) {
-            Interlocked.Increment(ref pendingKeyPresses);
+        if (nCode >= 0) {
+            int message = wParam.ToInt32();
+            if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN || message == WM_KEYUP || message == WM_SYSKEYUP) {
+                try {
+                    KBDLLHOOKSTRUCT data = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
+                    int key = unchecked((int)data.VkCode) & 0xFF;
+                    if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN) {
+                        if (Interlocked.Exchange(ref keyDownStates[key], 1) == 0) {
+                            Interlocked.Increment(ref pendingKeyPresses);
+                        }
+                    } else {
+                        Interlocked.Exchange(ref keyDownStates[key], 0);
+                    }
+                } catch {
+                }
+            }
         }
         return CallNextHookEx(keyboardHook, nCode, wParam, lParam);
+    }
+
+    private static void ResetKeyboardDownStates() {
+        for (int i = 0; i < keyDownStates.Length; i++) {
+            Interlocked.Exchange(ref keyDownStates[i], 0);
+        }
     }
 
     private static IntPtr MouseHookCallback(int nCode, IntPtr wParam, IntPtr lParam) {
