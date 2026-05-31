@@ -1,15 +1,15 @@
-<p align="center">
+﻿<p align="center">
   <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
 </p>
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.17-3CEBBD?style=for-the-badge&logo=github">
+    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.18-3CEBBD?style=for-the-badge&logo=github">
   </a>
 </p>
 
 <p align="center">
-  <a href="CHANGELOG.md#0117"><img alt="Version 0.1.17" src="https://img.shields.io/badge/version-0.1.17-3CEBBD?style=for-the-badge"></a>
+  <a href="CHANGELOG.md#0118"><img alt="Version 0.1.18" src="https://img.shields.io/badge/version-0.1.18-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -243,4 +243,3 @@ Run the project release harness:
 The harness checks version metadata, runs smoke tests, rebuilds `배포용`,
 verifies release zip freshness, refreshes the installed helper, and can publish
 the tag plus GitHub Release when `-PublishGitHub` is supplied.
-

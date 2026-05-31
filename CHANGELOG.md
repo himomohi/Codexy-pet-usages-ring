@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.18
+
+### Fixed
+
+- Hid the inactive reward claim button when every reward is already unlocked so the reward popover no longer shows an unexplained gray bar.
+
 ## 0.1.17
 
 ### Added

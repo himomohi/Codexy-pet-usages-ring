@@ -419,6 +419,9 @@ function Convert-ChangelogBulletKo {
     "Kept the ready chest icon tied to the 1000-key charge state so fully unlocked test inventories still show that the chest is charged." {
       return "테스트 인벤토리가 전체 해금 상태여도 1000키 충전 상태 자체는 ready 상자 아이콘으로 표시되게 했습니다."
     }
+    "Hid the inactive reward claim button when every reward is already unlocked so the reward popover no longer shows an unexplained gray bar." {
+      return "모든 보상이 이미 해금된 상태에서는 비활성 보상 상자 버튼을 숨겨, 보상 팝오버에 의미 없는 회색 막대가 보이지 않도록 수정했습니다."
+    }
     default {
       return $Bullet
     }

@@ -2670,7 +2670,9 @@ function Update-InventoryReadoutContent {
   $totalKeys = [Math]::Max(0, [int]$inventory.totalKeys)
   $rewardStatus = Get-RewardChestStatusText
   $claimable = Get-ClaimableRewardChestCount
-  $canClaim = ($claimable -gt 0 -and (Test-RewardChestPrizeAvailable) -and -not (Test-RewardChestCooldownActive))
+  $prizeAvailable = Test-RewardChestPrizeAvailable
+  $cooldownActive = Test-RewardChestCooldownActive
+  $canClaim = ($claimable -gt 0 -and $prizeAvailable -and -not $cooldownActive)
   $lastItem = Get-DropItemLabel -Item ([string]$inventory.lastDropItem)
   if ([string]::IsNullOrWhiteSpace($lastItem)) { $lastItem = Get-InventoryUiText -Key "None" }
 
@@ -2680,28 +2682,15 @@ function Update-InventoryReadoutContent {
   if ($null -ne $script:InventoryReadoutHint) {
     $script:InventoryReadoutHint.Text = if (-not [string]::IsNullOrWhiteSpace([string]$script:InventoryLastClaimMessage)) {
       [string]$script:InventoryLastClaimMessage
-    } elseif ($canClaim -or (Test-RewardChestCooldownActive)) {
+    } elseif (-not $prizeAvailable) {
+      Get-InventoryUiText -Key "AllUnlocked"
+    } elseif ($canClaim -or $cooldownActive) {
       $rewardStatus
     } elseif ($totalDrops -gt 0) {
       ((Get-InventoryUiText -Key "Last") -f $lastItem)
     } else {
       Get-InventoryUiText -Key "EmptyHint"
     }
-  }
-  if ($null -ne $script:InventoryClaimButton) {
-    $claimButtonText = if ($canClaim) {
-      Get-InventoryUiText -Key "OpenChest"
-    } else {
-      $rewardStatus
-    }
-    if ($null -ne $script:InventoryClaimButtonLabel) {
-      $script:InventoryClaimButtonLabel.Text = $claimButtonText
-    } else {
-      $script:InventoryClaimButton.Content = $claimButtonText
-    }
-    $script:InventoryClaimButton.IsEnabled = $canClaim
-    $script:InventoryClaimButton.Opacity = if ($canClaim) { 1.0 } else { 0.58 }
-    $script:InventoryClaimButton.Cursor = if ($canClaim) { [System.Windows.Input.Cursors]::Hand } else { [System.Windows.Input.Cursors]::Arrow }
   }
   if ($null -ne $script:InventoryReadoutStats) {
     $script:InventoryReadoutStats.Text = "{0}  {1}  {2}" -f `
@@ -2713,6 +2702,43 @@ function Update-InventoryReadoutContent {
     $script:InventoryReadoutText.Text = Get-InventoryReadoutText
   }
   Apply-CosmeticUnlockVisuals
+  if ($null -ne $script:InventoryClaimButton) {
+    $showClaimStatus = ($prizeAvailable -or $cooldownActive)
+    $script:InventoryClaimButton.Visibility = if ($showClaimStatus) {
+      [System.Windows.Visibility]::Visible
+    } else {
+      [System.Windows.Visibility]::Collapsed
+    }
+    if ($showClaimStatus) {
+      $claimButtonText = if ($canClaim) {
+        Get-InventoryUiText -Key "OpenChest"
+      } else {
+        $rewardStatus
+      }
+      if ($null -ne $script:InventoryClaimButtonLabel) {
+        $script:InventoryClaimButtonLabel.Text = $claimButtonText
+      } else {
+        $script:InventoryClaimButton.Content = $claimButtonText
+      }
+      $script:InventoryClaimButton.IsEnabled = $true
+      $script:InventoryClaimButton.IsHitTestVisible = $canClaim
+      $script:InventoryClaimButton.Focusable = $canClaim
+      $script:InventoryClaimButton.Opacity = 1.0
+      $script:InventoryClaimButton.Cursor = if ($canClaim) { [System.Windows.Input.Cursors]::Hand } else { [System.Windows.Input.Cursors]::Arrow }
+      if ($canClaim) {
+        $accent = Get-CosmeticAccentRgb
+        $script:InventoryClaimButton.Background = New-StyleBrush 126 ([int[]]$accent)
+        $script:InventoryClaimButton.BorderBrush = New-StyleBrush 210 ([int[]]$accent)
+        $script:InventoryClaimButton.Foreground = New-Brush 246 255 255 255
+        if ($null -ne $script:InventoryClaimButtonLabel) { $script:InventoryClaimButtonLabel.Foreground = New-Brush 246 255 255 255 }
+      } else {
+        $script:InventoryClaimButton.Background = New-Brush 42 18 25 34
+        $script:InventoryClaimButton.BorderBrush = New-Brush 92 220 236 244
+        $script:InventoryClaimButton.Foreground = New-Brush 196 220 236 244
+        if ($null -ne $script:InventoryClaimButtonLabel) { $script:InventoryClaimButtonLabel.Foreground = New-Brush 196 220 236 244 }
+      }
+    }
+  }
   Update-InventoryChargeVisuals -Force
 }
 
