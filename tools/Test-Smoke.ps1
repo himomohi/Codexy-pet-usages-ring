@@ -189,12 +189,22 @@ try {
       throw "Settings page is missing calibrated pet preview endpoint: $previewEndpoint"
     }
   }
+  foreach ($syncMarker in @("refreshPetPreview", "spriteVersion", "cache: 'no-store'")) {
+    if ($settingsPage -notmatch [regex]::Escape($syncMarker)) {
+      throw "Settings page is missing current-pet preview synchronization: $syncMarker"
+    }
+  }
   $settingsServerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Settings.ps1")
   if ($settingsServerText -notmatch '/assets/codex-pet-ambient\.webp' -or $settingsServerText -notmatch 'ContentType "image/webp"') {
     throw "Settings server must serve the imagegen background as WebP."
   }
   if ($settingsServerText -notmatch 'function Get-PetPreviewInfo' -or $settingsServerText -notmatch 'electron-avatar-overlay-bounds') {
     throw "Settings server is missing live pet preview calibration."
+  }
+  foreach ($syncMarker in @('selected-avatar-id', 'Sort-Object LastWriteTimeUtc -Descending', 'spriteVersion')) {
+    if ($settingsServerText -notmatch [regex]::Escape($syncMarker)) {
+      throw "Settings server is missing current-pet selection handling: $syncMarker"
+    }
   }
 
   $installLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Install.bat")

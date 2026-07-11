@@ -230,9 +230,31 @@ function Get-PreferredPetDirectory {
   $statePath = Join-Path $env:USERPROFILE ".codex\.codex-global-state.json"
   if (Test-Path -LiteralPath $statePath) {
     try {
-      $stateText = Read-Utf8Text -Path $statePath
-      $match = [regex]::Match($stateText, 'custom:([A-Za-z0-9_-]+)')
-      if ($match.Success) { $preferredId = $match.Groups[1].Value }
+      $state = Read-Utf8Text -Path $statePath | ConvertFrom-Json
+      $candidateValues = @(
+        Get-PropertyValue $state "selected-avatar-id" $null
+        Get-PropertyValue $state "selectedAvatarId" $null
+        Get-PropertyValue $state "avatarId" $null
+        Get-PropertyValue $state "petId" $null
+      )
+      $persisted = Get-PropertyValue $state "electron-persisted-atom-state" $null
+      if ($null -ne $persisted) {
+        $candidateValues += @(
+          Get-PropertyValue $persisted "selected-avatar-id" $null
+          Get-PropertyValue $persisted "selectedAvatarId" $null
+          Get-PropertyValue $persisted "avatarId" $null
+          Get-PropertyValue $persisted "petId" $null
+        )
+      }
+      foreach ($candidateValue in $candidateValues) {
+        $match = [regex]::Match([string]$candidateValue, '^(?:custom:)?([A-Za-z0-9_-]+)$')
+        if (-not $match.Success) { continue }
+        $candidateId = $match.Groups[1].Value
+        if (Test-Path -LiteralPath (Join-Path $petsRoot "$candidateId\pet.json")) {
+          $preferredId = $candidateId
+          break
+        }
+      }
     } catch {}
   }
   if (-not [string]::IsNullOrWhiteSpace($preferredId)) {
@@ -241,6 +263,7 @@ function Get-PreferredPetDirectory {
   }
   return Get-ChildItem -LiteralPath $petsRoot -Directory -ErrorAction SilentlyContinue |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName "pet.json") } |
+    Sort-Object LastWriteTimeUtc -Descending |
     Select-Object -First 1 -ExpandProperty FullName
 }
 
@@ -272,13 +295,22 @@ function Get-PetPreviewInfo {
   }
   $rows = 9
   $petDirectory = Get-PreferredPetDirectory
+  $petId = ""
+  $spriteVersion = "none"
   if (-not [string]::IsNullOrWhiteSpace($petDirectory)) {
     try {
       $manifest = Read-Utf8Text -Path (Join-Path $petDirectory "pet.json") | ConvertFrom-Json
+      $petId = [string](Get-PropertyValue $manifest "id" (Split-Path -Leaf $petDirectory))
       if ([int](Get-PropertyValue $manifest "spriteVersionNumber" 1) -eq 2) { $rows = 11 }
+      $spritesheetPath = Get-PetSpritesheetPath
+      if (-not [string]::IsNullOrWhiteSpace($spritesheetPath)) {
+        $spriteVersion = [string](Get-Item -LiteralPath $spritesheetPath).LastWriteTimeUtc.Ticks
+      }
     } catch {}
   }
   return [ordered]@{
+    petId = $petId
+    spriteVersion = $spriteVersion
     width = $width
     height = $height
     columns = 8

@@ -684,7 +684,8 @@
     let isDirty = false;
     let statusKey = 'loading';
     let automaticLanguage = '';
-    let petPreview = { width: 113, height: 122, columns: 8, rows: 11, spriteAvailable: false };
+    let petPreview = { petId: '', spriteVersion: 'none', width: 113, height: 122, columns: 8, rows: 11, spriteAvailable: false };
+    let petPreviewTimer = null;
 
     const translations = {
       en: {
@@ -1001,7 +1002,8 @@
       previewPetSprite.style.display = petPreview.spriteAvailable ? 'block' : 'none';
       previewPetFallback.style.display = petPreview.spriteAvailable ? 'none' : 'block';
       if (petPreview.spriteAvailable) {
-        previewPetSprite.style.backgroundImage = `url('/api/pet-spritesheet?token=${encodeURIComponent(sessionToken)}')`;
+        const spriteKey = `${petPreview.petId || 'pet'}-${petPreview.spriteVersion || 'current'}`;
+        previewPetSprite.style.backgroundImage = `url('/api/pet-spritesheet?token=${encodeURIComponent(sessionToken)}&v=${encodeURIComponent(spriteKey)}')`;
         previewPetSprite.style.backgroundSize = `${Math.max(1, Number(petPreview.columns) || 8) * 100}% ${Math.max(1, Number(petPreview.rows) || 11) * 100}%`;
       }
       const outerRadiusActual = windowSizeActual / 2 - 16;
@@ -1164,6 +1166,22 @@
       bind();
       updateDirtyState();
       showStatus('ready');
+      if (petPreviewTimer) clearInterval(petPreviewTimer);
+      petPreviewTimer = setInterval(refreshPetPreview, 2000);
+    }
+
+    async function refreshPetPreview() {
+      try {
+        const response = await fetch(`/api/pet-preview?t=${Date.now()}`, { headers: apiHeaders(), cache: 'no-store' });
+        if (!response.ok) return;
+        const next = await response.json();
+        const changed = next.petId !== petPreview.petId ||
+          next.spriteVersion !== petPreview.spriteVersion ||
+          next.width !== petPreview.width || next.height !== petPreview.height;
+        if (!changed) return;
+        petPreview = next;
+        renderPreview();
+      } catch {}
     }
 
     async function save() {
