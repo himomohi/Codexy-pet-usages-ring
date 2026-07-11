@@ -1,12 +1,13 @@
-# Architecture
+﻿# Architecture
 
-Codexy pet usages ring is a companion overlay. It runs next to Codex
+Codex Pet Limit Rings for Windows is a companion overlay. It runs next to Codex
 Desktop instead of modifying Codex itself.
 
 ## Data Flow
 
 1. `bin\powershell\Start.ps1` auto-discovers Codex Desktop and starts it unless
-   `-NoStartCodex` is used. Discovery checks a running `Codex.exe`, the
+   `-NoStartCodex` is used. Discovery checks a running Codex Desktop process
+   (`ChatGPT.exe` in current AppX builds or legacy `Codex.exe`), the
    `OpenAI.Codex` AppX package, the Start Menu AppID, and matching
    `WindowsApps` folders.
 2. Codex Desktop writes avatar overlay state to:

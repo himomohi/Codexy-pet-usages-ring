@@ -1,12 +1,12 @@
 param(
-  [string]$InstallDir = "$env:LOCALAPPDATA\CodexyPetUsagesRing",
+  [string]$InstallDir = "",
   [string]$CodexHome = "$env:USERPROFILE\.codex"
 )
 
 $ErrorActionPreference = "Stop"
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-  throw "Codexy pet usages ring can only run on Windows."
+  throw "Codex Pet Limit Rings for Windows can only run on Windows."
 }
 
 function Read-Utf8Text {
@@ -26,6 +26,11 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
   . $codexDiscoveryScript
 }
 
+$effectiveInstallDir = if ([string]::IsNullOrWhiteSpace($InstallDir)) {
+  Get-CodexPetDefaultInstallDir
+} else {
+  [System.IO.Path]::GetFullPath($InstallDir)
+}
 $processRoots = Get-CodexPetRuntimeRoots -ScriptProjectRoot $projectRoot -InstallDir $InstallDir
 $processes = Get-CodexPetRuntimeProcesses -ProjectRoots $processRoots
 $pidFiles = @($processRoots | ForEach-Object {
@@ -46,13 +51,14 @@ if (Test-Path -LiteralPath $statePath) {
   try { $state = Read-Utf8Text -Path $statePath | ConvertFrom-Json } catch { $state = $null }
 }
 
-$startupShortcut = Join-Path ([Environment]::GetFolderPath("Startup")) "Codexy pet usages ring.lnk"
+$startupShortcut = Join-Path ([Environment]::GetFolderPath("Startup")) "Codex Pet Limit Rings.lnk"
 
 [PSCustomObject]@{
-  Installed = Test-Path -LiteralPath $InstallDir
-  InstallDir = [System.IO.Path]::GetFullPath($InstallDir)
-  InstallMarker = Test-CodexPetInstallMarker -ProjectRoot $InstallDir
+  Installed = Test-Path -LiteralPath $effectiveInstallDir
+  InstallDir = $effectiveInstallDir
+  InstallMarker = Test-CodexPetInstallMarker -ProjectRoot $effectiveInstallDir
   Running = [bool]$processes
+  DuplicateRuntimeCount = [Math]::Max(0, @($processes).Count - 1)
   ProcessIds = @($processes | ForEach-Object { $_.ProcessId })
   ProcessRoots = @($processes | ForEach-Object { $_.ProjectRoot } | Sort-Object -Unique)
   PidFiles = $pidFiles

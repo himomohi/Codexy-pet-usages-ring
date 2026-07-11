@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.1.19
+
+### Added
+
+- Added five lightweight usage display styles, including reference-matched pixel-art potion orbs with adjustable size and placement.
+- Added Korean/English automatic language selection, live settings preview, safe installed-copy synchronization, and visible source/install folder links.
+- Added hover readouts that show the exact reset moment and continuously updated remaining time for both the 5-hour and weekly limits.
+
+### Changed
+
+- Streamlined the companion around usage visualization and removed the previous keyboard counter, pet-growth, reward, theme, and watcher subsystems.
+- Reworked installation around `%LOCALAPPDATA%\CodexPetLimitRingsWin`, with explicit optional auto-start and settings-preserving updates through `Apply-Installed.bat`.
+- Updated the settings UI, documentation, diagnostics, runtime naming, and release packaging for the streamlined Windows companion.
+
+### Fixed
+
+- Hardened process discovery, install markers, full uninstall cleanup, source/install linking, potion hover hit testing, ring sweep math, and transient usage-reset stabilization.
+
 ## 0.1.18
 
 ### Fixed

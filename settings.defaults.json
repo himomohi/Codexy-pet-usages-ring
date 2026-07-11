@@ -1,7 +1,10 @@
 {
   "version": 1,
   "language": "auto",
-  "displayMode": "ring",
+  "appearance": {
+    "mode": "rings",
+    "potionScale": 100
+  },
   "colors": {
     "primary": "#3CEBBD",
     "secondary": "#56B2FF",
@@ -25,23 +28,14 @@
     "lineHeight": 13
   },
   "layout": {
-    "ringGap": 22
+    "ringGap": 22,
+    "offsetX": 0,
+    "offsetY": 0
   },
   "behavior": {
-    "visibilityMode": "hover",
+    "visibilityMode": "always",
     "hoverRange": 24,
     "fadeInMs": 120,
     "fadeOutMs": 180
-  },
-  "gamification": {
-    "enabled": false,
-    "growthMode": "balanced",
-    "hudFocus": "growth",
-    "showGrowthChip": true,
-    "showHoverReadout": true,
-    "showKeyCounter": true,
-    "showKeyEffects": true,
-    "showComboHeat": true,
-    "showRewardCharge": true
   }
 }

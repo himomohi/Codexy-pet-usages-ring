@@ -9,8 +9,6 @@ param(
   [double]$ReadoutPadding = 160.0,
   [string]$SettingsPath = "",
   [switch]$NoTrayIcon,
-  [switch]$ShowTrayIcon,
-  [switch]$NoExitWithCodex,
   [string]$CodexAppPath = "",
   [string]$CodexAppId = "",
   [switch]$NoStartCodex,
@@ -20,7 +18,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-  throw "Codexy pet usages ring can only run on Windows."
+  throw "Codex Pet Limit Rings for Windows can only run on Windows."
 }
 
 $runtimeStateScript = Join-Path $PSScriptRoot "RuntimeState.ps1"
@@ -52,9 +50,9 @@ function Quote-Argument {
 }
 
 $projectRoot = Get-ProjectRoot
-$watchScript = Join-Path $projectRoot "src\WatchPetOverlay.ps1"
-if (-not (Test-Path -LiteralPath $watchScript)) {
-  throw "Missing watcher script: $watchScript"
+$appScript = Join-Path $projectRoot "src\CodexPetLimitRings.ps1"
+if (-not (Test-Path -LiteralPath $appScript)) {
+  throw "Missing app script: $appScript"
 }
 
 $codexDiscoveryScript = Join-Path $projectRoot "src\CodexAppDiscovery.ps1"
@@ -62,7 +60,8 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
   . $codexDiscoveryScript
 }
 
-& (Join-Path $PSScriptRoot "Stop.ps1") -InstallDir $projectRoot -Quiet
+# 현재 소스와 기본 설치본 중 어느 쪽에서 실행했든 기존 overlay를 하나만 남긴다.
+& (Join-Path $PSScriptRoot "Stop.ps1") -Quiet
 
 $codexStartResult = $null
 if (-not $NoStartCodex -and (Get-Command Start-CodexDesktopApp -ErrorAction SilentlyContinue)) {
@@ -94,7 +93,7 @@ $powerShell = Get-WindowsPowerShell
 $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
 if ([string]::IsNullOrWhiteSpace($localAppData)) { $localAppData = $env:LOCALAPPDATA }
 if ([string]::IsNullOrWhiteSpace($localAppData)) { $localAppData = $env:TEMP }
-$logDir = Join-Path $localAppData "CodexyPetUsagesRing\logs"
+$logDir = Join-Path $localAppData "CodexPetLimitRingsWin\logs"
 if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
   $SettingsPath = Join-Path $projectRoot "settings.json"
 }
@@ -102,23 +101,24 @@ $args = @(
   "-NoProfile",
   "-ExecutionPolicy", "Bypass",
   "-STA",
-  "-File", $watchScript,
+  "-File", $appScript,
   "-CodexHome", $CodexHome,
-  "-InstallDir", $projectRoot
+  "-UsagePollSeconds", $UsagePollSeconds,
+  "-FramePollMs", $FramePollMs,
+  "-IdleFramePollMs", $IdleFramePollMs,
+  "-PetPollMs", $PetPollMs,
+  "-ReadoutPadding", $ReadoutPadding,
+  "-SettingsPath", $SettingsPath,
+  "-LogDirectory", $logDir
 )
 if ($NoLiveUsage) { $args += "-NoLiveUsage" }
-if ($NoExitWithCodex) { $args += "-NoExitWithCodex" }
-if ($ShowTrayIcon -and -not $NoTrayIcon) { $args += "-ShowTrayIcon" }
-if ($NoStartCodex) { $args += "-NoStartCodex" }
-if (-not [string]::IsNullOrWhiteSpace($CodexAppPath)) { $args += @("-CodexAppPath", $CodexAppPath) }
-if (-not [string]::IsNullOrWhiteSpace($CodexAppId)) { $args += @("-CodexAppId", $CodexAppId) }
-if ($CodexStartWaitSeconds -ne 8) { $args += @("-CodexStartWaitSeconds", $CodexStartWaitSeconds) }
+if ($NoTrayIcon) { $args += "-NoTrayIcon" }
 
 $argumentLine = ($args | ForEach-Object { Quote-Argument ([string]$_) }) -join " "
 $process = Start-Process -FilePath $powerShell -ArgumentList $argumentLine -WorkingDirectory $projectRoot -WindowStyle Hidden -PassThru
 if (Get-Command Set-CodexPetPidFile -ErrorAction SilentlyContinue) {
   Set-CodexPetPidFile -ProjectRoot $projectRoot -ProcessId $process.Id
 }
-Write-Output "Started Codexy pet usages ring watcher."
+Write-Output "Started Codex Pet Limit Rings for Windows."
 Write-Output "PID: $($process.Id)"
 Write-Output "Project: $projectRoot"

@@ -55,74 +55,67 @@ function Normalize-Number {
   try { return [Math]::Round([Math]::Max($Min, [Math]::Min($Max, [double]$Value)), 3) } catch { return $Fallback }
 }
 
-function Normalize-Bool {
-  param($Value, [bool]$Fallback)
-  if ($null -eq $Value) { return $Fallback }
-  if ($Value -is [bool]) { return [bool]$Value }
-  $text = ([string]$Value).Trim().ToLowerInvariant()
-  if ($text -in @("true", "1", "yes", "on")) { return $true }
-  if ($text -in @("false", "0", "no", "off")) { return $false }
-  return $Fallback
-}
-
 function Normalize-Language {
   param($Value)
   $language = if ($null -eq $Value) { "auto" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($language -in @("auto", "ko", "en", "ja", "zh")) { return $language }
+  if ($language -in @("auto", "ko", "en")) { return $language }
   return "auto"
-}
-
-function Normalize-DisplayMode {
-  param($Value)
-  $displayMode = if ($null -eq $Value) { "ring" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($displayMode -in @("ring", "battery", "badge")) { return $displayMode }
-  return "ring"
-}
-
-function Normalize-GrowthMode {
-  param($Value)
-  $growthMode = if ($null -eq $Value) { "balanced" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($growthMode -in @("conserve", "balanced", "active")) { return $growthMode }
-  return "balanced"
-}
-
-function Normalize-GamificationHudFocus {
-  param($Value)
-  $focus = if ($null -eq $Value) { "growth" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($focus -in @("growth", "combo")) { return $focus }
-  return "growth"
 }
 
 function Normalize-VisibilityMode {
   param($Value)
-  $visibilityMode = if ($null -eq $Value) { "hover" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($visibilityMode -in @("hover", "always")) { return $visibilityMode }
-  return "hover"
+  $mode = if ($null -eq $Value) { "always" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($mode -in @("always", "hover")) { return $mode }
+  return "always"
+}
+
+function Normalize-AppearanceMode {
+  param($Value)
+  $mode = if ($null -eq $Value) { "rings" } else { ([string]$Value).Trim().ToLowerInvariant() }
+  if ($mode -in @("rings", "bars", "wings", "corners", "potions")) { return $mode }
+  return "rings"
 }
 
 function Get-SystemLanguage {
   try {
-    $cultureName = [System.Globalization.CultureInfo]::CurrentUICulture.Name
-    if ($cultureName -like "ko*") { return "ko" }
-    if ($cultureName -like "ja*") { return "ja" }
-    if ($cultureName -like "zh*") { return "zh" }
+    if ([System.Globalization.CultureInfo]::CurrentUICulture.Name -like "ko*") { return "ko" }
   } catch {}
   return "en"
+}
+
+function Resolve-SettingsAutomaticLanguage {
+  param($Settings)
+
+  $configured = Normalize-Language (Get-PropertyValue $Settings "language" "auto")
+  if ($configured -ne "auto") {
+    return [PSCustomObject]@{
+      Language = ""
+      CountryCode = ""
+      Source = "manual"
+    }
+  }
+  return (Get-AutomaticLanguageResult `
+    -CachePath $script:LanguageCachePath `
+    -TimeoutSeconds 2 `
+    -CacheHours 24)
 }
 
 function Get-NormalizedSettings {
   param($InputObject)
   $colors = Get-PropertyValue $InputObject "colors" $null
+  $appearance = Get-PropertyValue $InputObject "appearance" $null
   $opacity = Get-PropertyValue $InputObject "opacity" $null
   $text = Get-PropertyValue $InputObject "text" $null
   $layout = Get-PropertyValue $InputObject "layout" $null
   $behavior = Get-PropertyValue $InputObject "behavior" $null
-  $gamification = Get-PropertyValue $InputObject "gamification" $null
 
   return [ordered]@{
     version = 1
     language = Normalize-Language (Get-PropertyValue $InputObject "language" $null)
-    displayMode = Normalize-DisplayMode (Get-PropertyValue $InputObject "displayMode" $null)
+    appearance = [ordered]@{
+      mode = Normalize-AppearanceMode (Get-PropertyValue $appearance "mode" $null)
+      potionScale = Normalize-Number (Get-PropertyValue $appearance "potionScale" $null) 100 70 140
+    }
     colors = [ordered]@{
       primary = Normalize-Hex (Get-PropertyValue $colors "primary" $null) "#3CEBBD"
       secondary = Normalize-Hex (Get-PropertyValue $colors "secondary" $null) "#56B2FF"
@@ -147,23 +140,14 @@ function Get-NormalizedSettings {
     }
     layout = [ordered]@{
       ringGap = Normalize-Number (Get-PropertyValue $layout "ringGap" $null) 22 0 96
+      offsetX = Normalize-Number (Get-PropertyValue $layout "offsetX" $null) 0 -240 240
+      offsetY = Normalize-Number (Get-PropertyValue $layout "offsetY" $null) 0 -240 240
     }
     behavior = [ordered]@{
       visibilityMode = Normalize-VisibilityMode (Get-PropertyValue $behavior "visibilityMode" $null)
       hoverRange = Normalize-Number (Get-PropertyValue $behavior "hoverRange" $null) 24 0 96
       fadeInMs = Normalize-Number (Get-PropertyValue $behavior "fadeInMs" $null) 120 0 1000
       fadeOutMs = Normalize-Number (Get-PropertyValue $behavior "fadeOutMs" $null) 180 0 1000
-    }
-    gamification = [ordered]@{
-      enabled = Normalize-Bool (Get-PropertyValue $gamification "enabled" $null) $false
-      growthMode = Normalize-GrowthMode (Get-PropertyValue $gamification "growthMode" $null)
-      hudFocus = Normalize-GamificationHudFocus (Get-PropertyValue $gamification "hudFocus" $null)
-      showGrowthChip = Normalize-Bool (Get-PropertyValue $gamification "showGrowthChip" $null) $true
-      showHoverReadout = Normalize-Bool (Get-PropertyValue $gamification "showHoverReadout" $null) $true
-      showKeyCounter = Normalize-Bool (Get-PropertyValue $gamification "showKeyCounter" $null) $true
-      showKeyEffects = Normalize-Bool (Get-PropertyValue $gamification "showKeyEffects" $null) $true
-      showComboHeat = Normalize-Bool (Get-PropertyValue $gamification "showComboHeat" $null) $true
-      showRewardCharge = Normalize-Bool (Get-PropertyValue $gamification "showRewardCharge" $null) $true
     }
   }
 }
@@ -195,141 +179,13 @@ function Read-Defaults {
   return Get-NormalizedSettings $null
 }
 
-function Read-GamificationStateSummary {
-  $statePath = Join-Path $env:LOCALAPPDATA "CodexyPetUsagesRing\gamification.json"
-  $empty = [ordered]@{
-    inventory = [ordered]@{
-      snack = 0
-      gem = 0
-      ticket = 0
-      patch = 0
-      fontPixel = $false
-      fontTerminal = $false
-      themeForest = $false
-      themeArcane = $false
-      themeRoyal = $false
-      themeCyber = $false
-      themeCelestial = $false
-      effectPawBurst = $false
-      effectBearPaw = $false
-      effectDogPaw = $false
-      activeFont = ""
-      activeTheme = ""
-      activeEffect = ""
-      rewardRolls = 0
-      totalDrops = 0
-      totalKeys = 0
-      rewardKeys = 0
-      rewardKeysMigrated = 2
-      rewardCooldownUntil = $null
-      lastDropAt = $null
-      lastDropItem = ""
-    }
-  }
-  try {
-    if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { return $empty }
-    $state = (Read-Utf8Text -Path $statePath) | ConvertFrom-Json
-    $inventory = Get-PropertyValue $state "inventory" $null
-    if ($null -eq $inventory) { return $empty }
-    $fontPixel = [bool](Get-PropertyValue $inventory "fontPixel" $false)
-    $fontTerminal = [bool](Get-PropertyValue $inventory "fontTerminal" $false)
-    $themeForest = [bool](Get-PropertyValue $inventory "themeForest" $false)
-    $themeArcane = [bool](Get-PropertyValue $inventory "themeArcane" $false)
-    $themeRoyal = [bool](Get-PropertyValue $inventory "themeRoyal" $false)
-    $themeCyber = [bool](Get-PropertyValue $inventory "themeCyber" $false)
-    $themeCelestial = [bool](Get-PropertyValue $inventory "themeCelestial" $false)
-    $effectPawBurst = [bool](Get-PropertyValue $inventory "effectPawBurst" $false)
-    $effectBearPaw = [bool](Get-PropertyValue $inventory "effectBearPaw" $false)
-    $effectDogPaw = [bool](Get-PropertyValue $inventory "effectDogPaw" $false)
-    $themeKeys = @("themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial")
-    $effectKeys = @("effectPawBurst", "effectBearPaw", "effectDogPaw")
-    $unlockKeys = @("fontPixel", "fontTerminal") + $themeKeys + $effectKeys
-    $cosmeticDropCount = @(
-      $fontPixel,
-      $fontTerminal,
-      $themeForest,
-      $themeArcane,
-      $themeRoyal,
-      $themeCyber,
-      $themeCelestial,
-      $effectPawBurst,
-      $effectBearPaw,
-      $effectDogPaw
-    ).Where({ $_ }).Count
-    $activeFont = [string](Get-PropertyValue $inventory "activeFont" "")
-    if ($activeFont -notin @("fontPixel", "fontTerminal") -or -not [bool](Get-PropertyValue $inventory $activeFont $false)) { $activeFont = "" }
-    $activeTheme = [string](Get-PropertyValue $inventory "activeTheme" "")
-    if ($activeTheme -notin $themeKeys -or -not [bool](Get-PropertyValue $inventory $activeTheme $false)) { $activeTheme = "" }
-    $activeEffect = [string](Get-PropertyValue $inventory "activeEffect" "")
-    if ($activeEffect -notin $effectKeys -or -not [bool](Get-PropertyValue $inventory $activeEffect $false)) { $activeEffect = "" }
-    $lastDropItem = [string](Get-PropertyValue $inventory "lastDropItem" "")
-    $lastDropAt = Get-PropertyValue $inventory "lastDropAt" $null
-    if ($lastDropItem -notin $unlockKeys) {
-      $lastDropItem = ""
-      $lastDropAt = $null
-    }
-    $rewardRolls = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "rewardRolls" 0))
-    if ($cosmeticDropCount -le 0) { $rewardRolls = 0 }
-    $totalKeys = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "totalKeys" 0))
-    $rewardKeysMigrated = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "rewardKeysMigrated" 0))
-    $rewardKeysValue = Get-PropertyValue $inventory "rewardKeys" $null
-    $rewardKeysBase = if ($null -eq $rewardKeysValue) { 0 } else { [int][double]$rewardKeysValue }
-    $rewardChestCost = 1000
-    $rewardKeys = if ($rewardKeysMigrated -lt 2) {
-      $historicSpentKeys = [Math]::Max(0, [int]$rewardRolls) * $rewardChestCost
-      $historicRewardKeys = [Math]::Max(0, $totalKeys - $historicSpentKeys)
-      [Math]::Max($historicRewardKeys, [Math]::Max(0, $rewardKeysBase))
-    } else {
-      [Math]::Max(0, $rewardKeysBase)
-    }
-    $rewardCooldownUntil = Get-PropertyValue $inventory "rewardCooldownUntil" $null
-    if ($null -ne $rewardCooldownUntil) {
-      try {
-        if ([datetime]$rewardCooldownUntil -le (Get-Date)) { $rewardCooldownUntil = $null }
-      } catch {
-        $rewardCooldownUntil = $null
-      }
-    }
-    return [ordered]@{
-      inventory = [ordered]@{
-        snack = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "snack" 0))
-        gem = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "gem" 0))
-        ticket = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "ticket" 0))
-        patch = [Math]::Max(0, [int][double](Get-PropertyValue $inventory "patch" 0))
-        fontPixel = $fontPixel
-        fontTerminal = $fontTerminal
-        themeForest = $themeForest
-        themeArcane = $themeArcane
-        themeRoyal = $themeRoyal
-        themeCyber = $themeCyber
-        themeCelestial = $themeCelestial
-        effectPawBurst = $effectPawBurst
-        effectBearPaw = $effectBearPaw
-        effectDogPaw = $effectDogPaw
-        activeFont = $activeFont
-        activeTheme = $activeTheme
-        activeEffect = $activeEffect
-        rewardRolls = $rewardRolls
-        totalDrops = $cosmeticDropCount
-        totalKeys = $totalKeys
-        rewardKeys = $rewardKeys
-        rewardKeysMigrated = 2
-        rewardCooldownUntil = $rewardCooldownUntil
-        lastDropAt = $lastDropAt
-        lastDropItem = $lastDropItem
-      }
-    }
-  } catch {
-    return $empty
-  }
-}
-
 function Write-JsonResponse {
   param($Context, $Value, [int]$StatusCode = 200)
   $json = $Value | ConvertTo-Json -Depth 12
   $bytes = [System.Text.Encoding]::UTF8.GetBytes($json)
   $Context.Response.StatusCode = $StatusCode
   $Context.Response.ContentType = "application/json; charset=utf-8"
+  $Context.Response.ContentLength64 = $bytes.Length
   $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
@@ -338,40 +194,16 @@ function Write-TextResponse {
   $bytes = [System.Text.Encoding]::UTF8.GetBytes($Text)
   $Context.Response.StatusCode = $StatusCode
   $Context.Response.ContentType = $ContentType
-  $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
-}
-
-function Write-BinaryResponse {
-  param($Context, [string]$Path, [string]$ContentType)
-  $bytes = [System.IO.File]::ReadAllBytes($Path)
-  $Context.Response.StatusCode = 200
-  $Context.Response.ContentType = $ContentType
   $Context.Response.ContentLength64 = $bytes.Length
   $Context.Response.OutputStream.Write($bytes, 0, $bytes.Length)
 }
 
-function Get-SettingsAssetContentType {
-  param([string]$Path)
-  switch ([System.IO.Path]::GetExtension($Path).ToLowerInvariant()) {
-    ".png" { return "image/png" }
-    ".jpg" { return "image/jpeg" }
-    ".jpeg" { return "image/jpeg" }
-    ".gif" { return "image/gif" }
-    ".svg" { return "image/svg+xml" }
-    default { return "application/octet-stream" }
-  }
-}
-
-function Resolve-SettingsAssetPath {
-  param([string]$RequestPath)
-  $relativePath = ($RequestPath.TrimStart("/") -replace '/', '\')
-  if ($relativePath -notlike "assets\runtime\*") { return "" }
-  if ($relativePath -match '(^|\\)\.\.(\\|$)') { return "" }
-  $assetRoot = [System.IO.Path]::GetFullPath((Join-Path $projectRoot "assets\runtime")).TrimEnd("\") + "\"
-  $assetPath = [System.IO.Path]::GetFullPath((Join-Path $projectRoot $relativePath))
-  if (-not $assetPath.StartsWith($assetRoot, [System.StringComparison]::OrdinalIgnoreCase)) { return "" }
-  if (-not (Test-Path -LiteralPath $assetPath -PathType Leaf)) { return "" }
-  return $assetPath
+function Write-BinaryResponse {
+  param($Context, [byte[]]$Bytes, [string]$ContentType)
+  $Context.Response.StatusCode = 200
+  $Context.Response.ContentType = $ContentType
+  $Context.Response.ContentLength64 = $Bytes.Length
+  $Context.Response.OutputStream.Write($Bytes, 0, $Bytes.Length)
 }
 
 function Get-RequestBody {
@@ -389,6 +221,70 @@ function New-UrlSafeToken {
     $rng.Dispose()
   }
   return ([Convert]::ToBase64String($bytes).TrimEnd("=") -replace "\+", "-" -replace "/", "_")
+}
+
+function Get-PreferredPetDirectory {
+  $petsRoot = Join-Path $env:USERPROFILE ".codex\pets"
+  if (-not (Test-Path -LiteralPath $petsRoot)) { return $null }
+  $preferredId = $null
+  $statePath = Join-Path $env:USERPROFILE ".codex\.codex-global-state.json"
+  if (Test-Path -LiteralPath $statePath) {
+    try {
+      $stateText = Read-Utf8Text -Path $statePath
+      $match = [regex]::Match($stateText, 'custom:([A-Za-z0-9_-]+)')
+      if ($match.Success) { $preferredId = $match.Groups[1].Value }
+    } catch {}
+  }
+  if (-not [string]::IsNullOrWhiteSpace($preferredId)) {
+    $preferredPath = Join-Path $petsRoot $preferredId
+    if (Test-Path -LiteralPath (Join-Path $preferredPath "pet.json")) { return $preferredPath }
+  }
+  return Get-ChildItem -LiteralPath $petsRoot -Directory -ErrorAction SilentlyContinue |
+    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName "pet.json") } |
+    Select-Object -First 1 -ExpandProperty FullName
+}
+
+function Get-PetSpritesheetPath {
+  $petDirectory = Get-PreferredPetDirectory
+  if ([string]::IsNullOrWhiteSpace($petDirectory)) { return $null }
+  try {
+    $manifest = Read-Utf8Text -Path (Join-Path $petDirectory "pet.json") | ConvertFrom-Json
+    $relativePath = [string](Get-PropertyValue $manifest "spritesheetPath" "spritesheet.png")
+    $candidate = [System.IO.Path]::GetFullPath((Join-Path $petDirectory $relativePath))
+    $root = [System.IO.Path]::GetFullPath($petDirectory).TrimEnd("\") + "\"
+    if (-not $candidate.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) { return $null }
+    if (Test-Path -LiteralPath $candidate) { return $candidate }
+  } catch {}
+  return $null
+}
+
+function Get-PetPreviewInfo {
+  $width = 113.0
+  $height = 122.0
+  $statePath = Join-Path $env:USERPROFILE ".codex\.codex-global-state.json"
+  if (Test-Path -LiteralPath $statePath) {
+    try {
+      $state = Read-Utf8Text -Path $statePath | ConvertFrom-Json
+      $mascot = (Get-PropertyValue $state "electron-avatar-overlay-bounds" $null).mascot
+      $width = Normalize-Number (Get-PropertyValue $mascot "width" $null) $width 32 512
+      $height = Normalize-Number (Get-PropertyValue $mascot "height" $null) $height 32 512
+    } catch {}
+  }
+  $rows = 9
+  $petDirectory = Get-PreferredPetDirectory
+  if (-not [string]::IsNullOrWhiteSpace($petDirectory)) {
+    try {
+      $manifest = Read-Utf8Text -Path (Join-Path $petDirectory "pet.json") | ConvertFrom-Json
+      if ([int](Get-PropertyValue $manifest "spriteVersionNumber" 1) -eq 2) { $rows = 11 }
+    } catch {}
+  }
+  return [ordered]@{
+    width = $width
+    height = $height
+    columns = 8
+    rows = $rows
+    spriteAvailable = -not [string]::IsNullOrWhiteSpace((Get-PetSpritesheetPath))
+  }
 }
 
 function Test-RequestToken {
@@ -415,27 +311,13 @@ function Start-SettingsListener {
   throw "Could not start a local settings server on ports $StartPort-$($StartPort + 29)."
 }
 
-function Open-SettingsUrl {
-  param([string]$Url)
-  foreach ($browser in @("msedge.exe", "chrome.exe", "firefox.exe")) {
-    try {
-      $command = Get-Command $browser -ErrorAction SilentlyContinue
-      if ($null -ne $command -and -not [string]::IsNullOrWhiteSpace($command.Source)) {
-        Start-Process -FilePath $command.Source -ArgumentList @($Url) | Out-Null
-        return
-      }
-    } catch {}
-  }
-  try {
-    Start-Process -FilePath "explorer.exe" -ArgumentList @($Url) | Out-Null
-  } catch {
-    Write-Warning "Could not open settings URL automatically: $Url"
-  }
-}
-
 $projectRoot = Get-ProjectRoot
 $script:DefaultsFile = Join-Path $projectRoot "settings.defaults.json"
 $settingsHtml = Join-Path $projectRoot "settings\index.html"
+$ambientBackground = Join-Path $projectRoot "settings\assets\codex-pet-ambient.webp"
+$potionPixelFrame = Join-Path $projectRoot "assets\runtime\potion-pixel-frame.png"
+$potionPixelMask = Join-Path $projectRoot "assets\runtime\potion-pixel-mask.png"
+$languageDetectionScript = Join-Path $projectRoot "src\LanguageDetection.ps1"
 if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
   $SettingsPath = Join-Path $projectRoot "settings.json"
 }
@@ -444,8 +326,14 @@ $script:SettingsFile = [System.IO.Path]::GetFullPath($SettingsPath)
 if (-not (Test-Path -LiteralPath $settingsHtml)) {
   throw "Missing settings page: $settingsHtml"
 }
+if (-not (Test-Path -LiteralPath $languageDetectionScript)) {
+  throw "Missing language detection module: $languageDetectionScript"
+}
+. $languageDetectionScript
+$script:LanguageCachePath = Get-LanguageCachePath -SettingsPath $script:SettingsFile
 
 Ensure-SettingsFile
+$script:AutomaticLanguageResult = Resolve-SettingsAutomaticLanguage -Settings (Read-Settings)
 $server = Start-SettingsListener -StartPort $Port
 $script:SessionToken = New-UrlSafeToken
 $url = "$($server.Url)?token=$script:SessionToken&v=$([DateTimeOffset]::UtcNow.ToUnixTimeSeconds())"
@@ -454,7 +342,7 @@ Write-Output "Settings file: $script:SettingsFile"
 Write-Output "The server will stop after $TimeoutMinutes minute(s) of inactivity."
 
 if (-not $NoOpen) {
-  Open-SettingsUrl -Url $url
+  Start-Process $url | Out-Null
 }
 
 $deadline = (Get-Date).AddMinutes([Math]::Max(1, $TimeoutMinutes))
@@ -476,43 +364,67 @@ try {
         $context.Response.StatusCode = 204
       } elseif ($context.Request.HttpMethod -eq "GET" -and ($path -eq "/" -or $path -eq "/index.html")) {
         Write-TextResponse -Context $context -Text (Read-Utf8Text -Path $settingsHtml) -ContentType "text/html; charset=utf-8"
-      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -like "/assets/runtime/*") {
-        $assetPath = Resolve-SettingsAssetPath -RequestPath $path
-        if ([string]::IsNullOrWhiteSpace($assetPath)) {
-          Write-TextResponse -Context $context -Text "Not found" -StatusCode 404
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/assets/codex-pet-ambient.webp") {
+        if (-not (Test-Path -LiteralPath $ambientBackground)) {
+          Write-TextResponse -Context $context -Text "Background illustration not found." -StatusCode 404
         } else {
-          Write-BinaryResponse -Context $context -Path $assetPath -ContentType (Get-SettingsAssetContentType -Path $assetPath)
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($ambientBackground)) -ContentType "image/webp"
+        }
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/assets/potion-pixel-frame.png") {
+        if (-not (Test-Path -LiteralPath $potionPixelFrame)) {
+          Write-TextResponse -Context $context -Text "Pixel potion frame not found." -StatusCode 404
+        } else {
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($potionPixelFrame)) -ContentType "image/png"
+        }
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/assets/potion-pixel-mask.png") {
+        if (-not (Test-Path -LiteralPath $potionPixelMask)) {
+          Write-TextResponse -Context $context -Text "Pixel potion mask not found." -StatusCode 404
+        } else {
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($potionPixelMask)) -ContentType "image/png"
         }
       } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/settings") {
         Write-JsonResponse -Context $context -Value @{
           settings = Read-Settings
           settingsPath = $script:SettingsFile
-          systemLanguage = Get-SystemLanguage
-          gamificationState = Read-GamificationStateSummary
+          automaticLanguage = $script:AutomaticLanguageResult.Language
+          languageCountry = $script:AutomaticLanguageResult.CountryCode
+          languageSource = $script:AutomaticLanguageResult.Source
+          systemLanguage = $script:AutomaticLanguageResult.Language
         }
       } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/defaults") {
         Write-JsonResponse -Context $context -Value (Read-Defaults)
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/pet-preview") {
+        Write-JsonResponse -Context $context -Value (Get-PetPreviewInfo)
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/pet-spritesheet") {
+        $spritesheetPath = Get-PetSpritesheetPath
+        if ([string]::IsNullOrWhiteSpace($spritesheetPath)) {
+          Write-TextResponse -Context $context -Text "Pet spritesheet not found." -StatusCode 404
+        } else {
+          $extension = [System.IO.Path]::GetExtension($spritesheetPath).ToLowerInvariant()
+          $contentType = if ($extension -eq ".webp") { "image/webp" } else { "image/png" }
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($spritesheetPath)) -ContentType $contentType
+        }
       } elseif ($context.Request.HttpMethod -eq "POST" -and $path -eq "/api/settings") {
         $body = Get-RequestBody -Request $context.Request
         $settings = Get-NormalizedSettings ($body | ConvertFrom-Json)
         Write-Utf8Text -Path $script:SettingsFile -Text (($settings | ConvertTo-Json -Depth 8) + [Environment]::NewLine)
+        $script:AutomaticLanguageResult = Resolve-SettingsAutomaticLanguage -Settings $settings
         Write-JsonResponse -Context $context -Value @{
           ok = $true
           settings = $settings
           settingsPath = $script:SettingsFile
-          systemLanguage = Get-SystemLanguage
+          automaticLanguage = $script:AutomaticLanguageResult.Language
+          languageCountry = $script:AutomaticLanguageResult.CountryCode
+          languageSource = $script:AutomaticLanguageResult.Source
+          systemLanguage = $script:AutomaticLanguageResult.Language
         }
       } else {
         Write-TextResponse -Context $context -Text "Not found" -StatusCode 404
       }
     } catch {
-      try {
-        Write-TextResponse -Context $context -Text $_.Exception.Message -StatusCode 500
-      } catch {
-        try { $context.Response.Close() } catch {}
-      }
+      Write-TextResponse -Context $context -Text $_.Exception.Message -StatusCode 500
     } finally {
-      try { $context.Response.OutputStream.Close() } catch {}
+      $context.Response.OutputStream.Close()
     }
   }
 } finally {

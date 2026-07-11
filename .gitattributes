@@ -1,10 +1,10 @@
-*.gitattributes text eol=lf
-*.gitignore text eol=lf
+* text=auto
+*.sh text eol=lf
+*.bat text eol=crlf
 *.cmd text eol=crlf
 *.ps1 text eol=crlf
-*.sh text eol=lf
-*.md text eol=lf
-*.json text eol=lf
-*.html text eol=lf
+*.md text eol=crlf
+*.json text eol=crlf
+*.html text eol=crlf
+VERSION text eol=crlf
 *.png binary
-*.zip binary

@@ -1,2952 +1,831 @@
-<!doctype html>
-<html lang="ko">
+﻿<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Codexy pet usages ring Settings</title>
-  <style>
+  <meta name="description" content="Configure Codex Pet five-hour and weekly usage rings with a live preview.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23090d11'/%3E%3Ccircle cx='32' cy='32' r='21' fill='none' stroke='%233cebbd' stroke-width='6' stroke-linecap='round' stroke-dasharray='100 32'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%2316202a' stroke='%2356b2ff' stroke-width='4'/%3E%3C/svg%3E">
+  <title>Codex Pet Limit Rings Settings</title>
+  <style id="legacy-styles" media="not all">
     :root {
       color-scheme: dark;
-      --ink: #101419;
-      --ink-2: #161f28;
-      --ink-3: #22303b;
-      --paper: #fff7df;
-      --paper-dim: #f2dfb6;
-      --mint: #45e0ba;
-      --sky: #65b7ff;
-      --berry: #f2618b;
-      --sun: #ffd15c;
-      --leaf: #88d66c;
-      --danger: #ff5a54;
-      --shadow: #07090d;
-      --user-primary: #3cebbd;
-      --user-secondary: #56b2ff;
-      --user-warning: #ff4238;
-      --pixel-size: 4px;
-      font-family: "Cascadia Mono", "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-      background: var(--ink);
-      color: var(--paper);
+      --bg: #101318;
+      --panel: #171c22;
+      --panel-2: #1d242c;
+      --text: #f4f7fb;
+      --muted: #9ba8b7;
+      --line: #303946;
+      --accent: #3cebbd;
+      --danger: #ff4238;
     }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      scroll-behavior: smooth;
-    }
-
+    * { box-sizing: border-box; }
     body {
-      min-width: 320px;
       margin: 0;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,255,255,.035) 1px, transparent 1px),
-        linear-gradient(180deg, #0f151a 0%, #18232c 45%, #101419 100%);
-      background-size: 24px 24px, 24px 24px, auto;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main {
+      width: min(1040px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+    header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      font-weight: 650;
       letter-spacing: 0;
     }
-
-    button,
-    input,
-    select {
-      font: inherit;
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 13px;
     }
-
+    .status {
+      min-width: 220px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      font-size: 12px;
+      color: var(--muted);
+      text-align: right;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+    section {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 16px;
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: 0;
+    }
+    .field {
+      display: grid;
+      grid-template-columns: 168px minmax(0, 1fr) 72px;
+      gap: 10px;
+      align-items: center;
+      min-height: 38px;
+      border-top: 1px solid rgba(255,255,255,0.055);
+    }
+    .field:first-of-type { border-top: 0; }
+    label {
+      color: #dbe5ef;
+      font-size: 13px;
+    }
+    input[type="color"] {
+      inline-size: 44px;
+      block-size: 28px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+    }
+    select,
+    input[type="number"], input[type="text"] {
+      width: 100%;
+      height: 30px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 4px 8px;
+      font: inherit;
+      font-size: 13px;
+    }
+    output {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 18px;
+    }
     button {
+      min-height: 34px;
+      border: 1px solid var(--line);
+      background: var(--panel-2);
+      color: var(--text);
+      padding: 0 14px;
+      font: inherit;
+      font-size: 13px;
       cursor: pointer;
     }
-
-    .page {
-      width: min(1440px, 100%);
-      margin: 0 auto;
-      padding: 20px clamp(14px, 2.5vw, 34px) 36px;
+    button.primary {
+      border-color: rgba(60, 235, 189, 0.7);
+      background: #15342f;
     }
+    button:hover { border-color: var(--accent); }
+    .preview-wrap {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 14px;
+      margin-top: 14px;
+      align-items: center;
+    }
+    .preview {
+      position: relative;
+      width: 220px;
+      aspect-ratio: 1;
+      background: #0d1117;
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+    .preview-gauge {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-18deg);
+      pointer-events: none;
+    }
+    .gauge-track,
+    .gauge-ring {
+      fill: none;
+      transform-box: fill-box;
+      transform-origin: center;
+      vector-effect: non-scaling-stroke;
+    }
+    .gauge-track {
+      stroke-linecap: round;
+    }
+    .gauge-ring {
+      stroke-linecap: round;
+      transition: stroke 120ms ease, stroke-opacity 120ms ease, stroke-dasharray 120ms ease;
+    }
+    .hover-range {
+      fill: none;
+      stroke: rgba(255,255,255,0.18);
+      stroke-width: 1.5px;
+      stroke-dasharray: 4 5;
+      transition: r 160ms ease, opacity 160ms ease;
+    }
+    .pet {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 78px;
+      height: 78px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: #151a20;
+      font-size: 32px;
+    }
+    .tooltip {
+      position: absolute;
+      left: 124px;
+      top: 78px;
+      padding: 5px 7px;
+      font-size: 11px;
+      line-height: 13px;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .tooltip.inner {
+      left: 124px;
+      top: 118px;
+    }
+    .path {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 760px) {
+      header, .preview-wrap { display: block; }
+      .grid { grid-template-columns: 1fr; }
+      .status { margin-top: 12px; text-align: left; }
+      .field { grid-template-columns: 126px minmax(0, 1fr) 58px; }
+      .preview { margin-bottom: 12px; }
+    }
+  </style>
+  <style id="app-styles">
+    :root {
+      color-scheme: dark;
+      --background: #09090b;
+      --foreground: #fafafa;
+      --card: #111113;
+      --card-foreground: #fafafa;
+      --popover: #18181b;
+      --muted: #18181b;
+      --muted-foreground: #a1a1aa;
+      --secondary: #27272a;
+      --secondary-foreground: #f4f4f5;
+      --border: #27272a;
+      --border-strong: #3f3f46;
+      --primary: #2dd4bf;
+      --primary-hover: #5eead4;
+      --primary-foreground: #042f2e;
+      --danger: #f87171;
+      --warning: #fbbf24;
+      --focus: #5eead4;
+      --radius: 8px;
+      --shadow: 0 1px 2px rgba(0,0,0,.32), 0 12px 32px rgba(0,0,0,.18);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-5: 20px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --duration: 160ms;
+      --ease: cubic-bezier(.2,0,0,1);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+        radial-gradient(circle at 15% 0%, rgba(45,212,191,.08), transparent 28%),
+        var(--background);
+      background-size: 32px 32px, 32px 32px, auto, auto;
+      color: var(--foreground);
+      font-family: "Pretendard Variable", Pretendard, "Segoe UI", "Malgun Gothic", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 20px;
+      font-synthesis: none;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      overflow-x: hidden;
+    }
+    button, input, select { font: inherit; }
+    button, select, input[type="range"], input[type="color"] { cursor: pointer; }
+    h1, h2, p { margin: 0; }
+    h1 { font-size: 16px; line-height: 24px; font-weight: 650; letter-spacing: -.01em; }
+    h2 { font-size: 14px; line-height: 20px; font-weight: 650; }
+    :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+    .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .icon, .pet-icon { width: 20px; height: 20px; fill: currentColor; flex: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 
-    .top-nav {
+    .ambient-scene {
+      position: fixed;
+      inset: 64px 0 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      opacity: .76;
+      background: #09090b;
+    }
+    .ambient-scene::before {
+      content: "";
+      position: absolute;
+      inset: -3%;
+      background: url("assets/codex-pet-ambient.webp") center / cover no-repeat;
+      transform: scale(1.035);
+      transform-origin: 50% 55%;
+      animation: ambient-drift 18s ease-in-out infinite alternate;
+      will-change: transform;
+    }
+    .ambient-scene::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 12% 34%, rgba(45,212,191,.13), transparent 24%),
+        radial-gradient(circle at 88% 68%, rgba(59,130,246,.12), transparent 28%),
+        linear-gradient(90deg, rgba(9,9,11,.08), rgba(9,9,11,.34) 28%, rgba(9,9,11,.34) 72%, rgba(9,9,11,.08));
+      animation: ambient-glow 8s ease-in-out infinite alternate;
+    }
+    .ambient-particle {
+      position: absolute;
+      z-index: 1;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #99f6e4;
+      box-shadow: 0 0 12px rgba(94,234,212,.78);
+      animation: ambient-twinkle 4.2s ease-in-out infinite;
+    }
+    .ambient-particle.one { left: 7%; top: 20%; }
+    .ambient-particle.two { right: 7%; top: 48%; animation-delay: -1.6s; }
+    .ambient-particle.three { left: 18%; bottom: 12%; animation-delay: -2.8s; }
+
+    .app-chrome, .content-shell { position: relative; }
+    .content-shell { z-index: 1; }
+
+    .app-chrome {
       position: sticky;
       top: 0;
       z-index: 20;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 16px;
-      min-height: 60px;
-      padding: 10px 0 12px;
-      background: linear-gradient(180deg, rgba(16,20,25,.98), rgba(16,20,25,.86));
-      border-bottom: var(--pixel-size) solid rgba(255,247,223,.08);
-    }
-
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-      color: var(--paper);
-      font-weight: 900;
-      text-transform: uppercase;
-      line-height: 1.05;
-    }
-
-    .brand-mark {
-      position: relative;
-      width: 28px;
-      height: 28px;
-      flex: 0 0 auto;
-      background: var(--mint);
-      box-shadow:
-        0 0 0 4px var(--shadow),
-        4px 4px 0 4px var(--sky),
-        8px 8px 0 0 var(--shadow);
-    }
-
-    .brand-mark::before,
-    .brand-mark::after {
-      content: "";
-      position: absolute;
-      top: 8px;
-      width: 5px;
-      height: 5px;
-      background: var(--shadow);
-    }
-
-    .brand-mark::before {
-      left: 7px;
-    }
-
-    .brand-mark::after {
-      right: 7px;
-    }
-
-    .brand-text {
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .nav-links a,
-    .mini-status {
-      min-height: 34px;
-      padding: 8px 10px;
-      color: var(--paper);
-      text-decoration: none;
-      background: #111b22;
-      border: 2px solid #31424f;
-      box-shadow: 3px 3px 0 var(--shadow);
-      white-space: nowrap;
-    }
-
-    .mini-status {
-      color: var(--mint);
-      border-color: rgba(69,224,186,.55);
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(360px, .95fr);
-      gap: clamp(22px, 4vw, 56px);
-      align-items: center;
-      min-height: min(720px, calc(100vh - 96px));
-      padding: clamp(28px, 6vw, 72px) 0 clamp(24px, 5vw, 58px);
-    }
-
-    .hero-copy {
-      min-width: 0;
-    }
-
-    .hero h1 {
-      max-width: 790px;
-      margin: 0;
-      font-size: clamp(40px, 7.6vw, 104px);
-      line-height: .9;
-      text-transform: uppercase;
-      text-shadow: 5px 5px 0 var(--shadow), 9px 9px 0 #2b3c45;
-      letter-spacing: 0;
-    }
-
-    .hero p {
-      max-width: 670px;
-      margin: 28px 0 0;
-      color: var(--paper-dim);
-      font-size: clamp(15px, 2vw, 20px);
-      line-height: 1.75;
-    }
-
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 28px;
-    }
-
-    .pixel-button {
-      min-height: 44px;
-      padding: 11px 15px;
-      color: var(--shadow);
-      font-weight: 900;
-      text-decoration: none;
-      text-transform: uppercase;
-      background: var(--sun);
-      border: 0;
-      box-shadow:
-        0 0 0 3px var(--shadow),
-        5px 5px 0 3px #7a5029;
-    }
-
-    .pixel-button.secondary {
-      color: var(--paper);
-      background: #22303b;
-      box-shadow:
-        0 0 0 3px var(--shadow),
-        5px 5px 0 3px #415866;
-    }
-
-    .pixel-button:active {
-      transform: translate(3px, 3px);
-      box-shadow:
-        0 0 0 3px var(--shadow),
-        2px 2px 0 3px #7a5029;
-    }
-
-    .hero-stage {
-      position: relative;
-      min-height: 480px;
-      padding: 26px;
-      overflow: hidden;
-      background:
-        linear-gradient(90deg, rgba(255,247,223,.1) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,247,223,.1) 1px, transparent 1px),
-        #17232b;
-      background-size: 18px 18px;
-      border: 4px solid var(--paper);
-      box-shadow:
-        0 0 0 6px var(--shadow),
-        12px 12px 0 #06080b;
-    }
-
-    .hero-stage::before {
-      content: "";
-      position: absolute;
-      inset: 14px;
-      border: 2px dashed rgba(255,247,223,.22);
-      pointer-events: none;
-    }
-
-    .scene-label {
-      position: relative;
-      z-index: 2;
-      display: inline-block;
-      padding: 7px 10px;
-      color: var(--shadow);
-      font-weight: 900;
-      background: var(--mint);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .pixel-sprite-wrap {
-      position: absolute;
-      left: 50%;
-      top: 52%;
-      width: min(78%, 420px);
-      aspect-ratio: 1;
-      transform: translate(-50%, -50%);
-    }
-
-    .pixel-shadow {
-      position: absolute;
-      left: 50%;
-      bottom: 12%;
-      width: 58%;
-      height: 11%;
-      transform: translateX(-50%);
-      background: rgba(0,0,0,.35);
-      box-shadow: 0 0 0 5px rgba(0,0,0,.28);
-      animation: shadowTick 1.15s steps(2, end) infinite;
-    }
-
-    .pixel-pet {
-      position: absolute;
-      left: 50%;
-      bottom: 17%;
-      width: 46%;
-      aspect-ratio: .82;
-      transform: translateX(-50%);
-      animation: petTick 1.15s steps(2, end) infinite;
-    }
-
-    .pixel-pet div {
-      position: absolute;
-      image-rendering: pixelated;
-    }
-
-    .pet-ear {
-      top: 0;
-      width: 24%;
-      height: 24%;
-      background: var(--user-secondary);
-      box-shadow: 0 0 0 5px var(--shadow);
-    }
-
-    .pet-ear.left {
-      left: 13%;
-    }
-
-    .pet-ear.right {
-      right: 13%;
-    }
-
-    .pet-head {
-      left: 12%;
-      top: 12%;
-      width: 76%;
-      height: 56%;
-      background: var(--user-primary);
-      box-shadow:
-        0 0 0 6px var(--shadow),
-        inset 0 -18px 0 rgba(16,20,25,.12);
-    }
-
-    .pet-face {
-      left: 22%;
-      top: 33%;
-      width: 56%;
-      height: 28%;
-      background: var(--paper);
-      box-shadow: 0 0 0 5px var(--shadow);
-    }
-
-    .pet-eye {
-      top: 42%;
-      width: 8%;
-      height: 8%;
-      background: var(--shadow);
-      animation: blink 4.2s steps(1, end) infinite;
-    }
-
-    .pet-eye.left {
-      left: 36%;
-    }
-
-    .pet-eye.right {
-      right: 36%;
-    }
-
-    .pet-cheek {
-      top: 53%;
-      width: 9%;
-      height: 6%;
-      background: var(--berry);
-    }
-
-    .pet-cheek.left {
-      left: 27%;
-    }
-
-    .pet-cheek.right {
-      right: 27%;
-    }
-
-    .pet-body {
-      left: 23%;
-      bottom: 4%;
-      width: 54%;
-      height: 32%;
-      background: var(--sun);
-      box-shadow:
-        0 0 0 6px var(--shadow),
-        inset 0 -16px 0 rgba(16,20,25,.14);
-    }
-
-    .pet-tail {
-      right: 5%;
-      bottom: 19%;
-      width: 18%;
-      height: 16%;
-      background: var(--leaf);
-      box-shadow: 0 0 0 5px var(--shadow);
-      transform-origin: left center;
-      animation: tailTick 1.15s steps(2, end) infinite;
-    }
-
-    .hero-hud {
-      position: absolute;
-      right: 28px;
-      bottom: 28px;
-      display: grid;
-      gap: 8px;
-      min-width: 170px;
-    }
-
-    .hero-chip {
-      padding: 8px 10px;
-      color: var(--paper);
-      background: rgba(16,20,25,.88);
-      border: 2px solid rgba(255,247,223,.34);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .hero-chip strong {
-      color: var(--mint);
-    }
-
-    .settings-layout {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(340px, 440px);
-      gap: 22px;
-      align-items: start;
-      padding-top: 18px;
-    }
-
-    .settings-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
-    }
-
-    .panel,
-    .preview-panel {
-      position: relative;
-      background: rgba(23, 33, 41, .94);
-      border: 4px solid #f6e9c9;
-      box-shadow:
-        0 0 0 5px var(--shadow),
-        8px 8px 0 #070a0e;
-    }
-
-    .panel {
-      padding: 18px;
-    }
-
-    .panel.wide {
-      grid-column: 1 / -1;
-    }
-
-    .panel h2,
-    .preview-panel h2 {
-      margin: 0 0 14px;
-      font-size: 18px;
-      line-height: 1.1;
-      text-transform: uppercase;
-      color: var(--paper);
-    }
-
-    .panel h2::before,
-    .preview-panel h2::before {
-      content: "";
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      margin-right: 8px;
-      background: var(--sun);
-      box-shadow: 3px 3px 0 var(--shadow);
-      vertical-align: -1px;
-    }
-
-    .control-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-    }
-
-    .control-grid.single {
-      grid-template-columns: 1fr;
-    }
-
-    .growth-guide {
-      display: grid;
-      gap: 10px;
-      margin-bottom: 14px;
-      padding: 12px;
-      color: var(--paper-dim);
-      font-size: 12px;
-      line-height: 1.7;
-      background: rgba(16,20,25,.76);
-      border: 2px solid rgba(69,224,186,.42);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .growth-guide p {
-      margin: 0;
-    }
-
-    .growth-mode-help {
-      padding: 9px 10px;
-      color: var(--shadow);
-      font-weight: 900;
-      background: var(--mint);
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .hud-focus-note {
-      color: var(--paper-dim);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .mode-panels {
-      grid-column: 1 / -1;
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 12px;
-      align-items: stretch;
-    }
-
-    .mode-panel {
-      display: grid;
-      gap: 10px;
-      min-width: 0;
-      padding: 12px;
-      background: rgba(16,20,25,.44);
-      border: 2px solid rgba(255,247,223,.14);
-      opacity: .62;
-    }
-
-    .mode-panel.is-active {
-      background: rgba(20,41,43,.8);
-      border-color: rgba(69,224,186,.58);
-      opacity: 1;
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .mode-panel-title {
-      color: var(--paper);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .mode-panel-hint {
-      min-height: 38px;
-      color: var(--paper-dim);
-      font-size: 11px;
-      line-height: 1.55;
-    }
-
-    .inventory-summary {
-      grid-column: 1 / -1;
-      display: grid;
-      gap: 12px;
-      min-width: 0;
-      padding: 12px;
-      background: rgba(16,20,25,.58);
-      border: 2px solid rgba(255,247,223,.16);
-    }
-
-    .inventory-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .inventory-title {
-      color: var(--paper);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .inventory-total {
-      color: var(--mint);
-      font-size: 12px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .reward-loadout {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-    }
-
-    .loadout-chip {
-      min-width: 0;
-      padding: 9px;
-      background: rgba(0,0,0,.24);
-      border: 2px solid rgba(255,247,223,.12);
-    }
-
-    .loadout-chip span {
-      display: block;
-      color: var(--paper-dim);
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .loadout-chip strong {
-      display: block;
-      overflow: hidden;
-      margin-top: 3px;
-      color: var(--paper);
-      font-size: 12px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .reward-selector {
-      display: grid;
-      grid-template-columns: 180px minmax(0, 1fr);
-      gap: 8px;
-    }
-
-    .reward-category-grid {
-      display: grid;
-      gap: 8px;
-      align-content: start;
-    }
-
-    .reward-category {
-      min-width: 0;
-      min-height: 56px;
-      padding: 10px;
-      color: var(--paper);
-      text-align: left;
-      background: rgba(0,0,0,.24);
-      border: 2px solid rgba(255,247,223,.12);
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .reward-category[aria-pressed="true"] {
-      border-color: var(--mint);
-      background: rgba(69,224,186,.13);
-    }
-
-    .reward-category strong,
-    .reward-category span {
-      display: block;
-    }
-
-    .reward-category strong {
-      font-size: 12px;
-      text-transform: uppercase;
-    }
-
-    .reward-category span {
-      margin-top: 3px;
-      color: var(--paper-dim);
-      font-size: 10px;
-      font-weight: 900;
-    }
-
-    .reward-panels {
-      min-width: 0;
-    }
-
-    .reward-panel {
-      display: none;
-      min-width: 0;
-    }
-
-    .reward-panel.is-active {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
-      gap: 8px;
-    }
-
-    .inventory-item {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 8px;
-      align-items: center;
-      min-width: 0;
-      min-height: 54px;
-      padding: 8px;
-      background: rgba(0,0,0,.24);
-      border: 2px solid rgba(255,247,223,.12);
-    }
-
-    .inventory-item.is-unlocked {
-      border-color: rgba(69,224,186,.48);
-      background: rgba(69,224,186,.08);
-    }
-
-    .inventory-item.is-active {
-      border-color: var(--sun);
-      background: rgba(255,209,92,.1);
-    }
-
-    .inventory-item.is-locked {
-      opacity: .55;
-    }
-
-    .inventory-item[data-rarity="common"] .inventory-icon {
-      background: var(--mint);
-    }
-
-    .inventory-item[data-rarity="rare"] .inventory-icon {
-      background: var(--sky);
-    }
-
-    .inventory-item[data-rarity="epic"] .inventory-icon {
-      background: #c18cff;
-    }
-
-    .inventory-item[data-rarity="legendary"] .inventory-icon {
-      background: #ff66d6;
-    }
-
-    .inventory-item[data-rarity="mythic"] .inventory-icon {
-      color: var(--paper);
-      background: #171a2f;
-      box-shadow:
-        0 0 0 2px #7fe8ff,
-        3px 3px 0 var(--shadow);
-    }
-
-    .inventory-icon {
-      display: grid;
-      place-items: center;
-      width: 28px;
-      height: 28px;
-      overflow: hidden;
-      color: var(--shadow);
-      font-size: 11px;
-      font-weight: 900;
-      background: var(--sun);
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .inventory-icon img {
-      width: 24px;
-      height: 24px;
-      object-fit: contain;
-      pointer-events: none;
-    }
-
-    .inventory-item[data-item-key^="theme"] .inventory-icon img {
-      width: 28px;
-      height: 28px;
-    }
-
-    .inventory-copy {
-      min-width: 0;
-      color: var(--paper-dim);
-      font-size: 11px;
-      font-weight: 900;
-      line-height: 1.25;
-    }
-
-    .inventory-copy strong {
-      display: block;
-      overflow: hidden;
-      color: var(--paper);
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .inventory-copy em {
-      display: block;
-      margin-top: 2px;
-      color: var(--paper-dim);
-      font-size: 10px;
-      font-style: normal;
-      text-transform: uppercase;
-    }
-
-    .reward-flow {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      min-width: 0;
-    }
-
-    .reward-flow span {
-      position: relative;
-      min-height: 28px;
-      padding: 7px 10px;
-      color: var(--paper);
-      font-size: 10px;
-      font-weight: 900;
-      text-transform: uppercase;
-      background: rgba(0,0,0,.22);
-      border: 2px solid rgba(255,247,223,.12);
-    }
-
-    .reward-flow span + span::before {
-      content: ">";
-      margin-right: 8px;
-      color: var(--mint);
-    }
-
-    .growth-rules {
-      display: grid;
-      gap: 6px;
-      margin: 0;
-      padding: 0;
-      list-style: none;
-    }
-
-    .growth-rules li {
-      position: relative;
-      padding-left: 16px;
-    }
-
-    .growth-rules li::before {
-      content: "";
-      position: absolute;
-      left: 0;
-      top: .7em;
-      width: 7px;
-      height: 7px;
-      background: var(--sun);
-      box-shadow: 2px 2px 0 var(--shadow);
-    }
-
-    .control {
-      display: grid;
-      gap: 8px;
-      min-width: 0;
-      padding: 10px;
-      background: rgba(16,20,25,.62);
-      border: 2px solid rgba(255,247,223,.16);
-    }
-
-    .control > span,
-    .toggle-label {
-      color: var(--paper-dim);
-      font-size: 12px;
-      font-weight: 800;
-      text-transform: uppercase;
-    }
-
-    .control-row {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: 8px;
-      align-items: center;
-    }
-
-    .control input[type="color"] {
-      width: 100%;
-      height: 36px;
-      padding: 0;
-      background: var(--shadow);
-      border: 3px solid #425766;
-    }
-
-    .control input[type="range"] {
-      width: 100%;
-      accent-color: var(--mint);
-    }
-
-    .control input[type="checkbox"] {
-      width: 28px;
-      height: 28px;
-      margin: 0;
-      accent-color: var(--mint);
-    }
-
-    .control select {
-      width: 100%;
-      min-width: 0;
-      height: 36px;
-      padding: 0 8px;
-      color: var(--paper);
-      background: #101820;
-      border: 3px solid #425766;
-      border-radius: 0;
-    }
-
-    .control select option {
-      color: var(--paper);
-      background: #101820;
-    }
-
-    .control output {
-      min-width: 54px;
-      max-width: 132px;
-      padding: 7px 8px;
-      overflow: hidden;
-      color: var(--shadow);
-      font-size: 12px;
-      font-weight: 900;
-      text-align: center;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      background: var(--paper);
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .toggle-row {
-      grid-template-columns: auto minmax(54px, auto);
-      justify-content: start;
-    }
-
-    .segmented-row {
-      grid-template-columns: minmax(0, 1fr) auto;
-    }
-
-    .segmented-row select {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .segment-control {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-      min-width: 0;
-      padding: 3px;
-      background: rgba(0,0,0,.32);
-      border: 2px solid #425766;
-    }
-
-    .segment-control button {
-      min-width: 0;
-      min-height: 32px;
-      padding: 6px 8px;
-      color: var(--paper-dim);
-      font-size: 12px;
-      font-weight: 900;
-      line-height: 1.1;
-      background: #101820;
-      border: 0;
-    }
-
-    .segment-control button[aria-pressed="true"] {
-      color: var(--shadow);
-      background: var(--mint);
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .focus-control {
-      grid-column: 1 / -1;
-    }
-
-    .preset-grid {
-      display: grid;
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .preset-grid button {
-      min-height: 46px;
-      padding: 8px;
-      color: var(--paper);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-      background: #17252f;
-      border: 2px solid #4b6270;
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .preset-grid button:hover,
-    .nav-links a:hover,
-    .pixel-button:hover {
-      filter: brightness(1.12);
-    }
-
-    .preview-panel {
-      position: sticky;
-      top: 88px;
-      padding: 18px;
-    }
-
-    .preview-copy {
-      margin: -5px 0 14px;
-      color: var(--paper-dim);
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    .preview-screen {
-      position: relative;
-      min-height: 365px;
-      overflow: hidden;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,.07) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,255,255,.07) 1px, transparent 1px),
-        #0f181e;
-      background-size: 18px 18px;
-      border: 3px solid #3d5160;
-      box-shadow: inset 0 0 0 4px var(--shadow);
-    }
-
-    .preview-surface {
-      position: absolute;
-      inset: 18px;
-      display: grid;
-      place-items: center;
-    }
-
-    .preview-rings {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-      transform: rotate(-90deg);
-    }
-
-    .preview-rings circle {
-      fill: none;
-      stroke-linecap: round;
-      transform-origin: 128px 128px;
-    }
-
-    #previewHoverRange {
-      stroke: rgba(255,247,223,.18);
-      stroke-dasharray: 6 8;
-      stroke-linecap: butt;
-      stroke-width: 2px;
-    }
-
-    .preview-pet {
-      position: relative;
-      width: 78px;
-      height: 86px;
-      image-rendering: pixelated;
-      animation: previewPetTick 1.15s steps(2, end) infinite;
-    }
-
-    .preview-pet::before {
-      content: "";
-      position: absolute;
-      left: 10px;
-      top: 8px;
-      width: 58px;
-      height: 48px;
-      background: var(--user-primary);
-      box-shadow:
-        0 0 0 4px var(--shadow),
-        -8px -8px 0 var(--user-secondary),
-        8px -8px 0 var(--user-secondary),
-        0 44px 0 -6px var(--sun),
-        0 44px 0 -2px var(--shadow);
-    }
-
-    .preview-pet::after {
-      content: "";
-      position: absolute;
-      left: 25px;
-      top: 32px;
-      width: 6px;
-      height: 6px;
-      background: var(--shadow);
-      box-shadow: 22px 0 0 var(--shadow), 11px 13px 0 var(--berry);
-    }
-
-    .battery-preview {
-      position: absolute;
-      left: 50%;
-      bottom: 56px;
-      display: none;
-      width: 190px;
-      gap: 8px;
-      transform: translateX(-50%);
-    }
-
-    .battery-row {
-      position: relative;
-      display: grid;
-      grid-template-columns: 1fr 12px;
-      gap: 4px;
-      align-items: center;
-    }
-
-    .battery-shell {
-      height: 16px;
-      padding: 3px;
-      background: rgba(0,0,0,.35);
-      border: 2px solid rgba(255,247,223,.24);
-    }
-
-    .battery-fill {
-      height: 100%;
-      width: 50%;
-    }
-
-    .battery-cap {
-      width: 9px;
-      height: 11px;
-      background: rgba(255,255,255,.24);
-    }
-
-    .badge-preview {
-      position: absolute;
-      left: 50%;
-      bottom: 48px;
-      display: none;
-      grid-template-columns: 1fr 1fr;
-      gap: 7px;
-      padding: 8px;
-      border: 2px solid rgba(255,247,223,.24);
-      transform: translateX(-50%);
-    }
-
-    .badge-chip {
-      min-width: 72px;
-      padding: 7px 8px;
-      font-size: 11px;
-      font-weight: 900;
-      text-align: center;
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .growth-preview {
-      position: absolute;
-      bottom: 17px;
-      display: none;
-      grid-template-columns: 9px auto;
-      gap: 7px;
-      align-items: center;
-      justify-content: center;
-      min-width: 104px;
-      padding: 8px 9px;
-      font-size: 11px;
-      font-weight: 900;
-      border: 2px solid rgba(255,247,223,.24);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .growth-dot {
-      width: 9px;
-      height: 9px;
-      background: var(--mint);
-    }
-
-    .key-preview {
-      position: absolute;
-      bottom: 17px;
-      display: none;
-      min-width: 36px;
-      justify-content: center;
-      align-items: center;
-      padding: 10px 13px;
-      font-size: 20px;
-      font-weight: 900;
-      line-height: .94;
-      text-align: center;
-      white-space: pre-line;
-      border: 2px solid rgba(255,247,223,.24);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .key-heat-preview {
-      position: absolute;
-      top: 50%;
-      left: 5px;
-      display: grid;
-      gap: 2px;
-      transform: translateY(-50%);
-    }
-
-    .key-heat-preview i {
-      display: block;
-      width: 4px;
-      height: 4px;
-      background: var(--mint);
-      opacity: .38;
-    }
-
-    .key-heat-preview i:nth-child(-n+3) {
-      opacity: .96;
-    }
-
-    .preview-surface[data-display-mode="battery"] .growth-preview,
-    .preview-surface[data-display-mode="battery"] .key-preview {
-      bottom: 108px;
-    }
-
-    .preview-surface[data-display-mode="battery"] .key-preview {
-      min-width: 70px;
-      padding-inline: 13px;
-      border-radius: 8px;
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .preview-surface[data-display-mode="badge"] .badge-preview {
-      grid-template-columns: 1fr 1fr .62fr;
-      min-width: 246px;
-    }
-
-    .preview-surface[data-display-mode="badge"] .key-preview {
-      bottom: 56px;
-      min-width: 64px;
-      padding: 9px 10px;
-      border-radius: 999px;
-      box-shadow: 3px 3px 0 var(--shadow);
-    }
-
-    .tooltip {
-      position: absolute;
-      top: 24px;
-      left: 22px;
-      max-width: 190px;
-      padding: 9px 10px;
-      font-size: 11px;
-      font-weight: 800;
-      border: 2px solid rgba(255,247,223,.18);
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .tooltip.inner {
-      top: auto;
-      right: 22px;
-      bottom: 84px;
-      left: auto;
-    }
-
-    .path-row {
-      display: grid;
-      gap: 6px;
-      margin-top: 14px;
-      padding: 10px;
-      background: rgba(16,20,25,.66);
-      border: 2px solid rgba(255,247,223,.15);
-    }
-
-    .path-label {
-      color: var(--paper-dim);
-      font-size: 12px;
-      font-weight: 900;
-      text-transform: uppercase;
-    }
-
-    .path {
-      overflow-wrap: anywhere;
-      color: var(--mint);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .actions {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .actions button {
-      min-height: 44px;
-      padding: 10px 8px;
-      color: var(--paper);
-      font-weight: 900;
-      text-transform: uppercase;
-      background: #1b2a34;
-      border: 2px solid #526a7a;
-      box-shadow: 4px 4px 0 var(--shadow);
-    }
-
-    .actions button.primary {
-      color: var(--shadow);
-      background: var(--mint);
-      border-color: var(--mint);
-    }
-
-    .actions button:disabled {
-      cursor: wait;
-      opacity: .55;
-    }
-
-    @keyframes petTick {
-      0%, 100% { transform: translateX(-50%) translateY(0); }
-      50% { transform: translateX(-50%) translateY(-10px); }
-    }
-
-    @keyframes previewPetTick {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-
-    @keyframes shadowTick {
-      0%, 100% { transform: translateX(-50%) scaleX(1); opacity: .36; }
-      50% { transform: translateX(-50%) scaleX(.82); opacity: .24; }
-    }
-
-    @keyframes tailTick {
-      0%, 100% { transform: rotate(0deg); }
-      50% { transform: rotate(12deg); }
-    }
-
-    @keyframes blink {
-      0%, 92%, 100% { height: 8%; }
-      94% { height: 2%; }
-    }
-
-    @media (max-width: 1120px) {
-      .hero,
-      .settings-layout {
-        grid-template-columns: 1fr;
-      }
-
-      .hero-stage {
-        min-height: 420px;
-      }
-
-      .preview-panel {
-        position: relative;
-        top: 0;
-      }
-    }
-
-    @media (max-width: 760px) {
-      .page {
-        padding-inline: 12px;
-      }
-
-      .top-nav {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .nav-links {
-        width: 100%;
-        overflow-x: auto;
-        padding-bottom: 4px;
-      }
-
-      .hero {
-        min-height: auto;
-        padding-top: 34px;
-      }
-
-      .hero h1 {
-        font-size: clamp(34px, 15vw, 60px);
-        text-shadow: 3px 3px 0 var(--shadow), 6px 6px 0 #2b3c45;
-      }
-
-      .hero-stage {
-        min-height: 360px;
-        padding: 18px;
-      }
-
-      .settings-grid,
-      .control-grid,
-      .mode-panels,
-      .reward-loadout,
-      .reward-selector,
-      .preset-grid,
-      .actions {
-        grid-template-columns: 1fr;
-      }
-
-      .settings-layout {
-        gap: 16px;
-      }
-
-      .hero-hud {
-        right: 18px;
-        bottom: 18px;
-        min-width: 145px;
-      }
-    }
-
-    /* Settings app redesign: calmer structure over the older pixel hero surface. */
-    :root {
-      --app-bg: #10151d;
-      --app-bg-soft: #151c25;
-      --surface: #19222d;
-      --surface-2: #121922;
-      --surface-3: #202b36;
-      --line: rgba(220, 232, 242, .16);
-      --line-strong: rgba(220, 232, 242, .28);
-      --text: #f4f7fb;
-      --text-soft: #b7c5d3;
-      --text-muted: #8495a6;
-      --accent: #45d4b4;
-      --accent-2: #74a8ff;
-      --warning-soft: #f3c766;
-      --radius: 8px;
-      font-family: "Segoe UI", "Cascadia Mono", Consolas, sans-serif;
-      background: var(--app-bg);
-      color: var(--text);
-    }
-
-    body {
-      background:
-        linear-gradient(180deg, rgba(116,168,255,.08), transparent 280px),
-        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
-        var(--app-bg);
-      background-size: auto, 32px 32px, auto;
-    }
-
-    .page {
-      width: min(1480px, 100%);
-      padding: 0 clamp(14px, 2vw, 28px) 32px;
-    }
-
-    .top-nav {
       min-height: 64px;
-      padding: 10px 0;
-      background: linear-gradient(180deg, rgba(16,21,29,.98), rgba(16,21,29,.9));
-      border-bottom: 1px solid var(--line);
-      box-shadow: none;
-      backdrop-filter: blur(14px);
+      padding: 12px max(24px, calc((100vw - 1184px) / 2));
+      border-bottom: 1px solid var(--border);
+      background: rgba(9,9,11,.86);
+      backdrop-filter: blur(16px);
     }
-
-    .brand {
-      gap: 12px;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-
-    .brand-mark {
-      width: 30px;
-      height: 30px;
-      border-radius: 7px;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 10px 22px rgba(5,9,14,.28);
-    }
-
-    .brand-mark::before,
-    .brand-mark::after {
-      top: 11px;
-      width: 4px;
-      height: 4px;
-      border-radius: 999px;
-      background: #0e141c;
-    }
-
-    .brand-text {
-      font-size: 14px;
-      letter-spacing: .01em;
-    }
-
-    .nav-links {
-      gap: 7px;
-    }
-
-    .nav-links a,
-    .mini-status {
-      min-height: 34px;
-      padding: 8px 11px;
-      color: var(--text-soft);
-      background: rgba(255,255,255,.045);
-      border: 1px solid var(--line);
+    .brand-lockup { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .brand-mark, .section-icon {
+      display: grid;
+      place-items: center;
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(45,212,191,.24);
       border-radius: var(--radius);
-      box-shadow: none;
-      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      background: rgba(45,212,191,.08);
+      color: var(--primary);
     }
-
-    .nav-links a:hover,
-    .nav-links a:focus-visible,
-    .sidebar-nav a:hover,
-    .sidebar-nav a:focus-visible {
-      color: var(--text);
-      background: rgba(69,212,180,.12);
-      border-color: rgba(69,212,180,.42);
-      filter: none;
-      outline: none;
-    }
-
-    .nav-links a:active,
-    .sidebar-nav a:active,
-    .actions button:active,
-    .preset-grid button:active,
-    .reward-category:active {
-      transform: translateY(1px);
-    }
-
-    .mini-status {
-      color: var(--accent);
-      border-color: rgba(69,212,180,.34);
-    }
-
-    .hero {
-      display: none;
-    }
-
-    .settings-layout {
-      display: grid;
-      grid-template-columns: 220px minmax(0, 1fr) minmax(330px, 400px);
-      gap: 16px;
-      align-items: start;
-      padding-top: 18px;
-    }
-
-    .settings-sidebar,
-    .preview-panel {
-      position: sticky;
-      top: 82px;
-    }
-
-    .settings-sidebar {
-      display: grid;
-      gap: 12px;
-    }
-
-    .sidebar-panel,
-    .panel,
-    .preview-panel {
-      background: rgba(25,34,45,.88);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.045), 0 18px 50px rgba(5,9,14,.2);
-    }
-
-    .sidebar-panel,
-    .panel {
-      padding: 16px;
-    }
-
-    .sidebar-eyebrow {
-      display: block;
-      margin-bottom: 9px;
-      color: var(--text-muted);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-    }
-
-    .sidebar-nav {
-      display: grid;
-      gap: 5px;
-    }
-
-    .sidebar-nav a {
-      display: flex;
+    .brand-mark { width: 32px; height: 32px; }
+    .brand-mark .icon { width: 18px; height: 18px; }
+    .eyebrow { color: var(--muted-foreground); font-size: 11px; line-height: 16px; }
+    .header-tools { display: flex; align-items: center; gap: 8px; }
+    .status {
+      display: inline-flex;
       align-items: center;
-      min-height: 34px;
-      padding: 8px 10px;
-      color: var(--text-soft);
-      text-decoration: none;
-      border: 1px solid transparent;
-      border-radius: 7px;
-      transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
-    }
-
-    .sidebar-nav a.is-active {
-      color: var(--text);
-      background: rgba(69,212,180,.15);
-      border-color: rgba(69,212,180,.46);
-      box-shadow: inset 3px 0 0 var(--accent);
-    }
-
-    .sidebar-status strong {
-      display: block;
-      margin-bottom: 8px;
-      font-size: 13px;
-    }
-
-    .sidebar-status p {
-      margin: 0;
-      color: var(--text-soft);
+      gap: 8px;
+      min-height: 32px;
+      padding: 0 12px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: var(--card);
+      color: var(--muted-foreground);
       font-size: 12px;
-      line-height: 1.55;
     }
+    .status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px rgba(45,212,191,.1); }
+    .status[data-state="loading"]::before { animation: pulse 1.4s ease-in-out infinite; }
+    .status[data-state="error"]::before { background: var(--danger); }
+    .status[data-state="dirty"]::before { background: var(--warning); box-shadow: 0 0 0 3px rgba(251,191,36,.1); }
 
-    .settings-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 16px;
+    .content-shell { width: min(1184px, calc(100% - 48px)); margin: 0 auto; padding: 24px 0 96px; }
+    .workspace { display: grid; grid-template-columns: 328px minmax(0,1fr); gap: 24px; align-items: start; }
+    .preview-column { position: sticky; top: 88px; display: grid; gap: 12px; }
+    .preview-panel, .settings-card, .meta-strip {
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 2px);
+      background: rgba(17,17,19,.94);
+      box-shadow: var(--shadow);
     }
-
-    .panel {
-      scroll-margin-top: 88px;
-    }
-
-    .panel:target,
-    #rewards:target {
-      border-color: rgba(69,212,180,.5);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.055), 0 0 0 1px rgba(69,212,180,.18), 0 18px 50px rgba(5,9,14,.2);
-    }
-
-    .panel h2,
-    .preview-panel h2 {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      margin-bottom: 15px;
-      color: var(--text);
-      font-size: 15px;
-      line-height: 1.2;
-      text-transform: none;
-    }
-
-    .panel h2::before,
-    .preview-panel h2::before {
-      width: 4px;
-      height: 18px;
-      margin: 0;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: none;
-    }
-
-    .control-grid {
-      grid-template-columns: repeat(auto-fit, minmax(248px, 1fr));
-      gap: 10px;
-    }
-
-    .control {
-      gap: 9px;
-      padding: 12px;
-      background: rgba(18,25,34,.86);
-      border: 1px solid var(--line);
+    .preview-panel { padding: 16px; }
+    .panel-heading, .section-header { display: flex; align-items: center; gap: 12px; }
+    .panel-heading { justify-content: space-between; margin-bottom: 12px; }
+    .sample-chip { display: inline-flex; align-items: center; gap: 4px; color: var(--muted-foreground); font-size: 11px; font-weight: 650; }
+    .sample-chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+    .preview {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1;
+      overflow: hidden;
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      transition: border-color .18s ease, background .18s ease;
-    }
-
-    .control:focus-within {
-      border-color: rgba(69,212,180,.5);
-      background: rgba(22,32,42,.96);
-    }
-
-    .control > span,
-    .toggle-label,
-    .path-label,
-    .inventory-title,
-    .mode-panel-title,
-    .reward-category strong {
-      color: var(--text-soft);
-      font-size: 11px;
-      letter-spacing: .04em;
-      text-transform: uppercase;
-    }
-
-    .control-row {
-      grid-template-columns: minmax(0, 1fr) minmax(70px, auto);
-      gap: 9px;
-    }
-
-    .toggle-row {
-      grid-template-columns: auto minmax(70px, auto);
-    }
-
-    .control select,
-    .control input[type="color"] {
-      border: 1px solid var(--line-strong);
-      border-radius: 7px;
-      background: var(--surface-2);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
-    }
-
-    .control select {
-      color: var(--text);
-    }
-
-    .control output {
-      min-width: 70px;
-      max-width: none;
-      padding: 7px 8px;
-      color: var(--text);
-      font-size: 11px;
-      line-height: 1.25;
-      white-space: normal;
-      overflow-wrap: anywhere;
-      background: rgba(69,212,180,.14);
-      border: 1px solid rgba(69,212,180,.25);
-      border-radius: 7px;
-      box-shadow: none;
-    }
-
-    .segment-control,
-    .reward-category-grid,
-    .reward-selector,
-    .reward-panels {
-      min-width: 0;
-    }
-
-    .segment-control {
-      padding: 4px;
-      background: var(--surface-2);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-    }
-
-    .segment-control button,
-    .preset-grid button,
-    .reward-category,
-    .actions button {
-      border-radius: 7px;
-      box-shadow: none;
-      transition: transform .18s ease, border-color .18s ease, background .18s ease, color .18s ease;
-    }
-
-    .segment-control button {
-      color: var(--text-soft);
-      background: transparent;
-    }
-
-    .segment-control button[aria-pressed="true"] {
-      color: #0f171f;
-      background: var(--accent);
-      box-shadow: none;
-    }
-
-    .growth-guide,
-    .growth-mode-help,
-    .inventory-summary,
-    .mode-panel,
-    .loadout-chip,
-    .reward-category,
-    .inventory-item,
-    .reward-flow span,
-    .path-row {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: none;
-    }
-
-    .growth-guide {
-      color: var(--text-soft);
-      background: rgba(18,25,34,.72);
-    }
-
-    .growth-mode-help {
-      color: #0f171f;
-      background: rgba(69,212,180,.92);
-    }
-
-    .growth-rules li::before {
-      width: 5px;
-      height: 5px;
-      border-radius: 999px;
-      background: var(--accent);
-      box-shadow: none;
-    }
-
-    .mode-panels {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .mode-panel {
-      background: rgba(18,25,34,.62);
-      opacity: .78;
-    }
-
-    .mode-panel.is-active {
-      background: rgba(22,42,43,.78);
-      border-color: rgba(69,212,180,.52);
-      box-shadow: inset 3px 0 0 var(--accent);
-    }
-
-    .inventory-summary {
-      scroll-margin-top: 88px;
-      padding: 14px;
-      background: rgba(18,25,34,.74);
-    }
-
-    .reward-loadout {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-
-    .loadout-chip {
-      background: rgba(255,255,255,.035);
-    }
-
-    .loadout-chip strong,
-    .inventory-copy strong {
-      white-space: normal;
-      overflow-wrap: anywhere;
-    }
-
-    .reward-selector {
-      grid-template-columns: 168px minmax(0, 1fr);
-      gap: 10px;
-    }
-
-    .reward-category {
-      background: rgba(255,255,255,.035);
-      border-color: var(--line);
-    }
-
-    .reward-category[aria-pressed="true"] {
-      background: rgba(69,212,180,.13);
-      border-color: rgba(69,212,180,.5);
-    }
-
-    .reward-panel.is-active {
-      grid-template-columns: repeat(auto-fit, minmax(176px, 1fr));
-      gap: 9px;
-    }
-
-    .inventory-item {
-      min-height: 62px;
-      background: rgba(255,255,255,.035);
-    }
-
-    .inventory-icon {
-      border-radius: 7px;
-      box-shadow: none;
-    }
-
-    .inventory-copy {
-      color: var(--text-soft);
-    }
-
-    .reward-flow span {
-      background: rgba(255,255,255,.035);
-    }
-
-    .preset-grid {
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    }
-
-    .preset-grid button,
-    .actions button {
-      color: var(--text);
-      background: var(--surface-2);
-      border: 1px solid var(--line-strong);
-    }
-
-    .preset-grid button:hover,
-    .actions button:hover {
-      background: var(--surface-3);
-      filter: none;
-    }
-
-    .preview-panel {
-      padding: 16px;
-    }
-
-    .preview-copy,
-    .path,
-    .hud-focus-note,
-    .mode-panel-hint {
-      color: var(--text-soft);
-    }
-
-    .preview-screen {
-      min-height: 350px;
       background:
-        radial-gradient(circle at 50% 42%, rgba(69,212,180,.12), transparent 38%),
-        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px),
-        linear-gradient(0deg, rgba(255,255,255,.045) 1px, transparent 1px),
-        var(--surface-2);
-      background-size: auto, 22px 22px, 22px 22px, auto;
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+        linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px),
+        radial-gradient(circle at center, rgba(45,212,191,.07), transparent 46%),
+        #0c0c0e;
+      background-size: 24px 24px, 24px 24px, auto, auto;
     }
+    .preview-gauge { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-18deg); pointer-events: none; }
+    .preview-alt { position: absolute; inset: 0; display: none; width: 100%; height: 100%; pointer-events: none; }
+    .alt-track, .alt-value { fill: none; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+    .preview-pixel-potions { position: absolute; inset: 0; z-index: 3; display: none; pointer-events: none; }
+    .pixel-potion { position: absolute; image-rendering: pixelated; }
+    .pixel-potion-layer, .pixel-potion-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .pixel-potion-layer { background: #131414; -webkit-mask: url('/assets/potion-pixel-mask.png?v=019') center / 100% 100% no-repeat; mask: url('/assets/potion-pixel-mask.png?v=019') center / 100% 100% no-repeat; }
+    .pixel-potion-frame { image-rendering: pixelated; }
+    .pixel-potion-value, .pixel-potion-label { position: absolute; left: 0; z-index: 2; width: 100%; color: #fff; text-align: center; white-space: nowrap; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; font-variant-numeric: tabular-nums; text-rendering: geometricPrecision; }
+    .pixel-potion-value { top: 42.5%; text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000; }
+    .pixel-potion-label { top: 80.8%; letter-spacing: .35px; }
+    .gauge-track, .gauge-ring { fill: none; transform-box: fill-box; transform-origin: center; vector-effect: non-scaling-stroke; stroke-linecap: round; }
+    .gauge-ring, .hover-range { transition: opacity var(--duration) var(--ease); }
+    .hover-range { fill: none; stroke: rgba(255,255,255,.16); stroke-width: 1.5px; stroke-dasharray: 4 5; }
+    .pet { position: absolute; left: 50%; top: 50%; display: grid; place-items: center; width: 44%; height: 44%; transform: translate(-50%,-50%); border: 1px solid rgba(45,212,191,.24); border-radius: 24px; background: #15191b; color: var(--primary); box-shadow: 0 12px 28px rgba(0,0,0,.32); overflow: hidden; }
+    .pet-icon { width: 30px; height: 30px; }
+    .pet-sprite { position: absolute; inset: 0; display: none; background-repeat: no-repeat; background-position: 0 0; image-rendering: auto; }
+    .pet[data-sprite="true"] { border-color: transparent; border-radius: 0; background: transparent; box-shadow: none; }
+    .tooltip { position: absolute; left: 55%; top: 34%; padding: 8px 12px; border: 1px solid rgba(255,255,255,.1); border-radius: 6px; white-space: nowrap; box-shadow: var(--shadow); font-family: "Noto Sans KR", "Noto Sans CJK KR", sans-serif; font-size: 11px; font-weight: 500; line-height: 14px; font-variant-numeric: tabular-nums; backdrop-filter: blur(12px); }
+    .tooltip.inner { top: 56%; }
+    .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+    .legend-row { display: grid; grid-template-columns: 8px 1fr auto; align-items: center; gap: 8px; min-width: 0; color: var(--muted-foreground); font-size: 12px; }
+    .legend-row strong { color: var(--foreground); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .legend-swatch { width: 7px; height: 7px; border-radius: 50%; }
+    .legend-swatch.outer { background: #3cebbd; }
+    .legend-swatch.inner { background: #56b2ff; }
+    .meta-strip { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 8px 12px; color: var(--muted-foreground); box-shadow: none; }
+    .meta-strip .icon { width: 16px; height: 16px; }
+    .path { overflow: hidden; font: 11px/16px "Cascadia Code", Consolas, monospace; text-overflow: ellipsis; white-space: nowrap; }
 
-    .path-row {
-      background: rgba(18,25,34,.74);
+    .settings-stack { display: grid; gap: 12px; min-width: 0; }
+    .quick-nav { display: flex; gap: 4px; overflow-x: auto; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--card); }
+    .quick-nav a { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px; border-radius: 6px; color: var(--muted-foreground); text-decoration: none; white-space: nowrap; transition: background var(--duration) var(--ease), color var(--duration) var(--ease); }
+    .quick-nav a:hover { background: var(--muted); color: var(--foreground); }
+    .quick-nav .icon { width: 16px; height: 16px; }
+    .settings-card { scroll-margin-top: 88px; padding: 20px; }
+    .section-header { margin-bottom: 16px; }
+    .section-header p { display: none; }
+    .section-icon { width: 32px; height: 32px; }
+    .section-icon .icon { width: 18px; height: 18px; }
+    .subsection-label { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--muted-foreground); font-size: 12px; font-weight: 650; }
+    .subsection-label .icon { width: 16px; height: 16px; }
+    .section-grid, .range-grid, .color-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px 16px; }
+    .position-preset { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; border-top: 1px solid var(--border); color: var(--secondary-foreground); font-size: 13px; }
+    .field { display: grid; grid-template-columns: minmax(92px,.8fr) minmax(120px,1.2fr) 56px; align-items: center; gap: 12px; min-height: 52px; border-top: 1px solid var(--border); }
+    .field[hidden] { display: none; }
+    .section-header + .field, .section-header + .section-grid .field:nth-child(-n+2), .section-header + .range-grid .field:nth-child(-n+2), .section-header + .color-grid .field:nth-child(-n+2) { border-top: 0; }
+    label { color: var(--secondary-foreground); font-size: 13px; }
+    output { color: var(--muted-foreground); font: 11px/16px "Cascadia Code", Consolas, monospace; text-align: right; font-variant-numeric: tabular-nums; }
+    select { width: 100%; height: 36px; padding: 0 32px 0 12px; border: 1px solid var(--border-strong); border-radius: 6px; background: var(--background); color: var(--foreground); transition: border-color var(--duration) var(--ease), background var(--duration) var(--ease); }
+    select:hover { border-color: #52525b; background: var(--muted); }
+    input[type="color"] { width: 36px; height: 36px; padding: 3px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--background); }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+    input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 4px; }
+    input[type="range"] { width: 100%; height: 36px; margin: 0; accent-color: var(--primary); }
+    input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: 999px; background: var(--secondary); }
+    input[type="range"]::-webkit-slider-thumb { width: 16px; height: 16px; margin-top: -6px; border: 3px solid var(--card); border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px rgba(45,212,191,.3); -webkit-appearance: none; }
+
+    .actions { position: static; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 16px; padding: 8px; border: 1px solid var(--border-strong); border-radius: 10px; background: rgba(17,17,19,.9); box-shadow: 0 16px 40px rgba(0,0,0,.3); backdrop-filter: blur(16px); }
+    .actions-secondary { display: flex; gap: 8px; }
+    button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 16px; border: 1px solid var(--border-strong); border-radius: 7px; background: var(--secondary); color: var(--secondary-foreground); font-weight: 600; transition: transform var(--duration) var(--ease), background var(--duration) var(--ease), border-color var(--duration) var(--ease); }
+    button:hover { border-color: #52525b; background: #303034; }
+    button:active { transform: scale(.98); }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    button.icon-button { width: 40px; padding: 0; }
+    button.primary { min-width: 104px; border-color: var(--primary); background: var(--primary); color: var(--primary-foreground); }
+    button.primary:hover { border-color: var(--primary-hover); background: var(--primary-hover); }
+    button[data-loading="true"] .icon { animation: spin .8s linear infinite; }
+    [data-tooltip] { position: relative; }
+    [data-tooltip]::after { content: attr(data-tooltip); position: absolute; left: 50%; bottom: calc(100% + 8px); padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--popover); color: var(--foreground); font-size: 11px; white-space: nowrap; opacity: 0; pointer-events: none; transform: translate(-50%,4px); transition: opacity var(--duration) var(--ease), transform var(--duration) var(--ease); }
+    [data-tooltip]:hover::after, [data-tooltip]:focus-visible::after { opacity: 1; transform: translate(-50%,0); }
+
+    @keyframes pulse { 50% { opacity: .45; transform: scale(.8); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes ambient-drift { to { transform: scale(1.055) translate3d(-.45%, -.7%, 0); } }
+    @keyframes ambient-glow { to { opacity: .72; } }
+    @keyframes ambient-twinkle { 50% { opacity: .2; transform: scale(.65) translateY(-8px); } }
+    @media (max-width: 960px) {
+      .content-shell { width: min(760px, calc(100% - 40px)); }
+      .workspace { grid-template-columns: minmax(0, 1fr); }
+      .preview-column { position: static; display: block; }
+      .preview-panel { display: grid; grid-template-columns: minmax(280px, 320px) 1fr; gap: 12px 24px; }
+      .panel-heading { grid-column: 2; margin-bottom: 0; }
+      .preview { grid-column: 1; grid-row: 1 / span 2; }
+      .legend { grid-column: 2; grid-row: 2; grid-template-columns: 1fr; align-self: start; margin-top: 0; }
+      .meta-strip { margin-top: 12px; }
     }
-
-    .actions button.primary {
-      color: #0f171f;
-      background: var(--accent);
-      border-color: var(--accent);
+    @media (max-width: 680px) {
+      .ambient-scene { inset: 0; opacity: .42; }
+      .ambient-scene::before { background-position: 70% center; }
+      .content-shell { width: calc(100% - 24px); padding-top: 12px; }
+      .app-chrome { position: static; padding: 12px; }
+      .eyebrow { display: none; }
+      .preview-column { grid-template-columns: 1fr; }
+      .preview-panel { display: block; }
+      .panel-heading { margin-bottom: 12px; }
+      .preview { max-width: 360px; margin: 0 auto; }
+      .section-grid, .range-grid, .color-grid { grid-template-columns: 1fr; }
+      .section-header + .section-grid .field:nth-child(2), .section-header + .range-grid .field:nth-child(2), .section-header + .color-grid .field:nth-child(2) { border-top: 1px solid var(--border); }
     }
-
-    @media (max-width: 1220px) {
-      .settings-layout {
-        grid-template-columns: 210px minmax(0, 1fr);
-      }
-
-      .preview-panel {
-        grid-column: 2;
-        position: relative;
-        top: 0;
-      }
+    @media (max-width: 460px) {
+      .brand-mark { display: none; }
+      .status { max-width: 104px; padding: 0 8px; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+      .settings-card { padding: 16px; }
+      .field { grid-template-columns: 1fr 56px; gap: 8px; padding: 8px 0; }
+      .field label { grid-column: 1 / -1; }
+      .field select, .field input[type="range"], .field input[type="color"] { grid-column: 1; }
+      .field output { grid-column: 2; grid-row: 2; }
+      .quick-nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 100%; overflow: visible; }
+      .quick-nav a { min-height: 44px; padding: 0 12px; }
+      button, select, input[type="range"], input[type="color"] { min-height: 44px; }
+      input[type="color"] { width: 44px; height: 44px; }
     }
-
-    @media (max-width: 880px) {
-      .page {
-        padding-inline: 12px;
-      }
-
-      .top-nav {
-        align-items: stretch;
-        flex-direction: column;
-      }
-
-      .settings-layout {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-
-      .settings-sidebar {
-        position: sticky;
-        top: 0;
-        z-index: 12;
-      }
-
-      .sidebar-panel {
-        padding: 10px;
-      }
-
-      .sidebar-status {
-        display: none;
-      }
-
-      .sidebar-nav {
-        display: flex;
-        gap: 7px;
-        overflow-x: auto;
-        padding-bottom: 2px;
-      }
-
-      .sidebar-nav a {
-        flex: 0 0 auto;
-        white-space: nowrap;
-      }
-
-      .preview-panel {
-        grid-column: auto;
-      }
-
-      .mode-panels,
-      .reward-loadout,
-      .reward-selector,
-      .actions {
-        grid-template-columns: 1fr;
-      }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+    }
+    @media (forced-colors: active) {
+      .ambient-scene { display: none; }
+      body, .app-chrome, .preview-panel, .settings-card, .meta-strip, .quick-nav, .actions { background: Canvas; color: CanvasText; }
+      .preview-panel, .settings-card, .meta-strip, .quick-nav, .actions, button, select, input { border-color: CanvasText; }
+      :focus-visible { outline-color: Highlight; }
+      .legend-swatch, .sample-chip::before { forced-color-adjust: none; border: 1px solid CanvasText; }
     }
   </style>
 </head>
 <body>
-  <main class="page">
-    <nav class="top-nav" aria-label="Settings navigation">
-      <div class="brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-text">Codexy pet usages ring</span>
-      </div>
-      <div class="nav-links">
-        <a href="#settings" data-i18n="navSettings">설정</a>
-        <a href="#growth" data-i18n="navGrowth">성장</a>
-        <a href="#preview" data-i18n="navPreview">미리보기</a>
-        <span class="mini-status" id="status" data-state="loading">불러오는 중...</span>
-      </div>
-    </nav>
+  <!-- 아이콘은 MUI Material Icons의 SVG 경로를 인라인 스프라이트로 사용합니다. -->
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-pet" viewBox="0 0 24 24"><path d="M4.5 9.5A2.5 2.5 0 1 0 4.5 4a2.5 2.5 0 0 0 0 5.5ZM9 7a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm6 0a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm4.5 2.5A2.5 2.5 0 1 0 19.5 4a2.5 2.5 0 0 0 0 5.5ZM17.34 12c-.87-1.02-1.6-1.9-2.48-2.92C14.4 8.54 13.73 8.2 13 8.2h-2c-.73 0-1.4.34-1.86.88C8.26 10.1 7.53 10.98 6.66 12 5.36 13.5 4 15.24 4 17c0 2.58 2 4 4.5 4 1.28 0 2.4-.48 3.5-1.1 1.1.62 2.22 1.1 3.5 1.1 2.5 0 4.5-1.42 4.5-4 0-1.76-1.36-3.5-2.66-5Z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5C21.27 7.61 17 4.5 12 4.5Zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10Zm0-8a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></symbol>
+    <symbol id="i-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0 0 18h1.65a1.84 1.84 0 0 0 1.35-3.08 1.83 1.83 0 0 1 1.35-3.08H18A3 3 0 0 0 21 12a9 9 0 0 0-9-9ZM6.5 13A1.5 1.5 0 1 1 6.5 10a1.5 1.5 0 0 1 0 3Zm3-4A1.5 1.5 0 1 1 9.5 6a1.5 1.5 0 0 1 0 3Zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3Z"/></symbol>
+    <symbol id="i-opacity" viewBox="0 0 24 24"><path d="M17.66 8 12 2.35 6.34 8A8 8 0 1 0 20 13.66 7.94 7.94 0 0 0 17.66 8ZM6 14a6 6 0 0 1 6-6v12a6 6 0 0 1-6-6Z"/></symbol>
+    <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 4v3h5.5v12h3V7H19V4H5Z"/></symbol>
+    <symbol id="i-tune" viewBox="0 0 24 24"><path d="M3 17v2h6v-2H3ZM3 5v2h10V5H3Zm10 16v-2h8v-2h-8v-2h-2v6h2ZM7 9v2H3v2h4v2h2V9H7Zm14 4v-2H11v2h10Zm-6-4h2V7h4V5h-4V3h-2v6Z"/></symbol>
+    <symbol id="i-center" viewBox="0 0 24 24"><path d="M3 7V3h4v2H5v2H3Zm14-2V3h4v4h-2V5h-2ZM5 17v2h2v2H3v-4h2Zm14 0h2v4h-4v-2h2v-2Zm-7-9a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M17.65 6.35A7.95 7.95 0 0 0 12 4a8 8 0 1 0 7.9 9h-2.02A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h8V3l-3.35 3.35Z"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M13 3a9 9 0 0 0-9 9H1l4 4 4-4H6a7 7 0 1 1 2.05 4.95l-1.42 1.42A9 9 0 1 0 13 3Z"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M17 3H5a2 2 0 0 0-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4Zm-5 16a3 3 0 1 1 0-6 3 3 0 0 1 0 6Zm3-10H5V5h10v4Z"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16c0 1.1.89 2 1.99 2H18a2 2 0 0 0 2-2V8l-6-6Zm2 16H8v-2h8v2Zm0-4H8v-2h8v2Zm-3-5V3.5L18.5 9H13Z"/></symbol>
+  </svg>
 
-    <div class="settings-layout" id="settings">
-      <aside class="settings-sidebar" aria-label="Settings sections">
-        <div class="sidebar-panel">
-          <span class="sidebar-eyebrow">Control Map</span>
-          <nav class="sidebar-nav" aria-label="Settings sections">
-            <a href="#general" data-settings-nav data-i18n="sectionGeneral">일반</a>
-            <a href="#growth" data-settings-nav data-i18n="sectionPetGrowth">펫 성장</a>
-            <a href="#rewards" data-settings-nav data-i18n="inventoryTitle">보상 보관함</a>
-            <a href="#presets" data-settings-nav data-i18n="sectionThemePresets">테마 프리셋</a>
-            <a href="#colors" data-settings-nav data-i18n="sectionRingColors">HUD 색상</a>
-            <a href="#readout" data-settings-nav data-i18n="sectionReadoutColors">읽기 표시</a>
-            <a href="#opacity" data-settings-nav data-i18n="sectionOpacity">투명도</a>
-            <a href="#motion" data-settings-nav data-i18n="sectionMotion">호버와 텍스트</a>
-          </nav>
-        </div>
-        <div class="sidebar-panel sidebar-status">
-          <span class="sidebar-eyebrow">Live Preview</span>
-          <strong data-i18n="previewTitle">HUD 미리보기</strong>
-          <p data-i18n="previewDescription">링, 배터리, 배지, 성장 칩이 펫과 겹치지 않는 HUD 위치로 표시됩니다.</p>
-        </div>
-      </aside>
-      <section class="settings-grid" aria-label="Settings controls">
-        <section class="panel" id="general" aria-labelledby="generalTitle">
-          <h2 id="generalTitle" data-i18n="sectionGeneral">일반</h2>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="language">언어</span>
-              <div class="control-row">
-                <select data-path="language">
-                  <option value="auto" data-i18n="languageAuto">자동</option>
-                  <option value="ko" data-i18n="languageKo">한국어</option>
-                  <option value="en" data-i18n="languageEn">영어</option>
-                  <option value="ja" data-i18n="languageJa">일본어</option>
-                  <option value="zh" data-i18n="languageZh">중국어</option>
-                </select>
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="displayMode">표시 방식</span>
-              <div class="control-row">
-                <select data-path="displayMode">
-                  <option value="ring" data-i18n="displayModeRing">링</option>
-                  <option value="battery" data-i18n="displayModeBattery">배터리</option>
-                  <option value="badge" data-i18n="displayModeBadge">배지</option>
-                </select>
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="visibilityMode">노출 방식</span>
-              <div class="control-row">
-                <select data-path="behavior.visibilityMode">
-                  <option value="hover" data-i18n="visibilityModeHover">마우스 호버 시</option>
-                  <option value="always" data-i18n="visibilityModeAlways">상시 노출</option>
-                </select>
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="ringGap">Pet-HUD 거리</span>
-              <div class="control-row">
-                <input type="range" min="0" max="96" step="1" data-path="layout.ringGap" data-unit="px">
-                <output></output>
-              </div>
-            </label>
-          </div>
-        </section>
+  <!-- imagegen으로 제작한 래스터 일러스트에 저비용 CSS 움직임만 적용합니다. -->
+  <div class="ambient-scene" aria-hidden="true">
+    <span class="ambient-particle one"></span>
+    <span class="ambient-particle two"></span>
+    <span class="ambient-particle three"></span>
+  </div>
 
-        <section class="panel" id="growth" aria-labelledby="growthTitle">
-          <h2 id="growthTitle" data-i18n="sectionPetGrowth">펫 성장</h2>
-          <div class="growth-guide">
-            <p data-i18n="growthIntro">성장은 현재 5h 사용량에 직접 반응합니다. /pet이 보이면 5h 사용률이 목표치까지 차오르는 만큼 오늘 XP가 함께 오릅니다.</p>
-            <div class="growth-mode-help" id="growthModeHelp">균형 사용형: 5h 사용량 40%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.</div>
-            <ul class="growth-rules">
-              <li data-i18n="growthRuleVisible">XP는 실제 /pet 창이 보이고 사용량 스냅샷이 있을 때만 계산됩니다.</li>
-              <li data-i18n="growthRuleMinute">5h 사용량 진행률이 오늘 XP가 되며 하루 최대 +30 XP까지 차오릅니다.</li>
-              <li data-i18n="growthRuleWeekly">주간 사용량은 XP를 올리는 기준이 아니라 리셋 시즌과 고갈 방지 판단에 사용됩니다.</li>
-              <li data-i18n="growthRuleLow">5h 또는 주간 잔량이 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.</li>
-              <li data-i18n="growthRuleReset">5h 리셋은 성장 조건을 유지했을 때 1회 +10 XP를 줍니다. 주간 리셋이 오면 펫은 Lv1부터 다시 시작합니다.</li>
-            </ul>
-          </div>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="growthEnabled">성장 켜기</span>
-              <div class="control-row toggle-row">
-                <input type="checkbox" data-path="gamification.enabled">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="growthMode">성장 방식</span>
-              <div class="control-row">
-                <select data-path="gamification.growthMode">
-                  <option value="conserve" data-i18n="growthModeConserve">가벼운 사용형</option>
-                  <option value="balanced" data-i18n="growthModeBalanced">균형 사용형</option>
-                  <option value="active" data-i18n="growthModeActive">집중 사용형</option>
-                </select>
-                <output></output>
-              </div>
-            </label>
-            <label class="control focus-control">
-              <span data-i18n="hudFocus">HUD 포커스</span>
-              <div class="control-row segmented-row">
-                <select data-path="gamification.hudFocus">
-                  <option value="growth" data-i18n="hudFocusGrowth">레벨 구간</option>
-                  <option value="combo" data-i18n="hudFocusCombo">게이미피케이션 구간</option>
-                </select>
-                <div class="segment-control" data-segment-for="gamification.hudFocus">
-                  <button type="button" data-value="growth" data-i18n="hudFocusGrowth">레벨 구간</button>
-                  <button type="button" data-value="combo" data-i18n="hudFocusCombo">게이미피케이션 구간</button>
-                </div>
-                <output></output>
-              </div>
-              <span class="hud-focus-note" data-i18n="hudFocusNote">실제 HUD에는 레벨 구간 또는 게이미피케이션 구간 중 하나만 표시됩니다.</span>
-            </label>
-            <div class="mode-panels" aria-label="HUD focus options">
-              <div class="mode-panel" data-focus-panel="growth">
-                <span class="mode-panel-title" data-i18n="levelPanelTitle">레벨 구간</span>
-                <span class="mode-panel-hint" data-i18n="levelPanelHint">레벨, 상태, 성장 읽기 표시를 펫 아래에 고정합니다.</span>
-                <label class="control">
-                  <span data-i18n="growthChip">성장 칩 표시</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showGrowthChip">
-                    <output></output>
-                  </div>
-                </label>
-                <label class="control">
-                  <span data-i18n="growthHoverReadout">성장 호버 표시</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showHoverReadout">
-                    <output></output>
-                  </div>
-                </label>
-              </div>
-              <div class="mode-panel" data-focus-panel="combo">
-                <span class="mode-panel-title" data-i18n="comboPanelTitle">게이미피케이션 구간</span>
-                <span class="mode-panel-hint" data-i18n="comboPanelHint">키보드 카운트, 콤보 배율, 파티클 이펙트를 크게 보여줍니다.</span>
-                <label class="control">
-                  <span data-i18n="keyCounter">키 카운터</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showKeyCounter">
-                    <output></output>
-                  </div>
-                </label>
-                <label class="control">
-                  <span data-i18n="keyEffects">키 이펙트</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showKeyEffects">
-                    <output></output>
-                  </div>
-                </label>
-                <label class="control">
-                  <span data-i18n="comboHeat">콤보 열기 게이지</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showComboHeat">
-                    <output></output>
-                  </div>
-                </label>
-                <label class="control">
-                  <span data-i18n="rewardCharge">보상 충전 게이지</span>
-                  <div class="control-row toggle-row">
-                    <input type="checkbox" data-path="gamification.showRewardCharge">
-                    <output></output>
-                  </div>
-                </label>
-              </div>
-            </div>
-            <div class="inventory-summary" id="rewards" aria-labelledby="inventoryTitle">
-              <div class="inventory-head">
-                <span class="inventory-title" id="inventoryTitle" data-i18n="inventoryTitle">보상 보관함</span>
-                <span class="inventory-total" id="inventoryTotal">0 drops</span>
-              </div>
-              <div class="reward-loadout" aria-label="Active reward loadout">
-                <div class="loadout-chip">
-                  <span data-i18n="loadoutActiveFont">적용 폰트</span>
-                  <strong id="activeFontName">-</strong>
-                </div>
-                <div class="loadout-chip">
-                  <span data-i18n="loadoutActiveTheme">적용 테마</span>
-                  <strong id="activeThemeName">-</strong>
-                </div>
-                <div class="loadout-chip">
-                  <span data-i18n="loadoutActiveEffect">적용 이펙트</span>
-                  <strong id="activeEffectName">-</strong>
-                </div>
-                <div class="loadout-chip">
-                  <span data-i18n="loadoutRewardRolls">보상 시도</span>
-                  <strong id="rewardRollCount">0</strong>
-                </div>
-              </div>
-              <div class="reward-selector">
-                <div class="reward-category-grid" aria-label="Reward categories">
-                  <button type="button" class="reward-category" data-reward-tab="fonts" aria-pressed="true">
-                    <strong data-i18n="rewardTabFonts">폰트</strong>
-                    <span id="fontUnlockSummary">0/2</span>
-                  </button>
-                  <button type="button" class="reward-category" data-reward-tab="themes" aria-pressed="false">
-                    <strong data-i18n="rewardTabThemes">테마</strong>
-                    <span id="themeUnlockSummary">0/5</span>
-                  </button>
-                  <button type="button" class="reward-category" data-reward-tab="effects" aria-pressed="false">
-                    <strong data-i18n="rewardTabEffects">이펙트</strong>
-                    <span id="effectUnlockSummary">0/3</span>
-                  </button>
-                </div>
-                <div class="reward-panels">
-                  <div class="reward-panel is-active" data-reward-panel="fonts">
-                    <div class="inventory-item" data-item-key="fontPixel">
-                      <span class="inventory-icon"><img src="/assets/runtime/unlock-font-pixel.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemFontPixel">픽셀 폰트</strong><span id="inventoryFontPixel">잠김</span><em data-i18n="rewardTypeFont">Font</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="fontTerminal">
-                      <span class="inventory-icon"><img src="/assets/runtime/unlock-font-terminal.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemFontTerminal">터미널 폰트</strong><span id="inventoryFontTerminal">잠김</span><em data-i18n="rewardTypeFont">Font</em></span>
-                    </div>
-                  </div>
-                  <div class="reward-panel" data-reward-panel="themes">
-                    <div class="inventory-item" data-item-key="themeForest" data-rarity="common">
-                      <span class="inventory-icon"><img src="/assets/runtime/theme-forest-border.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemThemeForest">민트 회로 테마</strong><span id="inventoryThemeForest">잠김</span><em data-i18n="rarityCommon">Common</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="themeArcane" data-rarity="rare">
-                      <span class="inventory-icon"><img src="/assets/runtime/theme-arcane-border.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemThemeArcane">아케인 테마</strong><span id="inventoryThemeArcane">잠김</span><em data-i18n="rarityRare">Rare</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="themeRoyal" data-rarity="epic">
-                      <span class="inventory-icon"><img src="/assets/runtime/theme-royal-border.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemThemeRoyal">로열 테마</strong><span id="inventoryThemeRoyal">잠김</span><em data-i18n="rarityEpic">Epic</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="themeCyber" data-rarity="legendary">
-                      <span class="inventory-icon"><img src="/assets/runtime/theme-cyber-border.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemThemeCyber">네온 사이버 테마</strong><span id="inventoryThemeCyber">잠김</span><em data-i18n="rarityLegendary">Legendary</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="themeCelestial" data-rarity="mythic">
-                      <span class="inventory-icon"><img src="/assets/runtime/theme-celestial-border.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemThemeCelestial">셀레스티얼 테마</strong><span id="inventoryThemeCelestial">잠김</span><em data-i18n="rarityMythic">Mythic</em></span>
-                    </div>
-                  </div>
-                  <div class="reward-panel" data-reward-panel="effects">
-                    <div class="inventory-item" data-item-key="effectPawBurst" data-rarity="rare">
-                      <span class="inventory-icon"><img src="/assets/runtime/effect-paw-burst.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemEffectPawBurst">고양이 발바닥 파파팡</strong><span id="inventoryEffectPawBurst">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="effectBearPaw" data-rarity="rare">
-                      <span class="inventory-icon"><img src="/assets/runtime/effect-bear-paw-burst.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemEffectBearPaw">곰 발바닥 파파팡</strong><span id="inventoryEffectBearPaw">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
-                    </div>
-                    <div class="inventory-item" data-item-key="effectDogPaw" data-rarity="rare">
-                      <span class="inventory-icon"><img src="/assets/runtime/effect-dog-paw-burst.png" alt=""></span>
-                      <span class="inventory-copy"><strong data-i18n="itemEffectDogPaw">강아지 발바닥 파파팡</strong><span id="inventoryEffectDogPaw">잠김</span><em data-i18n="rewardTypeEffect">Effect</em></span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div class="reward-flow">
-                <span data-i18n="rewardFlowChest">상자</span>
-                <span data-i18n="rewardFlowCategory">폰트/테마/이펙트</span>
-                <span data-i18n="rewardFlowPicker">선택 팝오버</span>
-              </div>
-            </div>
-          </div>
-        </section>
+  <header class="app-chrome">
+    <div class="brand-lockup">
+      <div class="brand-mark"><svg class="icon"><use href="#i-pet"></use></svg></div>
+      <div><div class="eyebrow">Codex Pet</div><h1 data-i18n="title">Codex Pet Usage HUD Settings</h1></div>
+    </div>
+    <div class="header-tools"><div class="status" id="status" role="status" aria-live="polite" data-i18n="loading">Loading...</div></div>
+  </header>
 
-        <section class="panel wide" id="presets" aria-labelledby="presetTitle">
-          <h2 id="presetTitle" data-i18n="sectionThemePresets">테마 프리셋</h2>
-          <div class="preset-grid">
-            <button type="button" data-preset="arcadeMint" data-i18n="presetArcadeMint">아케이드 민트</button>
-            <button type="button" data-preset="berryQuest" data-i18n="presetBerryQuest">베리 퀘스트</button>
-            <button type="button" data-preset="sunnyBattery" data-i18n="presetSunnyBattery">써니 배터리</button>
-            <button type="button" data-preset="quietTerminal" data-i18n="presetQuietTerminal">터미널</button>
-            <button type="button" data-preset="highContrast" data-i18n="presetHighContrast">고대비</button>
-          </div>
-        </section>
-
-        <section class="panel" id="colors" aria-labelledby="colorTitle">
-          <h2 id="colorTitle" data-i18n="sectionRingColors">HUD 색상</h2>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="outer5h">5h</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.primary">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="innerWeekly">주간</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.secondary">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="warning">위험</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.warning">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="caution">주의</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.caution">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="track">트랙</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.track">
-                <output></output>
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="panel" id="readout" aria-labelledby="readoutTitle">
-          <h2 id="readoutTitle" data-i18n="sectionReadoutColors">읽기 표시</h2>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="textColor">글자</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.readoutText">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="outerBackground">5h 배경</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.outerReadoutBackground">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="innerBackground">주간 배경</span>
-              <div class="control-row">
-                <input type="color" data-path="colors.innerReadoutBackground">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="readoutBackground">배경 투명도</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.readout">
-                <output></output>
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="panel" id="opacity" aria-labelledby="opacityTitle">
-          <h2 id="opacityTitle" data-i18n="sectionOpacity">투명도</h2>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="outer">5h</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.primary">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="inner">주간</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.secondary">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="warning">위험</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.warning">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="track">트랙</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.track">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="readoutTextOpacity">글자</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1" step="0.01" data-path="opacity.readoutText">
-                <output></output>
-              </div>
-            </label>
-          </div>
-        </section>
-
-        <section class="panel" id="motion" aria-labelledby="motionTitle">
-          <h2 id="motionTitle" data-i18n="sectionMotion">호버와 텍스트</h2>
-          <div class="control-grid">
-            <label class="control">
-              <span data-i18n="hoverRange">유지 범위</span>
-              <div class="control-row">
-                <input type="range" min="0" max="96" step="1" data-path="behavior.hoverRange" data-unit="px">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="fadeIn">페이드 인</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1000" step="10" data-path="behavior.fadeInMs" data-unit="ms">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="fadeOut">페이드 아웃</span>
-              <div class="control-row">
-                <input type="range" min="0" max="1000" step="10" data-path="behavior.fadeOutMs" data-unit="ms">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="fontSize">글자 크기</span>
-              <div class="control-row">
-                <input type="range" min="8" max="24" step="0.5" data-path="text.fontSize" data-unit="px">
-                <output></output>
-              </div>
-            </label>
-            <label class="control">
-              <span data-i18n="lineHeight">줄 높이</span>
-              <div class="control-row">
-                <input type="range" min="10" max="32" step="0.5" data-path="text.lineHeight" data-unit="px">
-                <output></output>
-              </div>
-            </label>
-          </div>
-        </section>
-      </section>
-
-      <aside class="preview-panel" id="preview" aria-labelledby="previewTitle">
-        <h2 id="previewTitle" data-i18n="previewTitle">HUD 미리보기</h2>
-        <p class="preview-copy" data-i18n="previewDescription">링, 배터리, 배지, 성장 칩이 펫과 겹치지 않는 HUD 위치로 표시됩니다.</p>
-        <div class="preview-screen">
-          <div class="preview-surface" id="previewSurface">
-            <svg class="preview-rings" viewBox="0 0 256 256" aria-hidden="true">
-              <circle id="previewHoverRange" cx="128" cy="128" r="92"></circle>
-              <circle id="previewOuterTrack" cx="128" cy="128" r="82"></circle>
-              <circle id="previewInnerTrack" cx="128" cy="128" r="68"></circle>
-              <circle id="previewOuter" cx="128" cy="128" r="82"></circle>
-              <circle id="previewInner" cx="128" cy="128" r="68"></circle>
-              <circle id="previewCaution" cx="128" cy="128" r="99"></circle>
-              <circle id="previewWarning" cx="128" cy="128" r="99"></circle>
+  <main class="content-shell">
+    <div class="workspace">
+      <aside class="preview-column" aria-label="Sample preview">
+        <section class="preview-panel">
+          <div class="panel-heading"><h2 data-i18n="previewTitle">Display preview</h2><span class="sample-chip" data-i18n="previewSample">SAMPLE</span></div>
+          <div class="preview" aria-label="Sample display preview">
+            <svg class="preview-gauge" viewBox="0 0 220 220" aria-hidden="true">
+              <circle class="gauge-track" id="previewOuterTrack" cx="110" cy="110" r="78"></circle>
+              <circle class="gauge-track" id="previewInnerTrack" cx="110" cy="110" r="62"></circle>
+              <circle class="gauge-ring" id="previewOuter" cx="110" cy="110" r="78"></circle>
+              <circle class="gauge-ring" id="previewInner" cx="110" cy="110" r="62"></circle>
+              <circle class="gauge-ring" id="previewCaution" cx="110" cy="110" r="92"></circle>
+              <circle class="gauge-ring" id="previewWarning" cx="110" cy="110" r="92"></circle>
+              <circle class="hover-range" id="previewHoverRange" cx="110" cy="110" r="92"></circle>
             </svg>
-            <div class="preview-pet" aria-hidden="true"></div>
-            <div class="battery-preview" id="previewBattery" aria-hidden="true">
-              <div class="battery-row">
-                <div class="battery-shell"><div class="battery-fill" id="previewBatteryPrimary"></div></div>
-                <div class="battery-cap" id="previewBatteryPrimaryCap"></div>
+            <svg class="preview-alt" id="previewAlt" viewBox="0 0 220 220" aria-hidden="true">
+              <path class="alt-track" id="previewAltOuterTrack" pathLength="100"></path>
+              <path class="alt-track" id="previewAltInnerTrack" pathLength="100"></path>
+              <path class="alt-value" id="previewAltOuter" pathLength="100"></path>
+              <path class="alt-value" id="previewAltInner" pathLength="100"></path>
+            </svg>
+            <div class="preview-pixel-potions" id="previewPixelPotions" aria-hidden="true">
+              <div class="pixel-potion" id="previewPotionLeft">
+                <div class="pixel-potion-layer"></div><div class="pixel-potion-layer pixel-potion-liquid"></div>
+                <img class="pixel-potion-frame" src="/assets/potion-pixel-frame.png?v=019" alt="">
+                <span class="pixel-potion-value">74%</span><span class="pixel-potion-label">5H</span>
               </div>
-              <div class="battery-row">
-                <div class="battery-shell"><div class="battery-fill" id="previewBatterySecondary"></div></div>
-                <div class="battery-cap" id="previewBatterySecondaryCap"></div>
+              <div class="pixel-potion" id="previewPotionRight">
+                <div class="pixel-potion-layer"></div><div class="pixel-potion-layer pixel-potion-liquid"></div>
+                <img class="pixel-potion-frame" src="/assets/potion-pixel-frame.png?v=019" alt="">
+                <span class="pixel-potion-value">58%</span><span class="pixel-potion-label">WK</span>
               </div>
             </div>
-            <div class="badge-preview" id="previewBadge" aria-hidden="true">
-              <div class="badge-chip" id="previewBadgePrimary">5h 74%</div>
-              <div class="badge-chip" id="previewBadgeSecondary">W 58%</div>
-            </div>
-            <div class="growth-preview" id="previewGrowth" aria-hidden="true">
-              <span class="growth-dot" id="previewGrowthDot"></span>
-              <span id="previewGrowthText">Lv1 신남</span>
-            </div>
-            <div class="key-preview" id="previewKeyCounter" aria-hidden="true">
-              <span id="previewKeyText">128</span>
-              <span class="key-heat-preview" id="previewKeyHeat">
-                <i></i><i></i><i></i><i></i><i></i>
-              </span>
-            </div>
-            <div class="tooltip" id="previewTip">5h 90% 남음<br>재설정 22:27</div>
-            <div class="tooltip inner" id="previewInnerTip">주간 64% 남음<br>화 15:24</div>
+            <div class="pet" id="previewPet"><div class="pet-sprite" id="previewPetSprite"></div><svg class="pet-icon" id="previewPetFallback"><use href="#i-pet"></use></svg></div>
+            <div class="tooltip" id="previewTip">5h  74% left<br>Sample reset 16:45<br>Time left 2h 10m</div>
+            <div class="tooltip inner" id="previewInnerTip">Weekly  58% left<br>Sample reset Jul 17 09:30<br>Time left 5d 18h</div>
           </div>
-        </div>
-        <div class="path-row">
-          <div class="path-label" data-i18n="settingsFile">설정 파일</div>
-          <div class="path" id="path">settings.json</div>
-        </div>
-        <div class="actions">
-          <button id="reload" type="button" data-i18n="reload">다시 불러오기</button>
-          <button id="reset" type="button" data-i18n="resetDefaults">기본값 복원</button>
-          <button class="primary" id="save" type="button" data-i18n="save">저장</button>
-        </div>
+          <div class="legend">
+            <div class="legend-row"><span class="legend-swatch outer"></span><span data-i18n="outer5h">Outer 5h</span><strong>74%</strong></div>
+            <div class="legend-row"><span class="legend-swatch inner"></span><span data-i18n="innerWeekly">Inner Weekly</span><strong>58%</strong></div>
+          </div>
+        </section>
+        <div class="meta-strip" title="settings.json"><svg class="icon"><use href="#i-file"></use></svg><span class="path" id="path">settings.json</span></div>
       </aside>
+
+      <div class="settings-stack">
+        <nav class="quick-nav" aria-label="설정 섹션">
+          <a href="#display"><svg class="icon"><use href="#i-tune"></use></svg><span data-i18n="sectionGeneral">Display & Layout</span></a>
+          <a href="#rings"><svg class="icon"><use href="#i-palette"></use></svg><span data-i18n="sectionRingColors">Ring Colors</span></a>
+        </nav>
+
+        <section class="settings-card" id="display">
+          <div class="section-header"><div class="section-icon"><svg class="icon"><use href="#i-tune"></use></svg></div><div><h2 data-i18n="sectionGeneral">Display & Layout</h2></div></div>
+          <div class="section-grid">
+            <div class="field"><label for="language" data-i18n="language">Language</label><select id="language" data-path="language"><option value="auto" data-i18n="languageAuto">Auto (IP location)</option><option value="ko" data-i18n="languageKo">Korean</option><option value="en" data-i18n="languageEn">English</option></select><output></output></div>
+            <div class="field"><label for="visibilityMode" data-i18n="visibilityMode">Ring Display</label><select id="visibilityMode" data-path="behavior.visibilityMode"><option value="always" data-i18n="visibilityAlways">Always</option><option value="hover" data-i18n="visibilityHover">On Hover</option></select><output></output></div>
+            <div class="field"><label for="appearanceMode" data-i18n="appearanceMode">Display Style</label><select id="appearanceMode" data-path="appearance.mode"><option value="rings" data-i18n="appearanceRings">Rings</option><option value="bars" data-i18n="appearanceBars">Dual Bars</option><option value="wings" data-i18n="appearanceWings">Side Gauges</option><option value="corners" data-i18n="appearanceCorners">Corner Frame</option><option value="potions" data-i18n="appearancePotions">Potion Orbs</option></select><output></output></div>
+            <div class="field" id="potionScaleField"><label for="potionScale" data-i18n="potionScale">Potion Size</label><input id="potionScale" type="range" min="70" max="140" step="5" data-path="appearance.potionScale" data-unit="%"><output></output></div>
+            <div class="field"><label for="offsetX" data-i18n="offsetX">Horizontal Position</label><input id="offsetX" type="range" min="-240" max="240" step="1" data-path="layout.offsetX" data-unit="px"><output></output></div>
+            <div class="field"><label for="offsetY" data-i18n="offsetY">Vertical Position</label><input id="offsetY" type="range" min="-240" max="240" step="1" data-path="layout.offsetY" data-unit="px"><output></output></div>
+            <div class="position-preset"><span data-i18n="positionPreset">Position preset</span><button id="centerOnPet" type="button"><svg class="icon"><use href="#i-center"></use></svg><span data-i18n="centerOnPet">Center on pet</span></button></div>
+            <div class="field"><label for="ringGap" data-i18n="ringGap">Display Distance</label><input id="ringGap" type="range" min="0" max="96" step="1" data-path="layout.ringGap" data-unit="px"><output></output></div>
+            <div class="field"><label for="hoverRange" data-i18n="hoverRange">Hover Range</label><input id="hoverRange" type="range" min="0" max="96" step="1" data-path="behavior.hoverRange" data-unit="px"><output></output></div>
+            <div class="field"><label for="fadeInMs" data-i18n="fadeIn">Fade In</label><input id="fadeInMs" type="range" min="0" max="1000" step="10" data-path="behavior.fadeInMs" data-unit="ms"><output></output></div>
+            <div class="field"><label for="fadeOutMs" data-i18n="fadeOut">Fade Out</label><input id="fadeOutMs" type="range" min="0" max="1000" step="10" data-path="behavior.fadeOutMs" data-unit="ms"><output></output></div>
+          </div>
+        </section>
+
+        <section class="settings-card" id="rings">
+          <div class="section-header"><div class="section-icon"><svg class="icon"><use href="#i-palette"></use></svg></div><div><h2 data-i18n="sectionRingColors">Ring Colors</h2></div></div>
+          <div class="color-grid">
+            <div class="field"><label for="primary" data-i18n="outer5h">Outer 5h</label><input id="primary" type="color" data-path="colors.primary"><output></output></div>
+            <div class="field"><label for="secondary" data-i18n="innerWeekly">Inner Weekly</label><input id="secondary" type="color" data-path="colors.secondary"><output></output></div>
+            <div class="field"><label for="warning" data-i18n="warning">Warning</label><input id="warning" type="color" data-path="colors.warning"><output></output></div>
+            <div class="field"><label for="caution" data-i18n="caution">Caution</label><input id="caution" type="color" data-path="colors.caution"><output></output></div>
+            <div class="field"><label for="track" data-i18n="track">Track</label><input id="track" type="color" data-path="colors.track"><output></output></div>
+          </div>
+          <div class="subsection-label"><svg class="icon"><use href="#i-opacity"></use></svg><span data-i18n="sectionOpacity">Opacity</span></div>
+          <div class="range-grid">
+            <div class="field"><label for="opPrimary" data-i18n="outer">Outer</label><input id="opPrimary" type="range" min="0" max="1" step="0.01" data-path="opacity.primary"><output></output></div>
+            <div class="field"><label for="opSecondary" data-i18n="inner">Inner</label><input id="opSecondary" type="range" min="0" max="1" step="0.01" data-path="opacity.secondary"><output></output></div>
+            <div class="field"><label for="opWarning" data-i18n="warning">Warning</label><input id="opWarning" type="range" min="0" max="1" step="0.01" data-path="opacity.warning"><output></output></div>
+            <div class="field"><label for="opTrack" data-i18n="track">Track</label><input id="opTrack" type="range" min="0" max="1" step="0.01" data-path="opacity.track"><output></output></div>
+          </div>
+          <div class="subsection-label"><svg class="icon"><use href="#i-text"></use></svg><span data-i18n="sectionReadoutColors">Readout</span></div>
+          <div class="color-grid">
+            <div class="field"><label for="readoutText" data-i18n="textColor">Text</label><input id="readoutText" type="color" data-path="colors.readoutText"><output></output></div>
+            <div class="field"><label for="outerBg" data-i18n="outerBackground">Outer Background</label><input id="outerBg" type="color" data-path="colors.outerReadoutBackground"><output></output></div>
+            <div class="field"><label for="innerBg" data-i18n="innerBackground">Inner Background</label><input id="innerBg" type="color" data-path="colors.innerReadoutBackground"><output></output></div>
+          </div>
+          <div class="subsection-label"><svg class="icon"><use href="#i-type"></use></svg><span data-i18n="sectionText">Text</span></div>
+          <div class="range-grid">
+            <div class="field"><label for="opReadout" data-i18n="readoutBackground">Readout Background</label><input id="opReadout" type="range" min="0" max="1" step="0.01" data-path="opacity.readout"><output></output></div>
+            <div class="field"><label for="opReadoutText" data-i18n="readoutTextOpacity">Readout Text</label><input id="opReadoutText" type="range" min="0" max="1" step="0.01" data-path="opacity.readoutText"><output></output></div>
+            <div class="field"><label for="fontSize" data-i18n="fontSize">Font Size</label><input id="fontSize" type="range" min="8" max="24" step="0.5" data-path="text.fontSize"><output></output></div>
+            <div class="field"><label for="lineHeight" data-i18n="lineHeight">Line Height</label><input id="lineHeight" type="range" min="10" max="32" step="0.5" data-path="text.lineHeight"><output></output></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <div class="actions" aria-label="Settings actions">
+      <div class="actions-secondary">
+        <button class="icon-button" id="reload" title="다시 불러오기" aria-label="다시 불러오기" data-tooltip="다시 불러오기"><svg class="icon"><use href="#i-refresh"></use></svg><span class="sr-only" data-i18n="reload">Reload</span></button>
+        <button class="icon-button" id="reset" title="기본값 복원" aria-label="기본값 복원" data-tooltip="기본값 복원"><svg class="icon"><use href="#i-reset"></use></svg><span class="sr-only" data-i18n="resetDefaults">Reset Defaults</span></button>
+      </div>
+      <button class="primary" id="save"><svg class="icon"><use href="#i-save"></use></svg><span data-i18n="save">Save</span></button>
     </div>
   </main>
 
   <script>
     const statusEl = document.getElementById('status');
     const pathEl = document.getElementById('path');
-    const saveButton = document.getElementById('save');
-    const saveHeroButton = document.getElementById('saveHero');
-    const saveButtons = [saveButton, saveHeroButton].filter(Boolean);
-    const growthModeHelpEl = document.getElementById('growthModeHelp');
     const inputs = Array.from(document.querySelectorAll('[data-path]'));
-    const presetButtons = Array.from(document.querySelectorAll('[data-preset]'));
-    const segmentGroups = Array.from(document.querySelectorAll('[data-segment-for]'));
-    const focusPanels = Array.from(document.querySelectorAll('[data-focus-panel]'));
-    const rewardTabButtons = Array.from(document.querySelectorAll('[data-reward-tab]'));
-    const rewardPanels = Array.from(document.querySelectorAll('[data-reward-panel]'));
-    const navAnchors = Array.from(document.querySelectorAll('[data-settings-nav]'));
     const sessionToken = new URLSearchParams(window.location.search).get('token') || '';
     let settings = null;
     let defaults = null;
-    let gamificationState = null;
+    let lastSavedSettings = null;
+    let isDirty = false;
     let statusKey = 'loading';
-    let systemLanguage = '';
+    let automaticLanguage = '';
+    let petPreview = { width: 113, height: 122, columns: 8, rows: 11, spriteAvailable: false };
 
     const translations = {
       en: {
-        navSettings: 'Settings',
-        navGrowth: 'Growth',
-        navPreview: 'Preview',
-        heroSubtitle: 'A pixel pet grows beside the real /pet HUD. Tune display mode, colors, hover timing, and usage-based growth here.',
-        heroSceneLabel: 'PIXEL HUD ROOM',
-        openOptions: 'Open Options',
+        title: 'Codex Pet Usage HUD Settings',
+        subtitle: 'Customize visualization style, colors, size, placement, hover behavior, and readout typography. Changes are saved to settings.json and picked up by the running helper.',
         loading: 'Loading...',
         ready: 'Ready',
         saving: 'Saving...',
-        saved: 'Saved and applied. Running displays will update automatically.',
+        saved: 'Saved. Running rings will update automatically.',
+        unsaved: 'Unsaved changes',
+        discardChanges: 'Discard unsaved changes and reload?',
         defaultsLoaded: 'Defaults loaded. Save to apply.',
         serverUnavailable: 'Settings server is not available.',
         launchHint: 'Launch this page with Settings.bat or bin\\powershell\\Settings.ps1.',
-        presetLoaded: 'Preset loaded. Save to apply.',
-        sectionGeneral: 'General',
+        previewDescription: 'Outer ring maps to the 5h limit. Inner ring maps to the weekly limit. Warning and caution colors appear when remaining usage is low.',
+        previewTitle: 'Display preview',
+        previewSample: 'SAMPLE',
+        generalDescription: 'Choose how and when usage rings appear.',
+        ringColorDescription: 'Define each usage state at a glance.',
+        readoutColorDescription: 'Keep detailed limits clear and legible.',
+        opacityDescription: 'Balance visibility against desktop distraction.',
+        textDescription: 'Tune hover readout typography.',
+        motionDescription: 'Adjust distance, range, and transitions.',
+        pet: 'PET',
+        sectionGeneral: 'Display & Layout',
         language: 'Language',
-        languageAuto: 'Auto',
+        languageAuto: 'Auto (IP location)',
         languageKo: 'Korean',
         languageEn: 'English',
-        languageJa: 'Japanese',
-        languageZh: 'Chinese',
-        displayMode: 'Display Mode',
-        displayModeRing: 'Ring',
-        displayModeBattery: 'Battery',
-        displayModeBadge: 'Badge',
         visibilityMode: 'Visibility',
-        visibilityModeHover: 'Hover',
-        visibilityModeAlways: 'Always',
-        ringGap: 'Pet-HUD Distance',
-        sectionPetGrowth: 'Pet Growth',
-        growthEnabled: 'Enable Growth',
-        growthMode: 'Growth Mode',
-        growthModeConserve: 'Light Use',
-        growthModeBalanced: 'Balanced Use',
-        growthModeActive: 'Focused Use',
-        growthIntro: 'Growth reacts directly to current 5h usage. While /pet is visible, today XP fills as 5h usage approaches the selected target.',
-        growthModeHelpConserve: 'Light Use: convert progress toward 20% 5h usage into up to +30 XP today.',
-        growthModeHelpBalanced: 'Balanced Use: convert progress toward 40% 5h usage into up to +30 XP today.',
-        growthModeHelpActive: 'Focused Use: convert progress toward 60% 5h usage into up to +30 XP today.',
-        growthRuleVisible: 'XP is calculated only when the real /pet window is visible and a usage snapshot exists.',
-        growthRuleMinute: '5h usage progress becomes today XP, filling up to +30 XP per day.',
-        growthRuleWeekly: 'Weekly usage no longer raises XP directly; it is used for reset seasons and depletion guard checks.',
-        growthRuleLow: 'If 5h or weekly remaining quota drops below 20%, the pet becomes Overheated; below 10%, Cooldown. XP pauses to avoid depletion.',
-        growthRuleReset: 'A 5h reset grants +10 XP once if the growth target stayed charged. A weekly reset restarts the pet at Lv1.',
-        hudFocus: 'HUD Focus',
-        hudFocusGrowth: 'Level Zone',
-        hudFocusCombo: 'Game Zone',
-        hudFocusNote: 'Only one HUD zone is shown at a time, so controls stay easy to read and do not cover each other.',
-        levelPanelTitle: 'Level Zone',
-        levelPanelHint: 'Keeps level, mood, and growth readouts under the pet.',
-        comboPanelTitle: 'Game Zone',
-        comboPanelHint: 'Shows the keyboard count, combo multiplier, and burst effects at larger size.',
-        inventoryTitle: 'Reward Bag',
-        itemFontPixel: 'Pixel Font',
-        itemFontTerminal: 'Terminal Font',
-        itemThemeForest: 'Mint Circuit Theme',
-        itemThemeArcane: 'Arcane Theme',
-        itemThemeRoyal: 'Royal Theme',
-        itemThemeCyber: 'Neon Cyber Theme',
-        itemThemeCelestial: 'Celestial Prism Theme',
-        itemEffectPawBurst: 'Cat Paw Papapang',
-        itemEffectBearPaw: 'Bear Paw Papapang',
-        itemEffectDogPaw: 'Puppy Paw Papapang',
-        inventoryLocked: 'Locked',
-        inventoryUnlocked: 'Unlocked',
-        inventoryActive: 'Active',
-        loadoutActiveFont: 'Active Font',
-        loadoutActiveTheme: 'Active Theme',
-        loadoutActiveEffect: 'Active Effect',
-        loadoutRewardRolls: 'Reward Rolls / Charge',
-        rewardTabFonts: 'Fonts',
-        rewardTabThemes: 'Themes',
-        rewardTabEffects: 'Effects',
-        rewardTypeFont: 'Font',
-        rewardTypeEffect: 'Effect',
-        rarityCommon: 'Common',
-        rarityRare: 'Rare',
-        rarityEpic: 'Epic',
-        rarityLegendary: 'Legendary',
-        rarityMythic: 'Mythic',
-        rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme / Effect',
-        rewardFlowPicker: 'Picker',
-        growthChip: 'Show Growth Chip',
-        growthHoverReadout: 'Growth Hover Readout',
-        keyCounter: 'Key Counter',
-        keyEffects: 'Key Effects',
-        comboHeat: 'Combo Heat',
-        rewardCharge: 'Reward Charge',
-        enabledValue: 'On',
-        disabledValue: 'Off',
-        sectionThemePresets: 'Theme Presets',
-        presetArcadeMint: 'Arcade Mint',
-        presetBerryQuest: 'Berry Quest',
-        presetSunnyBattery: 'Sunny Battery',
-        presetQuietTerminal: 'Terminal',
-        presetHighContrast: 'High Contrast',
-        sectionRingColors: 'HUD Colors',
-        outer5h: '5h',
-        innerWeekly: 'Weekly',
-        warning: 'Danger',
+        visibilityAlways: 'Always',
+        visibilityHover: 'On Hover',
+        appearanceMode: 'Display Style',
+        appearanceRings: 'Rings',
+        appearanceBars: 'Dual Bars',
+        appearanceWings: 'Side Gauges',
+        appearanceCorners: 'Corner Frame',
+        appearancePotions: 'Potion Orbs',
+        potionScale: 'Potion Size',
+        sectionRingColors: 'Colors & Readout',
+        outer5h: 'Outer 5h',
+        innerWeekly: 'Inner Weekly',
+        warning: 'Warning',
         caution: 'Caution',
         track: 'Track',
-        sectionReadoutColors: 'Readout',
+        sectionReadoutColors: 'Readout Colors',
         textColor: 'Text',
-        outerBackground: '5h Background',
-        innerBackground: 'Weekly Background',
-        readoutBackground: 'Background Opacity',
+        outerBackground: 'Outer Background',
+        innerBackground: 'Inner Background',
         sectionOpacity: 'Opacity',
-        outer: '5h',
-        inner: 'Weekly',
-        readoutTextOpacity: 'Text',
-        sectionMotion: 'Hover And Text',
-        hoverRange: 'Keep Range',
-        fadeIn: 'Fade In',
-        fadeOut: 'Fade Out',
+        outer: 'Outer',
+        inner: 'Inner',
+        readoutBackground: 'Readout Background',
+        readoutTextOpacity: 'Readout Text',
+        sectionText: 'Text',
         fontSize: 'Font Size',
         lineHeight: 'Line Height',
-        previewTitle: 'HUD Preview',
-        previewDescription: 'Ring, battery, badge, and growth chip use HUD positions that stay clear of the pet.',
-        previewGrowth: 'Lv1 Hyped',
-        previewKeyCounter: '128\nx3 Flow',
-        settingsFile: 'Settings File',
+        sectionHover: 'Hover Behavior',
+        offsetX: 'Horizontal Position',
+        offsetY: 'Vertical Position',
+        positionPreset: 'Quick alignment',
+        centerOnPet: 'Center on pet',
+        ringGap: 'Display Distance',
+        hoverRange: 'Hover Range',
+        fadeIn: 'Fade In',
+        fadeOut: 'Fade Out',
         reload: 'Reload',
         resetDefaults: 'Reset Defaults',
         save: 'Save',
-        previewOuter: '5h 90% left<br>Reset 22:27',
-        previewInner: 'Week 64% left<br>Tue 15:24'
+        previewOuter: '5h  74% left<br>Sample reset 16:45<br>Time left 2h 10m',
+        previewInner: 'Weekly  58% left<br>Sample reset Jul 17 09:30<br>Time left 5d 18h'
       },
       ko: {
-        navSettings: '설정',
-        navGrowth: '성장',
-        navPreview: '미리보기',
-        heroSubtitle: '픽셀 펫이 실제 /pet 주변 HUD와 함께 성장합니다. 표시 방식, 색상, 호버, 사용량 성장 옵션을 여기서 바로 조정하세요.',
-        heroSceneLabel: 'PIXEL HUD ROOM',
-        openOptions: '옵션 열기',
+        title: 'Codex Pet 사용량 HUD 설정',
+        subtitle: '표현 방식, 색상, 크기, 배치, 호버 동작과 상세 정보 글꼴을 조정합니다. 변경값은 settings.json에 저장되고 실행 중인 helper에 반영됩니다.',
         loading: '불러오는 중...',
         ready: '준비됨',
         saving: '저장 중...',
-        saved: '저장 및 적용됨. 실행 중인 표시에 자동 반영됩니다.',
+        saved: '저장됨. 실행 중인 링에 자동 반영됩니다.',
+        unsaved: '저장하지 않은 변경사항',
+        discardChanges: '저장하지 않은 변경사항을 버리고 다시 불러올까요?',
         defaultsLoaded: '기본값을 불러왔습니다. 적용하려면 저장하세요.',
         serverUnavailable: '설정 서버를 사용할 수 없습니다.',
         launchHint: 'Settings.bat 또는 bin\\powershell\\Settings.ps1로 이 페이지를 실행하세요.',
-        presetLoaded: '프리셋을 불러왔습니다. 적용하려면 저장하세요.',
-        sectionGeneral: '일반',
+        previewDescription: '바깥 링은 5h 한도, 안쪽 링은 주간 한도를 나타냅니다. 남은 사용량이 적으면 주의/위험 색상이 표시됩니다.',
+        previewTitle: '표시 미리보기',
+        previewSample: '샘플',
+        generalDescription: '사용량 링이 표시되는 방식을 선택합니다.',
+        ringColorDescription: '각 사용량 상태를 한눈에 구분합니다.',
+        readoutColorDescription: '상세 한도 정보를 선명하게 표시합니다.',
+        opacityDescription: '가독성과 데스크톱 집중도 사이의 균형을 조정합니다.',
+        textDescription: '호버 상세 정보의 글꼴을 조정합니다.',
+        motionDescription: '거리, 반응 범위와 전환 속도를 조정합니다.',
+        pet: 'PET',
+        sectionGeneral: '표시 및 배치',
         language: '언어',
-        languageAuto: '자동',
+        languageAuto: '자동 (IP 위치)',
         languageKo: '한국어',
         languageEn: '영어',
-        languageJa: '일본어',
-        languageZh: '중국어',
-        displayMode: '표시 방식',
-        displayModeRing: '링',
-        displayModeBattery: '배터리',
-        displayModeBadge: '배지',
-        visibilityMode: '노출 방식',
-        visibilityModeHover: '호버',
-        visibilityModeAlways: '상시',
-        ringGap: 'Pet-HUD 거리',
-        sectionPetGrowth: '펫 성장',
-        growthEnabled: '성장 켜기',
-        growthMode: '성장 방식',
-        growthModeConserve: '가벼운 사용형',
-        growthModeBalanced: '균형 사용형',
-        growthModeActive: '집중 사용형',
-        growthIntro: '성장은 현재 5h 사용량에 직접 반응합니다. /pet이 보이면 5h 사용률이 목표치까지 차오르는 만큼 오늘 XP가 함께 오릅니다.',
-        growthModeHelpConserve: '가벼운 사용형: 5h 사용량 20%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
-        growthModeHelpBalanced: '균형 사용형: 5h 사용량 40%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
-        growthModeHelpActive: '집중 사용형: 5h 사용량 60%를 오늘 목표로 삼고, 목표까지의 진행률을 최대 +30 XP로 환산합니다.',
-        growthRuleVisible: 'XP는 실제 /pet 창이 보이고 사용량 스냅샷이 있을 때만 계산됩니다.',
-        growthRuleMinute: '5h 사용량 진행률이 오늘 XP가 되며 하루 최대 +30 XP까지 차오릅니다.',
-        growthRuleWeekly: '주간 사용량은 XP를 올리는 기준이 아니라 리셋 시즌과 고갈 방지 판단에 사용됩니다.',
-        growthRuleLow: '5h 또는 주간 잔량이 20% 미만이면 과열, 10% 미만이면 쿨다운이 되어 고갈 방지로 XP가 멈춥니다.',
-        growthRuleReset: '5h 리셋은 성장 조건을 유지했을 때 1회 +10 XP를 줍니다. 주간 리셋이 오면 펫은 Lv1부터 다시 시작합니다.',
-        hudFocus: 'HUD 포커스',
-        hudFocusGrowth: '레벨 구간',
-        hudFocusCombo: '게이미피케이션 구간',
-        hudFocusNote: '실제 HUD에는 한 번에 하나의 구간만 표시되어 요소가 서로 가리거나 겹치지 않습니다.',
-        levelPanelTitle: '레벨 구간',
-        levelPanelHint: '레벨, 상태, 성장 읽기 표시를 펫 아래에 고정합니다.',
-        comboPanelTitle: '게이미피케이션 구간',
-        comboPanelHint: '키보드 카운트, 콤보 배율, 파티클 이펙트를 크게 보여줍니다.',
-        inventoryTitle: '보상 보관함',
-        itemFontPixel: '픽셀 폰트',
-        itemFontTerminal: '터미널 폰트',
-        itemThemeForest: '민트 회로 테마',
-        itemThemeArcane: '아케인 테마',
-        itemThemeRoyal: '로열 테마',
-        itemThemeCyber: '네온 사이버 테마',
-        itemThemeCelestial: '셀레스티얼 테마',
-        itemEffectPawBurst: '고양이 발바닥 파파팡',
-        itemEffectBearPaw: '곰 발바닥 파파팡',
-        itemEffectDogPaw: '강아지 발바닥 파파팡',
-        inventoryLocked: '잠김',
-        inventoryUnlocked: '해금',
-        inventoryActive: '적용 중',
-        loadoutActiveFont: '적용 폰트',
-        loadoutActiveTheme: '적용 테마',
-        loadoutActiveEffect: '적용 이펙트',
-        loadoutRewardRolls: '보상 시도 / 충전',
-        rewardTabFonts: '폰트',
-        rewardTabThemes: '테마',
-        rewardTabEffects: '이펙트',
-        rewardTypeFont: '폰트',
-        rewardTypeEffect: '이펙트',
-        rarityCommon: 'Common',
-        rarityRare: 'Rare',
-        rarityEpic: 'Epic',
-        rarityLegendary: 'Legendary',
-        rarityMythic: 'Mythic',
-        rewardFlowChest: '상자',
-        rewardFlowCategory: '폰트 / 테마 / 이펙트',
-        rewardFlowPicker: '선택 팝오버',
-        growthChip: '성장 칩 표시',
-        growthHoverReadout: '성장 호버 표시',
-        keyCounter: '키 카운터',
-        keyEffects: '키 이펙트',
-        comboHeat: '콤보 열기 게이지',
-        rewardCharge: '보상 충전 게이지',
-        enabledValue: '켜짐',
-        disabledValue: '꺼짐',
-        sectionThemePresets: '테마 프리셋',
-        presetArcadeMint: '아케이드 민트',
-        presetBerryQuest: '베리 퀘스트',
-        presetSunnyBattery: '써니 배터리',
-        presetQuietTerminal: '터미널',
-        presetHighContrast: '고대비',
-        sectionRingColors: 'HUD 색상',
-        outer5h: '5h',
-        innerWeekly: '주간',
+        visibilityMode: '표시 상태',
+        visibilityAlways: '항상 표시',
+        visibilityHover: '마우스 호버 시',
+        appearanceMode: '표현 방식',
+        appearanceRings: '원형 링',
+        appearanceBars: '듀얼 바',
+        appearanceWings: '사이드 게이지',
+        appearanceCorners: '코너 프레임',
+        appearancePotions: '포션 오브',
+        potionScale: '포션 크기',
+        sectionRingColors: '색상 및 상세 표시',
+        outer5h: '바깥 5h',
+        innerWeekly: '안쪽 주간',
         warning: '위험',
         caution: '주의',
         track: '트랙',
-        sectionReadoutColors: '읽기 표시',
+        sectionReadoutColors: '상세 표시 색상',
         textColor: '글자',
-        outerBackground: '5h 배경',
-        innerBackground: '주간 배경',
-        readoutBackground: '배경 투명도',
+        outerBackground: '바깥 배경',
+        innerBackground: '안쪽 배경',
         sectionOpacity: '투명도',
-        outer: '5h',
-        inner: '주간',
-        readoutTextOpacity: '글자',
-        sectionMotion: '호버와 텍스트',
-        hoverRange: '유지 범위',
-        fadeIn: '페이드 인',
-        fadeOut: '페이드 아웃',
+        outer: '바깥',
+        inner: '안쪽',
+        readoutBackground: '사용량 표시 배경',
+        readoutTextOpacity: '사용량 표시 글자',
+        sectionText: '텍스트',
         fontSize: '글자 크기',
         lineHeight: '줄 높이',
-        previewTitle: 'HUD 미리보기',
-        previewDescription: '링, 배터리, 배지, 성장 칩이 펫과 겹치지 않는 HUD 위치로 표시됩니다.',
-        previewGrowth: 'Lv1 신남',
-        previewKeyCounter: '128\nx3 몰입',
-        settingsFile: '설정 파일',
+        sectionHover: '호버 동작',
+        offsetX: '좌우 위치',
+        offsetY: '상하 위치',
+        positionPreset: '빠른 위치 설정',
+        centerOnPet: '펫 기준 중앙정렬',
+        ringGap: '표현 간격',
+        hoverRange: '호버 반응 범위',
+        fadeIn: '페이드 인',
+        fadeOut: '페이드 아웃',
         reload: '다시 불러오기',
         resetDefaults: '기본값 복원',
         save: '저장',
-        previewOuter: '5h 90% 남음<br>재설정 22:27',
-        previewInner: '주간 64% 남음<br>화 15:24'
-      },
-      ja: {
-        navSettings: '設定',
-        navGrowth: '成長',
-        navPreview: 'プレビュー',
-        heroSubtitle: 'ピクセルペットが実際の /pet HUD と一緒に成長します。表示形式、色、ホバー、使用量ベースの成長をここで調整できます。',
-        heroSceneLabel: 'PIXEL HUD ROOM',
-        openOptions: 'オプション',
-        loading: '読み込み中...',
-        ready: '準備完了',
-        saving: '保存中...',
-        saved: '保存して適用しました。実行中の表示へ自動的に反映されます。',
-        defaultsLoaded: '既定値を読み込みました。適用するには保存してください。',
-        serverUnavailable: '設定サーバーを利用できません。',
-        launchHint: 'Settings.bat または bin\\powershell\\Settings.ps1 でこのページを開いてください。',
-        presetLoaded: 'プリセットを読み込みました。適用するには保存してください。',
-        sectionGeneral: '一般',
-        language: '言語',
-        languageAuto: '自動',
-        languageKo: '韓国語',
-        languageEn: '英語',
-        languageJa: '日本語',
-        languageZh: '中国語',
-        displayMode: '表示形式',
-        displayModeRing: 'リング',
-        displayModeBattery: 'バッテリー',
-        displayModeBadge: 'バッジ',
-        visibilityMode: '表示',
-        visibilityModeHover: 'ホバー',
-        visibilityModeAlways: '常時',
-        ringGap: 'Pet-HUD 距離',
-        sectionPetGrowth: 'Pet 成長',
-        growthEnabled: '成長を有効化',
-        growthMode: '成長方式',
-        growthModeConserve: 'ライト使用型',
-        growthModeBalanced: 'バランス使用型',
-        growthModeActive: '集中使用型',
-        growthIntro: '成長は現在の 5h 使用量に直接反応します。/pet が見えている間、5h 使用率が目標に近づくほど今日の XP が増えます。',
-        growthModeHelpConserve: 'ライト使用型: 5h 使用量 20% への進行度を、今日最大 +30 XP に換算します。',
-        growthModeHelpBalanced: 'バランス使用型: 5h 使用量 40% への進行度を、今日最大 +30 XP に換算します。',
-        growthModeHelpActive: '集中使用型: 5h 使用量 60% への進行度を、今日最大 +30 XP に換算します。',
-        growthRuleVisible: 'XP は実際の /pet ウィンドウが見えていて、使用量スナップショットがある時だけ計算されます。',
-        growthRuleMinute: '5h 使用量の進行度が今日の XP になり、1日最大 +30 XP まで増えます。',
-        growthRuleWeekly: '週次使用量は XP を直接増やす条件ではなく、リセットシーズンと使い切り防止の判断に使われます。',
-        growthRuleLow: '5h または週次の残量が 20% 未満なら オーバーヒート、10% 未満なら クールダウン になり、使い切り防止のため XP は止まります。',
-        growthRuleReset: '5h リセットは成長条件を保った場合に 1回 +10 XP。週次リセットではペットが Lv1 から再開します。',
-        hudFocus: 'HUD フォーカス',
-        hudFocusGrowth: 'レベル枠',
-        hudFocusCombo: 'ゲーム枠',
-        hudFocusNote: '実際の HUD には一度に 1 つの枠だけ表示されるため、要素同士が重なりません。',
-        levelPanelTitle: 'レベル枠',
-        levelPanelHint: 'レベル、状態、成長表示をペットの下に固定します。',
-        comboPanelTitle: 'ゲーム枠',
-        comboPanelHint: 'キー数、コンボ倍率、エフェクトを大きく表示します。',
-        inventoryTitle: '報酬バッグ',
-        itemFontPixel: 'ピクセルフォント',
-        itemFontTerminal: 'ターミナルフォント',
-        itemThemeForest: 'Mint Circuit Theme',
-        itemThemeArcane: 'アーケインテーマ',
-        itemThemeRoyal: 'ロイヤルテーマ',
-        itemThemeCyber: 'Neon Cyber Theme',
-        itemThemeCelestial: 'Celestial Prism Theme',
-        itemEffectPawBurst: 'Cat Paw Papapang',
-        itemEffectBearPaw: 'Bear Paw Papapang',
-        itemEffectDogPaw: 'Puppy Paw Papapang',
-        inventoryLocked: '未解放',
-        inventoryUnlocked: '解放済み',
-        inventoryActive: '適用中',
-        loadoutActiveFont: 'Active Font',
-        loadoutActiveTheme: 'Active Theme',
-        loadoutActiveEffect: 'Active Effect',
-        loadoutRewardRolls: 'Reward Rolls / Charge',
-        rewardTabFonts: 'Fonts',
-        rewardTabThemes: 'Themes',
-        rewardTabEffects: 'Effects',
-        rewardTypeFont: 'Font',
-        rewardTypeEffect: 'Effect',
-        rarityCommon: 'Common',
-        rarityRare: 'Rare',
-        rarityEpic: 'Epic',
-        rarityLegendary: 'Legendary',
-        rarityMythic: 'Mythic',
-        rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme / Effect',
-        rewardFlowPicker: 'Picker',
-        growthChip: '成長チップを表示',
-        growthHoverReadout: '成長ホバー表示',
-        keyCounter: 'キー カウンター',
-        keyEffects: 'キー エフェクト',
-        comboHeat: 'コンボヒート',
-        rewardCharge: '報酬チャージ',
-        enabledValue: 'オン',
-        disabledValue: 'オフ',
-        sectionThemePresets: 'テーマ',
-        presetArcadeMint: 'Arcade Mint',
-        presetBerryQuest: 'Berry Quest',
-        presetSunnyBattery: 'Sunny Battery',
-        presetQuietTerminal: 'Terminal',
-        presetHighContrast: 'High Contrast',
-        sectionRingColors: 'HUD 色',
-        outer5h: '5h',
-        innerWeekly: '週次',
-        warning: '警告',
-        caution: '注意',
-        track: 'トラック',
-        sectionReadoutColors: '表示',
-        textColor: '文字',
-        outerBackground: '5h 背景',
-        innerBackground: '週次背景',
-        readoutBackground: '背景不透明度',
-        sectionOpacity: '不透明度',
-        outer: '5h',
-        inner: '週次',
-        readoutTextOpacity: '文字',
-        sectionMotion: 'ホバーと文字',
-        hoverRange: '保持範囲',
-        fadeIn: 'フェードイン',
-        fadeOut: 'フェードアウト',
-        fontSize: '文字サイズ',
-        lineHeight: '行の高さ',
-        previewTitle: 'HUD プレビュー',
-        previewDescription: 'リング、バッテリー、バッジ、成長チップはペットと重ならない HUD 位置で表示されます。',
-        previewGrowth: 'Lv1 げんき',
-        previewKeyCounter: '128\nx3 Flow',
-        settingsFile: '設定ファイル',
-        reload: '再読み込み',
-        resetDefaults: '既定値',
-        save: '保存',
-        previewOuter: '5h 残り90%<br>リセット 22:27',
-        previewInner: '週次 残り64%<br>火 15:24'
-      },
-      zh: {
-        navSettings: '设置',
-        navGrowth: '成长',
-        navPreview: '预览',
-        heroSubtitle: '像素宠物会跟随真实 /pet HUD 成长。可在这里调整显示模式、颜色、悬停和基于使用量的成长选项。',
-        heroSceneLabel: 'PIXEL HUD ROOM',
-        openOptions: '打开选项',
-        loading: '正在加载...',
-        ready: '已就绪',
-        saving: '正在保存...',
-        saved: '已保存并应用。正在运行的显示会自动更新。',
-        defaultsLoaded: '已加载默认值。保存后应用。',
-        serverUnavailable: '设置服务器不可用。',
-        launchHint: '请使用 Settings.bat 或 bin\\powershell\\Settings.ps1 打开此页面。',
-        presetLoaded: '已加载预设。保存后应用。',
-        sectionGeneral: '常规',
-        language: '语言',
-        languageAuto: '自动',
-        languageKo: '韩语',
-        languageEn: '英语',
-        languageJa: '日语',
-        languageZh: '中文',
-        displayMode: '显示模式',
-        displayModeRing: '圆环',
-        displayModeBattery: '电池',
-        displayModeBadge: '徽章',
-        visibilityMode: '显示',
-        visibilityModeHover: '悬停',
-        visibilityModeAlways: '始终',
-        ringGap: 'Pet-HUD 距离',
-        sectionPetGrowth: 'Pet 成长',
-        growthEnabled: '启用成长',
-        growthMode: '成长方式',
-        growthModeConserve: '轻量使用型',
-        growthModeBalanced: '均衡使用型',
-        growthModeActive: '专注使用型',
-        growthIntro: '成长会直接响应当前 5h 使用量。/pet 可见时，5h 使用率越接近目标，今日 XP 越会填充。',
-        growthModeHelpConserve: '轻量使用型：将 5h 使用量到 20% 目标的进度换算为今日最多 +30 XP。',
-        growthModeHelpBalanced: '均衡使用型：将 5h 使用量到 40% 目标的进度换算为今日最多 +30 XP。',
-        growthModeHelpActive: '专注使用型：将 5h 使用量到 60% 目标的进度换算为今日最多 +30 XP。',
-        growthRuleVisible: '只有真实 /pet 窗口可见并且存在使用量快照时，才会计算 XP。',
-        growthRuleMinute: '5h 使用量进度会变成今日 XP，每天最多填充到 +30 XP。',
-        growthRuleWeekly: '每周使用量不再直接提升 XP；它用于重置赛季和防耗尽判断。',
-        growthRuleLow: '5h 或每周剩余额度低于 20% 会变为过热，低于 10% 会变为冷却中，XP 会暂停以避免耗尽。',
-        growthRuleReset: '5h 重置时，如果使用目标保持健康，可获得一次 +10 XP。每周重置时，宠物会从 Lv1 重新开始。',
-        hudFocus: 'HUD 焦点',
-        hudFocusGrowth: '等级区域',
-        hudFocusCombo: '游戏区域',
-        hudFocusNote: '实际 HUD 一次只显示一个区域，避免元素互相遮挡。',
-        levelPanelTitle: '等级区域',
-        levelPanelHint: '将等级、状态和成长读数固定在宠物下方。',
-        comboPanelTitle: '游戏区域',
-        comboPanelHint: '以更大尺寸显示按键计数、连击倍率和效果。',
-        inventoryTitle: '奖励背包',
-        itemFontPixel: '像素字体',
-        itemFontTerminal: '终端字体',
-        itemThemeForest: 'Mint Circuit Theme',
-        itemThemeArcane: '秘法主题',
-        itemThemeRoyal: '皇家主题',
-        itemThemeCyber: 'Neon Cyber Theme',
-        itemThemeCelestial: 'Celestial Prism Theme',
-        itemEffectPawBurst: 'Cat Paw Papapang',
-        itemEffectBearPaw: 'Bear Paw Papapang',
-        itemEffectDogPaw: 'Puppy Paw Papapang',
-        inventoryLocked: '未解锁',
-        inventoryUnlocked: '已解锁',
-        inventoryActive: '使用中',
-        loadoutActiveFont: 'Active Font',
-        loadoutActiveTheme: 'Active Theme',
-        loadoutActiveEffect: 'Active Effect',
-        loadoutRewardRolls: 'Reward Rolls / Charge',
-        rewardTabFonts: 'Fonts',
-        rewardTabThemes: 'Themes',
-        rewardTabEffects: 'Effects',
-        rewardTypeFont: 'Font',
-        rewardTypeEffect: 'Effect',
-        rarityCommon: 'Common',
-        rarityRare: 'Rare',
-        rarityEpic: 'Epic',
-        rarityLegendary: 'Legendary',
-        rarityMythic: 'Mythic',
-        rewardFlowChest: 'Chest',
-        rewardFlowCategory: 'Font / Theme / Effect',
-        rewardFlowPicker: 'Picker',
-        growthChip: '显示成长标签',
-        growthHoverReadout: '成长悬停提示',
-        keyCounter: '按键计数器',
-        keyEffects: '按键效果',
-        comboHeat: '连击热度',
-        rewardCharge: '奖励充能',
-        enabledValue: '开启',
-        disabledValue: '关闭',
-        sectionThemePresets: '主题预设',
-        presetArcadeMint: 'Arcade Mint',
-        presetBerryQuest: 'Berry Quest',
-        presetSunnyBattery: 'Sunny Battery',
-        presetQuietTerminal: 'Terminal',
-        presetHighContrast: 'High Contrast',
-        sectionRingColors: 'HUD 颜色',
-        outer5h: '5h',
-        innerWeekly: '每周',
-        warning: '危险',
-        caution: '注意',
-        track: '轨道',
-        sectionReadoutColors: '读数',
-        textColor: '文字',
-        outerBackground: '5h 背景',
-        innerBackground: '每周背景',
-        readoutBackground: '背景透明度',
-        sectionOpacity: '透明度',
-        outer: '5h',
-        inner: '每周',
-        readoutTextOpacity: '文字',
-        sectionMotion: '悬停与文本',
-        hoverRange: '保持范围',
-        fadeIn: '淡入',
-        fadeOut: '淡出',
-        fontSize: '字体大小',
-        lineHeight: '行高',
-        previewTitle: 'HUD 预览',
-        previewDescription: '圆环、电池、徽章和成长标签会显示在不遮挡宠物的 HUD 位置。',
-        previewGrowth: 'Lv1 兴奋',
-        previewKeyCounter: '128\nx3 Flow',
-        settingsFile: '设置文件',
-        reload: '重新加载',
-        resetDefaults: '恢复默认值',
-        save: '保存',
-        previewOuter: '5h 剩余90%<br>重置 22:27',
-        previewInner: '每周 剩余64%<br>周二 15:24'
+        previewOuter: '5h  74% 남음<br>샘플 초기화 16:45<br>남은 시간 2시간 10분',
+        previewInner: '주간  58% 남음<br>샘플 초기화 7월 17일 09:30<br>남은 시간 5일 18시간'
       }
     };
 
@@ -2958,158 +837,41 @@
       node[parts.at(-1)] = value;
     };
     const clone = (value) => JSON.parse(JSON.stringify(value));
-    const themePresets = {
-      arcadeMint: {
-        displayMode: 'ring',
-        colors: {
-          primary: '#45E0BA',
-          secondary: '#65B7FF',
-          warning: '#FF5A54',
-          caution: '#FFD15C',
-          track: '#FFF7DF',
-          readoutText: '#FFF7DF',
-          outerReadoutBackground: '#10222A',
-          innerReadoutBackground: '#142A2B'
-        },
-        opacity: { primary: 0.72, secondary: 0.68, warning: 0.78, track: 0.12, readout: 0.78, readoutText: 0.96 },
-        text: { fontSize: 11, lineHeight: 13.5 },
-        layout: { ringGap: 22 },
-        behavior: { visibilityMode: 'hover', hoverRange: 28, fadeInMs: 120, fadeOutMs: 180 },
-        gamification: { growthMode: 'conserve', hudFocus: 'growth', showGrowthChip: true, showHoverReadout: true, showKeyCounter: true, showKeyEffects: true, showComboHeat: true, showRewardCharge: true }
-      },
-      berryQuest: {
-        displayMode: 'badge',
-        colors: {
-          primary: '#F2618B',
-          secondary: '#8F78FF',
-          warning: '#FF4D57',
-          caution: '#FFC857',
-          track: '#FFF3F7',
-          readoutText: '#FFF7DF',
-          outerReadoutBackground: '#2B1724',
-          innerReadoutBackground: '#1D1934'
-        },
-        opacity: { primary: 0.74, secondary: 0.72, warning: 0.8, track: 0.14, readout: 0.8, readoutText: 0.96 },
-        text: { fontSize: 11, lineHeight: 13.5 },
-        layout: { ringGap: 18 },
-        behavior: { visibilityMode: 'hover', hoverRange: 30, fadeInMs: 140, fadeOutMs: 190 },
-        gamification: { growthMode: 'balanced', hudFocus: 'combo', showGrowthChip: true, showHoverReadout: true, showKeyCounter: true, showKeyEffects: true, showComboHeat: true, showRewardCharge: true }
-      },
-      sunnyBattery: {
-        displayMode: 'battery',
-        colors: {
-          primary: '#FFD15C',
-          secondary: '#55DDE0',
-          warning: '#FF5A54',
-          caution: '#F4A261',
-          track: '#FFF7DF',
-          readoutText: '#FFFDF4',
-          outerReadoutBackground: '#2B2412',
-          innerReadoutBackground: '#102629'
-        },
-        opacity: { primary: 0.76, secondary: 0.72, warning: 0.78, track: 0.14, readout: 0.76, readoutText: 0.96 },
-        text: { fontSize: 10.5, lineHeight: 13 },
-        layout: { ringGap: 22 },
-        behavior: { visibilityMode: 'hover', hoverRange: 26, fadeInMs: 120, fadeOutMs: 180 },
-        gamification: { growthMode: 'active', hudFocus: 'combo', showGrowthChip: true, showHoverReadout: true, showKeyCounter: true, showKeyEffects: true, showComboHeat: true, showRewardCharge: true }
-      },
-      quietTerminal: {
-        displayMode: 'ring',
-        colors: {
-          primary: '#E8ECE7',
-          secondary: '#AAB4AC',
-          warning: '#F07167',
-          caution: '#E6C15C',
-          track: '#FFFFFF',
-          readoutText: '#F7F7F2',
-          outerReadoutBackground: '#171A18',
-          innerReadoutBackground: '#111614'
-        },
-        opacity: { primary: 0.58, secondary: 0.5, warning: 0.72, track: 0.08, readout: 0.7, readoutText: 0.94 },
-        text: { fontSize: 10.5, lineHeight: 13 },
-        layout: { ringGap: 24 },
-        behavior: { visibilityMode: 'hover', hoverRange: 24, fadeInMs: 110, fadeOutMs: 170 },
-        gamification: { growthMode: 'conserve', hudFocus: 'growth', showGrowthChip: true, showHoverReadout: true, showKeyCounter: true, showKeyEffects: true, showComboHeat: true, showRewardCharge: true }
-      },
-      highContrast: {
-        displayMode: 'badge',
-        colors: {
-          primary: '#006DFF',
-          secondary: '#008A5B',
-          warning: '#FF2E2E',
-          caution: '#FFD400',
-          track: '#FFFFFF',
-          readoutText: '#FFFFFF',
-          outerReadoutBackground: '#080D0F',
-          innerReadoutBackground: '#06171B'
-        },
-        opacity: { primary: 0.92, secondary: 0.88, warning: 0.94, track: 0.22, readout: 0.9, readoutText: 1 },
-        text: { fontSize: 12, lineHeight: 14.5 },
-        layout: { ringGap: 22 },
-        behavior: { visibilityMode: 'always', hoverRange: 30, fadeInMs: 80, fadeOutMs: 120 },
-        gamification: { growthMode: 'balanced', hudFocus: 'growth', showGrowthChip: true, showHoverReadout: true, showKeyCounter: true, showKeyEffects: true, showComboHeat: true, showRewardCharge: true }
+    const comparable = (value) => {
+      const normalized = clone(value);
+      for (const key of Object.keys(normalized.colors || {})) {
+        normalized.colors[key] = String(normalized.colors[key]).toUpperCase();
       }
-    };
-
-    const mergeDeep = (base, patch) => {
-      const next = clone(base || {});
-      for (const [key, value] of Object.entries(patch || {})) {
-        if (value && typeof value === 'object' && !Array.isArray(value)) next[key] = mergeDeep(next[key] || {}, value);
-        else next[key] = value;
-      }
-      return next;
+      return JSON.stringify(normalized);
     };
     const percent = (value) => `${Math.round(Number(value) * 100)}%`;
-    const supportedLanguages = ['ko', 'en', 'ja', 'zh'];
-    const resolveLanguage = (value) => {
-      const language = (value || '').toLowerCase();
-      if (language.startsWith('ko')) return 'ko';
-      if (language.startsWith('ja')) return 'ja';
-      if (language.startsWith('zh')) return 'zh';
-      return 'en';
-    };
-    const autoLanguage = () => supportedLanguages.includes(systemLanguage) ? systemLanguage : resolveLanguage(navigator.language || '');
+    const autoLanguage = () => automaticLanguage || ((navigator.language || '').toLowerCase().startsWith('ko') ? 'ko' : 'en');
     const activeLanguage = () => {
       const configured = settings && settings.language ? settings.language : 'auto';
-      return supportedLanguages.includes(configured) ? configured : autoLanguage();
+      return configured === 'ko' || configured === 'en' ? configured : autoLanguage();
     };
-    const t = (key) => (translations[activeLanguage()] || translations.en)[key] || translations.en[key] || key;
-    const rewardFonts = [
-      ['fontPixel', 'itemFontPixel'],
-      ['fontTerminal', 'itemFontTerminal']
-    ];
-    const rewardThemes = [
-      ['themeForest', 'itemThemeForest'],
-      ['themeArcane', 'itemThemeArcane'],
-      ['themeRoyal', 'itemThemeRoyal'],
-      ['themeCyber', 'itemThemeCyber'],
-      ['themeCelestial', 'itemThemeCelestial']
-    ];
-    const rewardEffects = [
-      ['effectPawBurst', 'itemEffectPawBurst'],
-      ['effectBearPaw', 'itemEffectBearPaw'],
-      ['effectDogPaw', 'itemEffectDogPaw']
-    ];
-    const rewardItems = [...rewardFonts, ...rewardThemes, ...rewardEffects];
+    const t = (key) => translations[activeLanguage()][key] || translations.en[key] || key;
+    const applyLanguage = () => {
+      const lang = activeLanguage();
+      document.documentElement.lang = lang;
+      document.title = t('title');
+      for (const element of document.querySelectorAll('[data-i18n]')) {
+        element.textContent = t(element.dataset.i18n);
+      }
+      for (const [id, key] of [['reload', 'reload'], ['reset', 'resetDefaults']]) {
+        const button = document.getElementById(id);
+        const label = t(key);
+        button.setAttribute('aria-label', label);
+        button.setAttribute('title', label);
+        button.dataset.tooltip = label;
+      }
+      if (statusKey) statusEl.textContent = t(statusKey);
+    };
     const valueFor = (path) => {
       const value = get(settings, path);
       return value ?? get(defaults, path);
     };
-    const apiHeaders = (headers = {}) => ({ ...headers, 'X-Codex-Pet-Settings-Token': sessionToken });
-    const rgba = (hex, opacity) => {
-      const value = String(hex || '#ffffff').replace('#', '');
-      const r = parseInt(value.slice(0, 2), 16);
-      const g = parseInt(value.slice(2, 4), 16);
-      const b = parseInt(value.slice(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-    };
-    const showStatus = (text) => {
-      statusKey = translations.en[text] ? text : '';
-      statusEl.dataset.state = statusKey || 'error';
-      statusEl.textContent = statusKey ? t(statusKey) : text;
-    };
     const formatValue = (input, value) => {
-      if (input.type === 'checkbox') return value ? t('enabledValue') : t('disabledValue');
       if (input.tagName === 'SELECT') {
         const option = input.querySelector(`option[value="${value}"]`);
         return option && option.dataset.i18n ? t(option.dataset.i18n) : value;
@@ -3117,134 +879,44 @@
       if (input.type === 'range' && input.max === '1') return percent(value);
       return `${value}${input.dataset.unit || ''}`;
     };
-    const outputFor = (input) => input.closest('.control-row')?.querySelector('output');
-    const syncOutput = (input, value) => {
-      const output = outputFor(input);
-      if (output) output.textContent = formatValue(input, value);
+    const updateValueOutput = (input, value) => {
+      const output = input.nextElementSibling;
+      const text = formatValue(input, value);
+      output.textContent = text;
+      if (!output.id) output.id = `${input.id}Value`;
+      output.setAttribute('for', input.id);
+      input.setAttribute('aria-describedby', output.id);
+      if (input.type === 'range') input.setAttribute('aria-valuetext', text);
     };
-    const syncSegments = () => {
-      for (const group of segmentGroups) {
-        const value = String(valueFor(group.dataset.segmentFor) || '');
-        for (const button of group.querySelectorAll('button[data-value]')) {
-          button.setAttribute('aria-pressed', button.dataset.value === value ? 'true' : 'false');
-        }
-      }
+    const apiHeaders = (headers = {}) => ({
+      ...headers,
+      'X-Codex-Pet-Settings-Token': sessionToken
+    });
+    const rgba = (hex, opacity) => {
+      const value = hex.replace('#', '');
+      const r = parseInt(value.slice(0, 2), 16);
+      const g = parseInt(value.slice(2, 4), 16);
+      const b = parseInt(value.slice(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
     };
-    const syncFocusPanels = () => {
-      const hudFocus = String(valueFor('gamification.hudFocus') || 'growth');
-      for (const panel of focusPanels) {
-        const active = panel.dataset.focusPanel === hudFocus;
-        panel.classList.toggle('is-active', active);
-        panel.dataset.active = active ? 'true' : 'false';
-      }
+    const shiftedRgba = (hex, delta, opacity) => {
+      const value = hex.replace('#', '');
+      const channels = [0, 2, 4].map((index) => Math.max(0, Math.min(255, parseInt(value.slice(index, index + 2), 16) + delta)));
+      return `rgba(${channels[0]}, ${channels[1]}, ${channels[2]}, ${opacity})`;
     };
-    const syncRewardPanels = (tab = 'fonts') => {
-      const activeTab = ['fonts', 'themes', 'effects'].includes(tab) ? tab : 'fonts';
-      for (const button of rewardTabButtons) {
-        button.setAttribute('aria-pressed', button.dataset.rewardTab === activeTab ? 'true' : 'false');
-      }
-      for (const panel of rewardPanels) {
-        panel.classList.toggle('is-active', panel.dataset.rewardPanel === activeTab);
-      }
+    const showStatus = (text) => {
+      statusKey = translations.en[text] ? text : '';
+      statusEl.textContent = statusKey ? t(statusKey) : text;
+      statusEl.dataset.state = ['loading', 'saving'].includes(text)
+        ? 'loading'
+        : (text === 'unsaved' ? 'dirty' : (text === 'serverUnavailable' || !statusKey ? 'error' : 'success'));
     };
-    const syncActiveNav = (id) => {
-      if (!id) return;
-      for (const anchor of navAnchors) {
-        anchor.classList.toggle('is-active', anchor.hash === `#${id}`);
-      }
-    };
-    const initSectionNavigation = () => {
-      const sections = navAnchors
-        .map((anchor) => document.getElementById(anchor.hash.slice(1)))
-        .filter(Boolean);
-      if (sections.length <= 0) return;
-      syncActiveNav((window.location.hash || '#general').slice(1));
-      for (const anchor of navAnchors) {
-        anchor.addEventListener('click', () => syncActiveNav(anchor.hash.slice(1)));
-      }
-      if (!('IntersectionObserver' in window)) return;
-      const observer = new IntersectionObserver((entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible && visible.target.id) syncActiveNav(visible.target.id);
-      }, {
-        root: null,
-        rootMargin: '-18% 0px -62% 0px',
-        threshold: [0.1, 0.25, 0.5]
-      });
-      for (const section of sections) observer.observe(section);
-    };
-    const updateInventorySummary = () => {
-      const inventory = gamificationState && gamificationState.inventory ? gamificationState.inventory : {};
-      const totalDrops = Number(inventory.totalDrops || 0);
-      const totalEl = document.getElementById('inventoryTotal');
-      const unlockedText = t('inventoryUnlocked');
-      const lockedText = t('inventoryLocked');
-      const activeText = t('inventoryActive');
-      const getRewardName = (key, fallback = '-') => {
-        const entry = rewardItems.find(([itemKey]) => itemKey === key);
-        return entry ? t(entry[1]) : fallback;
-      };
-      const status = (id, key, activeKey) => {
-        const el = document.getElementById(id);
-        const item = document.querySelector(`[data-item-key="${key}"]`);
-        const unlocked = Boolean(inventory[key]);
-        const active = unlocked && activeKey === key;
-        if (el) el.textContent = active ? activeText : (unlocked ? unlockedText : lockedText);
-        if (item) {
-          item.classList.toggle('is-unlocked', unlocked);
-          item.classList.toggle('is-active', active);
-          item.classList.toggle('is-locked', !unlocked);
-        }
-      };
-      if (totalEl) totalEl.textContent = `${totalDrops} unlocks`;
-      const activeFont = String(inventory.activeFont || '');
-      const activeTheme = String(inventory.activeTheme || '');
-      const activeEffect = String(inventory.activeEffect || '');
-      const activeFontName = document.getElementById('activeFontName');
-      const activeThemeName = document.getElementById('activeThemeName');
-      const activeEffectName = document.getElementById('activeEffectName');
-      const rewardRollCount = document.getElementById('rewardRollCount');
-      const fontUnlockSummary = document.getElementById('fontUnlockSummary');
-      const themeUnlockSummary = document.getElementById('themeUnlockSummary');
-      const effectUnlockSummary = document.getElementById('effectUnlockSummary');
-      if (activeFontName) activeFontName.textContent = getRewardName(activeFont);
-      if (activeThemeName) activeThemeName.textContent = getRewardName(activeTheme);
-      if (activeEffectName) activeEffectName.textContent = getRewardName(activeEffect);
-      if (rewardRollCount) rewardRollCount.textContent = `${Number(inventory.rewardRolls || 0)} / ${Number(inventory.rewardKeys || 0)}`;
-      const unlockedFonts = rewardFonts.filter(([key]) => Boolean(inventory[key])).length;
-      const unlockedThemes = rewardThemes.filter(([key]) => Boolean(inventory[key])).length;
-      const unlockedEffects = rewardEffects.filter(([key]) => Boolean(inventory[key])).length;
-      if (fontUnlockSummary) fontUnlockSummary.textContent = `${unlockedFonts}/${rewardFonts.length}`;
-      if (themeUnlockSummary) themeUnlockSummary.textContent = `${unlockedThemes}/${rewardThemes.length}`;
-      if (effectUnlockSummary) effectUnlockSummary.textContent = `${unlockedEffects}/${rewardEffects.length}`;
-      status('inventoryFontPixel', 'fontPixel', activeFont);
-      status('inventoryFontTerminal', 'fontTerminal', activeFont);
-      status('inventoryThemeForest', 'themeForest', activeTheme);
-      status('inventoryThemeArcane', 'themeArcane', activeTheme);
-      status('inventoryThemeRoyal', 'themeRoyal', activeTheme);
-      status('inventoryThemeCyber', 'themeCyber', activeTheme);
-      status('inventoryThemeCelestial', 'themeCelestial', activeTheme);
-      status('inventoryEffectPawBurst', 'effectPawBurst', activeEffect);
-      status('inventoryEffectBearPaw', 'effectBearPaw', activeEffect);
-      status('inventoryEffectDogPaw', 'effectDogPaw', activeEffect);
-    };
-    const applyLanguage = () => {
-      const lang = activeLanguage();
-      document.documentElement.lang = lang;
-      document.title = 'Codexy pet usages ring Settings';
-      for (const element of document.querySelectorAll('[data-i18n]')) {
-        element.textContent = t(element.dataset.i18n);
-      }
-      updateGrowthModeHelp();
-      if (statusKey) statusEl.textContent = t(statusKey);
-    };
-    const growthModeLabelKey = (mode) => `growthMode${String(mode || 'balanced').charAt(0).toUpperCase()}${String(mode || 'balanced').slice(1)}`;
-    const updateGrowthModeHelp = () => {
-      if (!growthModeHelpEl || !settings) return;
-      const growthMode = valueFor('gamification.growthMode') || 'balanced';
-      growthModeHelpEl.textContent = t(`${growthModeLabelKey(growthMode).replace('growthMode', 'growthModeHelp')}`);
+    const updateDirtyState = () => {
+      const wasDirty = isDirty;
+      isDirty = lastSavedSettings != null && comparable(settings) !== comparable(lastSavedSettings);
+      document.getElementById('save').disabled = !isDirty;
+      if (isDirty) showStatus('unsaved');
+      else if (wasDirty) showStatus('ready');
     };
     const setCircle = (circle, ratio, offsetRatio = 0) => {
       const radius = Number(circle.getAttribute('r'));
@@ -3258,55 +930,34 @@
       for (const input of inputs) {
         const value = valueFor(input.dataset.path);
         set(settings, input.dataset.path, value);
-        if (input.type === 'checkbox') input.checked = Boolean(value);
-        else input.value = value;
-        syncOutput(input, value);
+        input.value = value;
+        updateValueOutput(input, value);
       }
       applyLanguage();
       for (const input of inputs) {
-        syncOutput(input, valueFor(input.dataset.path));
+        updateValueOutput(input, valueFor(input.dataset.path));
       }
-      syncSegments();
-      syncFocusPanels();
-      syncRewardPanels();
-      updateInventorySummary();
       updatePreview();
+      updateDirtyState();
     }
 
     function collect() {
       if (!settings) return;
       for (const input of inputs) {
-        const value = input.type === 'checkbox'
-          ? input.checked
-          : input.type === 'range'
-            ? Number(input.value)
-            : input.value;
+        const value = input.type === 'range' ? Number(input.value) : input.value;
         set(settings, input.dataset.path, value);
-        syncOutput(input, value);
+        updateValueOutput(input, value);
       }
       applyLanguage();
       for (const input of inputs) {
-        syncOutput(input, get(settings, input.dataset.path));
+        updateValueOutput(input, get(settings, input.dataset.path));
       }
-      syncSegments();
-      syncFocusPanels();
-      updateInventorySummary();
       updatePreview();
-    }
-
-    function applyPreset(name) {
-      if (!settings || !themePresets[name]) return;
-      settings = mergeDeep(settings, themePresets[name]);
-      bind();
-      showStatus('presetLoaded');
+      updateDirtyState();
     }
 
     function updatePreview() {
       if (!settings) return;
-      document.documentElement.style.setProperty('--user-primary', settings.colors.primary);
-      document.documentElement.style.setProperty('--user-secondary', settings.colors.secondary);
-      document.documentElement.style.setProperty('--user-warning', settings.colors.warning);
-
       const outerTrack = document.getElementById('previewOuterTrack');
       const innerTrack = document.getElementById('previewInnerTrack');
       const outer = document.getElementById('previewOuter');
@@ -3314,82 +965,113 @@
       const warning = document.getElementById('previewWarning');
       const caution = document.getElementById('previewCaution');
       const hoverRange = document.getElementById('previewHoverRange');
-      const previewSurface = document.getElementById('previewSurface');
-      const battery = document.getElementById('previewBattery');
-      const batteryPrimary = document.getElementById('previewBatteryPrimary');
-      const batterySecondary = document.getElementById('previewBatterySecondary');
-      const batteryPrimaryCap = document.getElementById('previewBatteryPrimaryCap');
-      const batterySecondaryCap = document.getElementById('previewBatterySecondaryCap');
-      const badge = document.getElementById('previewBadge');
-      const badgePrimary = document.getElementById('previewBadgePrimary');
-      const badgeSecondary = document.getElementById('previewBadgeSecondary');
-      const growth = document.getElementById('previewGrowth');
-      const growthDot = document.getElementById('previewGrowthDot');
-      const growthText = document.getElementById('previewGrowthText');
-      const keyCounter = document.getElementById('previewKeyCounter');
-      const keyText = document.getElementById('previewKeyText');
-      const keyHeat = document.getElementById('previewKeyHeat');
+      const ringPreview = document.querySelector('.preview-gauge');
+      const altPreview = document.getElementById('previewAlt');
+      const altOuterTrack = document.getElementById('previewAltOuterTrack');
+      const altInnerTrack = document.getElementById('previewAltInnerTrack');
+      const altOuter = document.getElementById('previewAltOuter');
+      const altInner = document.getElementById('previewAltInner');
+      const potionGroup = document.getElementById('previewPixelPotions');
+      const potionLeft = document.getElementById('previewPotionLeft');
+      const potionRight = document.getElementById('previewPotionRight');
       const tip = document.getElementById('previewTip');
       const innerTip = document.getElementById('previewInnerTip');
-      const displayMode = valueFor('displayMode') || 'ring';
-      const visibilityMode = valueFor('behavior.visibilityMode') || 'hover';
-      const growthMode = valueFor('gamification.growthMode') || 'balanced';
-      const hudFocus = valueFor('gamification.hudFocus') || 'growth';
-      const growthEnabled = Boolean(valueFor('gamification.enabled'));
-      const growthChipEnabled = growthEnabled && Boolean(valueFor('gamification.showGrowthChip')) && hudFocus === 'growth';
-      const keyCounterEnabled = growthEnabled && Boolean(valueFor('gamification.showKeyCounter')) && hudFocus === 'combo';
-      const comboHeatEnabled = keyCounterEnabled && Boolean(valueFor('gamification.showComboHeat'));
-      const ringDisplay = displayMode === 'ring' ? '' : 'none';
-      const batteryDisplay = displayMode === 'battery' ? 'grid' : 'none';
-      const badgeDisplay = displayMode === 'badge' ? 'grid' : 'none';
+      const previewPet = document.getElementById('previewPet');
+      const previewPetSprite = document.getElementById('previewPetSprite');
+      const previewPetFallback = document.getElementById('previewPetFallback');
+      const center = 110;
+      const petWidthActual = Math.max(32, Number(petPreview.width) || 113);
+      const petHeightActual = Math.max(32, Number(petPreview.height) || 122);
+      const petMaxActual = Math.max(petWidthActual, petHeightActual);
+      const appearanceMode = valueFor('appearance.mode') || 'rings';
+      const potionMode = appearanceMode === 'potions';
+      const potionScale = Math.max(0.7, Math.min(1.4, Number(valueFor('appearance.potionScale') || 100) / 100));
+      document.getElementById('potionScaleField').hidden = !potionMode;
+      const ringGapActual = Number(valueFor('layout.ringGap') || 0);
+      const hoverRangeActual = Number(valueFor('behavior.hoverRange') || 0);
+      const potionPaddingActual = 128 + Math.max(0, potionScale - 1) * 80;
+      const paddingActual = potionMode ? Math.max(potionPaddingActual, ringGapActual + 16) : ringGapActual + 16;
+      const windowSizeActual = petMaxActual + paddingActual * 2;
+      const previewScale = Math.min(96 / petMaxActual, 212 / windowSizeActual);
+      const petWidth = petWidthActual * previewScale;
+      const petHeight = petHeightActual * previewScale;
+      previewPet.style.width = `${petWidth / 220 * 100}%`;
+      previewPet.style.height = `${petHeight / 220 * 100}%`;
+      previewPet.dataset.sprite = petPreview.spriteAvailable ? 'true' : 'false';
+      previewPetSprite.style.display = petPreview.spriteAvailable ? 'block' : 'none';
+      previewPetFallback.style.display = petPreview.spriteAvailable ? 'none' : 'block';
+      if (petPreview.spriteAvailable) {
+        previewPetSprite.style.backgroundImage = `url('/api/pet-spritesheet?token=${encodeURIComponent(sessionToken)}')`;
+        previewPetSprite.style.backgroundSize = `${Math.max(1, Number(petPreview.columns) || 8) * 100}% ${Math.max(1, Number(petPreview.rows) || 11) * 100}%`;
+      }
+      const outerRadiusActual = windowSizeActual / 2 - 16;
+      const innerRadiusActual = outerRadiusActual - 13;
+      const petHalfActual = Math.max(24, outerRadiusActual - ringGapActual);
+      const extentActual = Math.min(
+        windowSizeActual / 2 - 8,
+        petHalfActual + Math.max(10, ringGapActual * 0.55)
+      );
+      const outerRadius = outerRadiusActual * previewScale;
+      const innerRadius = Math.max(10, innerRadiusActual * previewScale);
+      const alertRadius = (outerRadiusActual + 14) * previewScale;
+      const hoverRadius = (outerRadiusActual + hoverRangeActual) * previewScale;
+      const extent = extentActual * previewScale;
+      const previewOffsetX = Number(valueFor('layout.offsetX') || 0) * previewScale;
+      const previewOffsetY = Number(valueFor('layout.offsetY') || 0) * previewScale;
+      const previewSurface = document.querySelector('.preview');
+      const previewCssScale = previewSurface.clientWidth / 220;
+      const previewOffsetCssX = previewOffsetX * previewCssScale;
+      const previewOffsetCssY = previewOffsetY * previewCssScale;
+      ringPreview.style.transform = `translate(${previewOffsetCssX}px, ${previewOffsetCssY}px) rotate(-18deg)`;
+      altPreview.style.transform = `translate(${previewOffsetCssX}px, ${previewOffsetCssY}px)`;
+      tip.style.transform = `translate(${previewOffsetCssX}px, ${previewOffsetCssY}px)`;
+      innerTip.style.transform = `translate(${previewOffsetCssX}px, ${previewOffsetCssY}px)`;
+      tip.style.display = potionMode ? 'none' : 'block';
+      innerTip.style.display = potionMode ? 'none' : 'block';
+      ringPreview.style.display = appearanceMode === 'rings' ? 'block' : 'none';
+      altPreview.style.display = appearanceMode === 'rings' ? 'none' : 'block';
+      potionGroup.style.display = potionMode ? 'block' : 'none';
+      for (const linePath of [altOuterTrack, altInnerTrack, altOuter, altInner]) {
+        linePath.style.display = potionMode ? 'none' : 'block';
+      }
 
-      previewSurface.dataset.displayMode = displayMode;
-      previewSurface.dataset.visibilityMode = visibilityMode;
-      previewSurface.dataset.growthChip = growthChipEnabled ? 'true' : 'false';
-      previewSurface.dataset.keyCounter = keyCounterEnabled ? 'true' : 'false';
-      for (const element of [outerTrack, innerTrack, outer, inner, warning, caution, hoverRange]) {
-        element.style.display = ringDisplay;
-      }
-      battery.style.display = batteryDisplay;
-      badge.style.display = badgeDisplay;
-      growth.style.display = growthChipEnabled ? 'grid' : 'none';
-      keyCounter.style.display = keyCounterEnabled ? 'grid' : 'none';
-      keyHeat.style.display = comboHeatEnabled ? 'grid' : 'none';
-      if (growthChipEnabled) {
-        growth.style.left = '50%';
-        growth.style.transform = 'translateX(-50%)';
-        keyCounter.style.left = '';
-        keyCounter.style.transform = '';
-      } else {
-        growth.style.left = '';
-        growth.style.transform = 'none';
-        keyCounter.style.left = displayMode === 'badge' ? 'calc(50% + 62px)' : '50%';
-        keyCounter.style.transform = displayMode === 'badge' ? 'none' : 'translateX(-50%)';
-      }
-      if (displayMode === 'badge') {
-        badge.style.gridTemplateColumns = keyCounterEnabled ? '1fr 1fr .62fr' : '1fr 1fr';
-        badge.style.minWidth = keyCounterEnabled ? '246px' : '';
-      } else {
-        badge.style.gridTemplateColumns = '';
-        badge.style.minWidth = '';
-      }
-      if (displayMode === 'battery' && keyCounterEnabled && !growthChipEnabled) {
-        keyCounter.style.left = '50%';
-        keyCounter.style.transform = 'translateX(-50%)';
-      }
+      const altPaths = {
+        bars: [`M${center - extent} ${center - extent}H${center + extent}`, `M${center - extent} ${center + extent}H${center + extent}`],
+        wings: [`M${center - extent} ${center + extent}V${center - extent}`, `M${center + extent} ${center + extent}V${center - extent}`],
+        corners: [`M${center} ${center - extent}H${center - extent}V${center}`, `M${center} ${center + extent}H${center + extent}V${center}`]
+      };
+      const selectedPaths = altPaths[appearanceMode] || altPaths.bars;
+      altOuterTrack.setAttribute('d', selectedPaths[0]);
+      altInnerTrack.setAttribute('d', selectedPaths[1]);
+      altOuter.setAttribute('d', selectedPaths[0]);
+      altInner.setAttribute('d', selectedPaths[1]);
 
-      const petRadius = 39;
-      const ringGap = Number(valueFor('layout.ringGap') || 0);
-      const hoverRangeValue = Number(valueFor('behavior.hoverRange') || 0);
-      const maxPreviewRadius = 108;
-      const adjustableRadius = ringGap + hoverRangeValue;
-      const fitScale = petRadius + adjustableRadius > maxPreviewRadius
-        ? (maxPreviewRadius - petRadius) / Math.max(1, adjustableRadius)
-        : 1;
-      const outerRadius = petRadius + ringGap * fitScale;
-      const innerRadius = Math.max(26, outerRadius - 13 * fitScale);
-      const alertRadius = Math.min(maxPreviewRadius, outerRadius + 14 * fitScale);
-      const hoverRadius = petRadius + adjustableRadius * fitScale;
+      const potionPetHalfActual = Math.max(24, outerRadiusActual - (paddingActual - 16));
+      const potionRadiusActual = Math.min(44, Math.max(28, potionPetHalfActual * 0.68)) * potionScale;
+      const potionOffsetActual = Math.min(
+        outerRadiusActual - potionRadiusActual - 10,
+        potionPetHalfActual + potionRadiusActual + 10
+      );
+      const potionRadius = potionRadiusActual * previewScale;
+      const potionOffset = potionOffsetActual * previewScale;
+      const leftPotionX = center - potionOffset;
+      const rightPotionX = center + potionOffset;
+      const potionSpriteScale = potionRadius / 34;
+      const potionWidth = 68 * potionSpriteScale;
+      const potionHeight = 73 * potionSpriteScale;
+      const potionTop = center - 37 * potionSpriteScale;
+      const positionPotion = (element, centerX) => {
+        element.style.left = `${(centerX - potionWidth / 2) / 220 * 100}%`;
+        element.style.top = `${potionTop / 220 * 100}%`;
+        element.style.width = `${potionWidth / 220 * 100}%`;
+        element.style.height = `${potionHeight / 220 * 100}%`;
+        element.querySelector('.pixel-potion-value').style.fontSize = `${11.5 * potionSpriteScale * previewCssScale}px`;
+        element.querySelector('.pixel-potion-value').style.lineHeight = `${16 * potionSpriteScale * previewCssScale}px`;
+        element.querySelector('.pixel-potion-label').style.fontSize = `${7.5 * potionSpriteScale * previewCssScale}px`;
+        element.querySelector('.pixel-potion-label').style.lineHeight = `${11 * potionSpriteScale * previewCssScale}px`;
+      };
+      positionPotion(potionLeft, leftPotionX);
+      positionPotion(potionRight, rightPotionX);
 
       outerTrack.setAttribute('r', outerRadius);
       innerTrack.setAttribute('r', innerRadius);
@@ -3398,47 +1080,47 @@
       caution.setAttribute('r', alertRadius);
       warning.setAttribute('r', alertRadius);
       hoverRange.setAttribute('r', hoverRadius);
-      hoverRange.style.opacity = hoverRangeValue > 0 ? '1' : '0';
+      hoverRange.style.opacity = hoverRangeActual > 0 ? '1' : '0';
+      const outerStroke = Math.max(3, 7 * previewScale);
+      const innerStroke = Math.max(2.5, 4.5 * previewScale);
       outerTrack.style.stroke = rgba(settings.colors.track, settings.opacity.track);
+      outerTrack.style.strokeWidth = `${outerStroke}px`;
       innerTrack.style.stroke = rgba(settings.colors.track, settings.opacity.track);
+      innerTrack.style.strokeWidth = `${innerStroke}px`;
       outer.style.stroke = rgba(settings.colors.primary, settings.opacity.primary);
+      outer.style.strokeWidth = `${outerStroke}px`;
       inner.style.stroke = rgba(settings.colors.secondary, settings.opacity.secondary);
+      inner.style.strokeWidth = `${innerStroke}px`;
+      altOuterTrack.style.stroke = rgba(settings.colors.track, settings.opacity.track);
+      altOuterTrack.style.strokeWidth = `${outerStroke}px`;
+      altInnerTrack.style.stroke = rgba(settings.colors.track, Math.max(0.04, settings.opacity.track - 0.02));
+      altInnerTrack.style.strokeWidth = `${innerStroke}px`;
+      altOuter.style.stroke = rgba(settings.colors.primary, settings.opacity.primary);
+      altOuter.style.strokeWidth = `${outerStroke}px`;
+      altOuter.style.strokeDasharray = '74 100';
+      altInner.style.stroke = rgba(settings.colors.secondary, settings.opacity.secondary);
+      altInner.style.strokeWidth = `${innerStroke}px`;
+      altInner.style.strokeDasharray = '58 100';
+      const setPotionFill = (element, ratio, color, opacity) => {
+        const chamberTop = 17;
+        const chamberBottom = 57;
+        const fillTop = chamberBottom - (chamberBottom - chamberTop) * ratio;
+        const liquid = element.querySelector('.pixel-potion-liquid');
+        liquid.style.background = rgba(color, opacity);
+        liquid.style.clipPath = `inset(${fillTop / 73 * 100}% 0 ${(73 - chamberBottom) / 73 * 100}% 0)`;
+      };
+      setPotionFill(potionLeft, .74, settings.colors.primary, settings.opacity.primary);
+      setPotionFill(potionRight, .58, settings.colors.secondary, settings.opacity.secondary);
       caution.style.stroke = rgba(settings.colors.caution, settings.opacity.warning);
+      caution.style.strokeWidth = '4px';
       warning.style.stroke = rgba(settings.colors.warning, settings.opacity.warning);
+      warning.style.strokeWidth = '4px';
       setCircle(outerTrack, 1);
       setCircle(innerTrack, 1);
       setCircle(outer, 0.74);
       setCircle(inner, 0.58);
       setCircle(caution, 0.08, 0.67);
       setCircle(warning, 0.08, 0.8);
-
-      batteryPrimary.style.width = '74%';
-      batterySecondary.style.width = '58%';
-      batteryPrimary.style.background = rgba(settings.colors.primary, settings.opacity.primary);
-      batterySecondary.style.background = rgba(settings.colors.secondary, settings.opacity.secondary);
-      batteryPrimaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
-      batterySecondaryCap.style.background = rgba(settings.colors.track, Math.max(0.18, settings.opacity.track));
-      badge.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
-      badge.style.borderColor = rgba(settings.colors.track, Math.max(0.16, settings.opacity.track));
-      badgePrimary.style.background = rgba(settings.colors.primary, settings.opacity.primary);
-      badgeSecondary.style.background = rgba(settings.colors.secondary, settings.opacity.secondary);
-      badgePrimary.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
-      badgeSecondary.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
-
-      growth.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
-      growth.style.borderColor = rgba(settings.colors.track, Math.max(0.16, settings.opacity.track));
-      growth.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
-      growthDot.style.background = rgba(settings.colors.primary, settings.opacity.primary);
-      const modeKey = `growthMode${growthMode.charAt(0).toUpperCase()}${growthMode.slice(1)}`;
-      growthText.textContent = `${t('previewGrowth')} / ${t(modeKey)}`;
-      keyCounter.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
-      keyCounter.style.borderColor = rgba(settings.colors.track, Math.max(0.16, settings.opacity.track));
-      keyCounter.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
-      keyText.textContent = hudFocus === 'combo' ? t('previewKeyCounter') : '128';
-      for (const segment of keyHeat.querySelectorAll('i')) {
-        segment.style.background = rgba(settings.colors.primary, settings.opacity.primary);
-      }
-
       tip.style.color = rgba(settings.colors.readoutText, settings.opacity.readoutText);
       tip.style.background = rgba(settings.colors.outerReadoutBackground, settings.opacity.readout);
       tip.style.fontSize = `${settings.text.fontSize}px`;
@@ -3449,39 +1131,49 @@
       innerTip.style.fontSize = `${settings.text.fontSize}px`;
       innerTip.style.lineHeight = `${settings.text.lineHeight}px`;
       innerTip.innerHTML = t('previewInner');
-
       const fadeMs = Math.max(Number(valueFor('behavior.fadeInMs') || 0), Number(valueFor('behavior.fadeOutMs') || 0));
-      outerTrack.style.transition = `r ${fadeMs}ms ease, stroke ${fadeMs}ms ease`;
-      innerTrack.style.transition = `r ${fadeMs}ms ease, stroke ${fadeMs}ms ease`;
+      outerTrack.style.transition = `stroke ${fadeMs}ms ease`;
+      innerTrack.style.transition = `stroke ${fadeMs}ms ease`;
       outer.style.transitionDuration = `${fadeMs}ms`;
       inner.style.transitionDuration = `${fadeMs}ms`;
       hoverRange.style.transitionDuration = `${fadeMs}ms`;
       tip.style.transition = `opacity ${fadeMs}ms ease`;
       innerTip.style.transition = `opacity ${fadeMs}ms ease`;
+      document.querySelector('.legend-swatch.outer').style.background = settings.colors.primary;
+      document.querySelector('.legend-swatch.inner').style.background = settings.colors.secondary;
     }
 
     async function load() {
       showStatus('loading');
-      const [settingsResponse, defaultsResponse] = await Promise.all([
+      const [settingsResponse, defaultsResponse, petPreviewResponse] = await Promise.all([
         fetch('/api/settings', { headers: apiHeaders() }),
-        fetch('/api/defaults', { headers: apiHeaders() })
+        fetch('/api/defaults', { headers: apiHeaders() }),
+        fetch('/api/pet-preview', { headers: apiHeaders() })
       ]);
       if (!settingsResponse.ok) throw new Error(await settingsResponse.text());
       if (!defaultsResponse.ok) throw new Error(await defaultsResponse.text());
+      if (!petPreviewResponse.ok) throw new Error(await petPreviewResponse.text());
       const payload = await settingsResponse.json();
       defaults = await defaultsResponse.json();
+      petPreview = await petPreviewResponse.json();
       settings = payload.settings;
-      gamificationState = payload.gamificationState || null;
-      systemLanguage = payload.systemLanguage || '';
+      lastSavedSettings = clone(settings);
+      automaticLanguage = payload.automaticLanguage || payload.systemLanguage || '';
       pathEl.textContent = payload.settingsPath;
+      pathEl.title = payload.settingsPath;
       bind();
+      updateDirtyState();
       showStatus('ready');
     }
 
     async function save() {
+      const saveButton = document.getElementById('save');
+      const saveIcon = saveButton.querySelector('use');
       collect();
       showStatus('saving');
-      for (const button of saveButtons) button.disabled = true;
+      saveButton.disabled = true;
+      saveButton.dataset.loading = 'true';
+      saveIcon.setAttribute('href', '#i-refresh');
       try {
         const response = await fetch('/api/settings', {
           method: 'POST',
@@ -3491,11 +1183,15 @@
         if (!response.ok) throw new Error(await response.text());
         const payload = await response.json();
         settings = payload.settings;
-        systemLanguage = payload.systemLanguage || systemLanguage;
+        lastSavedSettings = clone(settings);
+        automaticLanguage = payload.automaticLanguage || payload.systemLanguage || automaticLanguage;
         bind();
+        updateDirtyState();
         showStatus('saved');
       } finally {
-        for (const button of saveButtons) button.disabled = false;
+        saveButton.disabled = !isDirty;
+        saveButton.dataset.loading = 'false';
+        saveIcon.setAttribute('href', '#i-save');
       }
     }
 
@@ -3503,33 +1199,26 @@
       input.addEventListener('input', collect);
       input.addEventListener('change', collect);
     }
-    for (const button of presetButtons) {
-      button.addEventListener('click', () => applyPreset(button.dataset.preset));
-    }
-    for (const group of segmentGroups) {
-      for (const button of group.querySelectorAll('button[data-value]')) {
-        button.addEventListener('click', () => {
-          if (!settings) return;
-          const path = group.dataset.segmentFor;
-          set(settings, path, button.dataset.value);
-          const input = inputs.find((item) => item.dataset.path === path);
-          if (input) input.value = button.dataset.value;
-          collect();
-        });
-      }
-    }
-    for (const button of rewardTabButtons) {
-      button.addEventListener('click', () => syncRewardPanels(button.dataset.rewardTab));
-    }
-    initSectionNavigation();
-    for (const button of saveButtons) {
-      button.addEventListener('click', () => save().catch((error) => showStatus(error.message)));
-    }
-    document.getElementById('reload').addEventListener('click', () => load().catch((error) => showStatus(error.message)));
+    document.getElementById('centerOnPet').addEventListener('click', () => {
+      document.getElementById('offsetX').value = '0';
+      document.getElementById('offsetY').value = '0';
+      collect();
+    });
+    document.getElementById('save').addEventListener('click', () => save().catch((error) => showStatus(error.message)));
+    document.getElementById('reload').addEventListener('click', () => {
+      if (isDirty && !window.confirm(t('discardChanges'))) return;
+      load().catch((error) => showStatus(error.message));
+    });
     document.getElementById('reset').addEventListener('click', () => {
       settings = clone(defaults);
       bind();
+      updateDirtyState();
       showStatus('defaultsLoaded');
+    });
+    window.addEventListener('beforeunload', (event) => {
+      if (!isDirty) return;
+      event.preventDefault();
+      event.returnValue = '';
     });
 
     load().catch((error) => {

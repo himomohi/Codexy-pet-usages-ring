@@ -22,14 +22,22 @@ function New-CodexDesktopResult {
 
 function Get-CodexDesktopProcess {
   try {
-    $processes = Get-CimInstance Win32_Process -Filter "Name = 'Codex.exe'" -ErrorAction Stop
+    $processes = @(Get-CimInstance Win32_Process -ErrorAction Stop | Where-Object {
+      $_.Name -ieq "Codex.exe" -or $_.Name -ieq "ChatGPT.exe"
+    })
   } catch {
     return $null
   }
 
   $desktopProcesses = @($processes | Where-Object {
     -not [string]::IsNullOrWhiteSpace($_.ExecutablePath) -and
-    (Split-Path -Leaf $_.ExecutablePath) -ieq "Codex.exe" -and
+    (
+      (Split-Path -Leaf $_.ExecutablePath) -ieq "Codex.exe" -or
+      (
+        (Split-Path -Leaf $_.ExecutablePath) -ieq "ChatGPT.exe" -and
+        $_.ExecutablePath -match '\\OpenAI\.Codex_[^\\]+\\app\\ChatGPT\.exe$'
+      )
+    ) -and
     $_.ExecutablePath -notmatch '\\resources\\codex\.exe$' -and
     $_.CommandLine -notmatch '\s--type='
   })
@@ -40,7 +48,13 @@ function Get-CodexDesktopProcess {
 
   return @($processes | Where-Object {
     -not [string]::IsNullOrWhiteSpace($_.ExecutablePath) -and
-    (Split-Path -Leaf $_.ExecutablePath) -ieq "Codex.exe" -and
+    (
+      (Split-Path -Leaf $_.ExecutablePath) -ieq "Codex.exe" -or
+      (
+        (Split-Path -Leaf $_.ExecutablePath) -ieq "ChatGPT.exe" -and
+        $_.ExecutablePath -match '\\OpenAI\.Codex_[^\\]+\\app\\ChatGPT\.exe$'
+      )
+    ) -and
     $_.ExecutablePath -notmatch '\\resources\\codex\.exe$'
   } | Select-Object -First 1)
 }
@@ -118,7 +132,10 @@ function Resolve-CodexDesktopApp {
 
   foreach ($package in $packages) {
     if ([string]::IsNullOrWhiteSpace($package.InstallLocation)) { continue }
-    $exe = Join-Path $package.InstallLocation "app\Codex.exe"
+    $exe = @(
+      (Join-Path $package.InstallLocation "app\ChatGPT.exe"),
+      (Join-Path $package.InstallLocation "app\Codex.exe")
+    ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
     $appId = ""
     if (-not [string]::IsNullOrWhiteSpace($package.PackageFamilyName)) {
       $appId = "$($package.PackageFamilyName)!App"
@@ -152,7 +169,10 @@ function Resolve-CodexDesktopApp {
     $folders = @(Get-ChildItem -LiteralPath $windowsApps -Directory -Filter "OpenAI.Codex_*" -ErrorAction Stop |
       Sort-Object LastWriteTimeUtc -Descending)
     foreach ($folder in $folders) {
-      $exe = Join-Path $folder.FullName "app\Codex.exe"
+      $exe = @(
+        (Join-Path $folder.FullName "app\ChatGPT.exe"),
+        (Join-Path $folder.FullName "app\Codex.exe")
+      ) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
       if (Test-Path -LiteralPath $exe) {
         return New-CodexDesktopResult -Found $true -Source "windowsapps-scan" -ExecutablePath $exe -InstallLocation $folder.FullName
       }

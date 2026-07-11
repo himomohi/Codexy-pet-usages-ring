@@ -5,15 +5,14 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = [System.IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
-. (Join-Path $PSScriptRoot "ReleaseManifest.ps1")
 $versionFile = Join-Path $root "VERSION"
 $version = if (Test-Path -LiteralPath $versionFile) {
   (Get-Content -Raw -LiteralPath $versionFile).Trim()
 } else {
   "0.1.0"
 }
-$name = "Codexy-pet-usages-ring-$version"
-$staging = Join-Path $env:TEMP $name
+$name = "codex-pet-limit-rings-Win-$version"
+$staging = Join-Path $env:TEMP "$name-$([Guid]::NewGuid().ToString('N'))"
 $zipPath = Join-Path $OutputDirectory "$name.zip"
 
 function Get-ProjectRelativePath {
@@ -29,7 +28,20 @@ function Get-ProjectRelativePath {
 function Test-ProjectPathExcluded {
   param([string]$Path)
   $relativePath = Get-ProjectRelativePath -Path $Path
-  return (Test-CodexPetReleasePathExcluded -RelativePath $relativePath)
+  $leaf = Split-Path -Leaf $relativePath
+  if ($relativePath -in @(
+    ".gitignore",
+    "settings.json",
+    ".codex-pet-language-cache.json",
+    "docs/assets/current-pet-usage-capture.png",
+    "docs/assets/imagegen-hero-background.png"
+  )) { return $true }
+  if ($relativePath -like "dist/*" -or $relativePath -eq "dist") { return $true }
+  if ($relativePath -like "logs/*" -or $relativePath -eq "logs") { return $true }
+  if ($relativePath -like "qa/*" -or $relativePath -eq "qa") { return $true }
+  if ($relativePath -like "*.log" -or $relativePath -like "*.tmp" -or $relativePath -like "*.bak" -or $relativePath -like "*.zip") { return $true }
+  if ($leaf -eq ".DS_Store" -or $leaf -eq "Thumbs.db") { return $true }
+  return $false
 }
 
 function Copy-ReleaseItem {
@@ -57,7 +69,7 @@ if (Test-Path -LiteralPath $staging) {
 New-Item -ItemType Directory -Force -Path $staging | Out-Null
 New-Item -ItemType Directory -Force -Path $OutputDirectory | Out-Null
 
-foreach ($item in $script:CodexPetReleaseItems) {
+foreach ($item in @("Manage.bat", "Install.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "Start.bat", "Stop.bat", "Status.bat", "Settings.bat", "Diagnose.bat", "Uninstall.bat", "assets", "bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION")) {
   Copy-ReleaseItem -Name $item
 }
 

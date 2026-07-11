@@ -1,15 +1,10 @@
-﻿<p align="center">
-  <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
+<p align="center">
+  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codex Pet Limit Rings for Windows GitHub title bar" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.18-3CEBBD?style=for-the-badge&logo=github">
-  </a>
-</p>
-
-<p align="center">
-  <a href="CHANGELOG.md#0118"><img alt="Version 0.1.18" src="https://img.shields.io/badge/version-0.1.18-3CEBBD?style=for-the-badge"></a>
+  <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest"><img alt="최신 릴리스 다운로드" src="https://img.shields.io/badge/다운로드-최신_릴리스-3CEBBD?style=for-the-badge&logo=github"></a>
+  <a href="VERSION"><img alt="Version 0.1.19" src="https://img.shields.io/badge/version-0.1.19-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -17,68 +12,71 @@
 
 <p align="center">
   <a href="#빠른-시작">빠른 시작</a>
+  · <a href="#다운로드">다운로드</a>
   · <a href="#명령">명령</a>
   · <a href="#개인정보">개인정보</a>
   · <a href="README.md">English</a>
-  · <span>한국어</span>
-  · <a href="README.ja.md">日本語</a>
-  · <a href="README.zh.md">中文</a>
 </p>
 
-Codexy pet usages ring은 Codex Desktop `/pet` 아바타 주변에 반투명
+Codex Pet Limit Rings for Windows는 Codex Desktop `/pet` 아바타 주변에 반투명
 사용량 링을 표시하는 companion overlay입니다.
 [petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings)
 의 companion-app 방식을 Windows용 PowerShell, WPF, Win32 창 제어로 구현했습니다.
 
-<p align="center">
-  <a href="docs/assets/usage-rec.mp4">
-    <img src="docs/assets/usage-rec.gif" alt="Codexy pet usage rings demo" width="100%">
-  </a>
-</p>
-
-<p align="center">
-  몇 분마다 사용량 페이지를 확인하지 마세요.<br>
-  대신 pet이 알려주게 두세요.
-</p>
-
-<!-- Features -->
-
 ## 기능
 
-- 현재 Codex `/pet` 아바타 주변에 원형 링, 작은 배터리 바, 배지 칩을 표시합니다.
-- 오늘 XP가 5h 사용량 진행률로 차오르는 선택형 펫 성장과 주간 리셋 시즌, 재미있는 상태명을 제공합니다.
-- 실시간 키보드 카운트, 낮은 확률의 보상 드롭, 클릭 가능한 보상 상자, 폰트/테마/이펙트 꾸미기 해금을 제공합니다.
-- 5h 한도와 주간 한도를 hover readout으로 보여줍니다.
-- 영어, 한국어, 일본어, 중국어로 readout, tray text, 설정 UI를 현지화합니다.
+- 원형 링, 듀얼 바, 사이드 게이지, 코너 프레임, 레퍼런스 기반 픽셀 포션 오브 중에서 표현 방식을 선택합니다.
+- 5h와 주간 잔여 사용량을 항상 표시하거나 마우스 호버 시에만 표시할 수 있습니다.
+- 표현 위치·간격을 펫 기준으로 조정하고 한 번에 중앙정렬할 수 있습니다.
+- 포션 크기는 70~140% 범위에서 펫 비율에 맞게 조정합니다.
+- 좌측 5h와 우측 주간 hover readout을 분리하며 Noto Sans KR 글꼴을 사용합니다.
+- 언어가 자동이면 공인 IP가 한국일 때 한국어, 그 외 국가에서는 영어를 선택합니다.
 - Codex Desktop을 자동 감지하고 필요하면 실행합니다.
-- `/pet`가 보일 때만 companion helper를 시작하고, `/pet`가 닫히면 helper를 종료합니다.
-- Windows 상태영역 아이콘은 기본으로 꺼 두어 Codex 앱이 하나 더 떠 있는 것처럼 보이지 않습니다.
+- `/pet`가 보일 때까지 조용히 대기합니다.
 - WPF 기반 click-through overlay라서 마우스 입력을 가로채지 않습니다.
-- Windows 시작프로그램과 시작 메뉴 shortcut을 만들 수 있습니다.
+- 선택 시 Windows 시작프로그램 shortcut을 만들고, 기본 설치는 시작 메뉴 shortcut만 만듭니다.
 - 루트 `.bat` 파일로 설치, 설정, 상태 확인, 시작, 중지, 제거를 더블클릭 실행할 수 있습니다.
-
-<!-- Requirements -->
 
 ## 요구 사항
 
 - Windows 10 또는 Windows 11.
 - Codex Desktop 설치 및 로그인.
 - PowerShell 5.1 이상.
-- 링이 보이려면 Codex `/pet` 오버레이가 열려 있어야 합니다.
+- 사용량 표시가 보이려면 Codex `/pet` 오버레이가 열려 있어야 합니다.
 
 Python은 선택 사항이며 로컬 SQLite 로그 fallback에만 사용됩니다.
 
-<!-- Quick Start -->
+## 다운로드
+
+가장 쉬운 방법은 [GitHub 최신 릴리스](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest)에서 `codex-pet-limit-rings-Win-0.1.19.zip`을 다운로드하고 일반 폴더에 압축을 푼 다음 `Install.bat` 또는 `Manage.bat`을 더블클릭하는 것입니다.
+
+GitHub의 **Code → Download ZIP**으로 저장소 전체를 내려받아 설치해도 됩니다. 개발용으로는 다음처럼 clone할 수 있습니다.
+
+```powershell
+git clone https://github.com/himomohi/Codexy-pet-usages-ring.git
+cd Codexy-pet-usages-ring
+.\Install.bat
+```
 
 ## 빠른 시작
 
-1. 이 repository를 다운로드하거나 clone합니다.
-2. repository 폴더를 엽니다.
-3. `Install.bat`을 더블클릭합니다.
-4. Codex Desktop에서 `/pet`를 사용합니다.
+가장 쉬운 방법은 이 폴더의 `Manage.bat`을 더블클릭하는 것입니다. 설치,
+자동 실행 설치, 상태 확인, 설정, 중지, 완전 제거를 한 화면에서 선택할 수 있습니다.
 
-Installer는 파일을 `%LOCALAPPDATA%\CodexyPetUsagesRing`에 복사하고 가벼운
-`/pet` watcher를 시작한 뒤 Windows 시작프로그램에 등록합니다.
+바로 실행하려면 다음 파일을 더블클릭하세요.
+
+- `Install.bat`: 설치 후 즉시 실행합니다. Windows 자동 시작은 등록하지 않습니다.
+- `Install-AutoStart.bat`: 설치 후 실행하고 Windows 시작 시 자동 실행도 등록합니다.
+- `Apply-Installed.bat`: 이후 소스 변경을 현재 설치본에 적용합니다. 설정을 보존하고 기존에 실행 중이었을 때만 재시작합니다.
+- `Uninstall.bat`: 실행 중인 링, 바로가기, 설치본을 완전히 제거합니다. 이 소스 폴더는 남깁니다.
+
+설치 후 Codex Desktop에서 `/pet`를 열면 선택한 사용량 표시가 나타납니다.
+왼쪽/바깥쪽은 5시간, 오른쪽/안쪽은 주간 잔여 사용량이며, 표시에 마우스를
+올리면 정확한 비율, 초기화 시간, 실시간으로 갱신되는 남은 시간을 볼 수 있습니다.
+
+Installer는 파일을 `%LOCALAPPDATA%\CodexPetLimitRingsWin`에 복사하고 helper를
+시작합니다. 자동 시작은 `Install-AutoStart.bat` 또는 PowerShell `-Startup`을
+명시했을 때만 등록됩니다.
 
 PowerShell 설치:
 
@@ -86,28 +84,36 @@ PowerShell 설치:
 powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1
 ```
 
+PowerShell에서도 자동 시작을 함께 등록하려면 `-Startup`을 추가하세요.
+
 ## 명령
 
 더블클릭 launcher:
 
 ```text
+Manage.bat
 Install.bat
+Install-AutoStart.bat
+Apply-Installed.bat
 Start.bat
 Stop.bat
 Status.bat
-Diagnose.bat
 Settings.bat
+Diagnose.bat
 Uninstall.bat
 ```
 
 설치본이 있으면 launcher는 자동으로
-`%LOCALAPPDATA%\CodexyPetUsagesRing` 아래의 설치된 helper를 사용합니다.
+`%LOCALAPPDATA%\CodexPetLimitRingsWin` 아래의 설치된 helper를 사용합니다.
+
+원본과 설치본에는 서로를 여는 `설치본 열기.lnk`, `원본 프로젝트 열기.lnk`가 만들어집니다. 원본을 수정한 뒤 `Apply-Installed.bat`을 실행하면 `settings.json`을 보존하면서 설치본을 업데이트할 수 있습니다.
 
 PowerShell:
 
 ```powershell
 .\bin\powershell\Start.ps1
 .\bin\powershell\Stop.ps1
+.\tools\Sync-Installed.ps1
 .\bin\powershell\Status.ps1
 .\bin\powershell\Settings.ps1
 .\bin\powershell\Diagnose.ps1
@@ -118,6 +124,7 @@ PowerShell:
 
 ```powershell
 .\bin\powershell\Install.ps1 -NoStartCodex
+.\bin\powershell\Install.ps1 -Startup
 .\bin\powershell\Install.ps1 -NoStartup -NoStartMenu -NoStart
 .\bin\powershell\Install.ps1 -NoLiveUsage
 ```
@@ -142,19 +149,12 @@ PowerShell:
 설정 파일:
 
 ```text
-%LOCALAPPDATA%\CodexyPetUsagesRing\settings.json
+%LOCALAPPDATA%\CodexPetLimitRingsWin\settings.json
 ```
 
-링/배터리/배지 표시 방식을 선택하고, 색상, 투명도, readout 색상, hover text
-크기를 바꿀 수 있습니다. 펫 성장은 언제든지 끌 수 있고, 성장 방식은 오늘 XP의
-5h 사용량 목표를 정합니다: 가벼운 사용형 20%, 균형 사용형 40%, 집중 사용형 60%.
-주간 사용량은 일반 XP 조건이 아니라 리셋과 고갈 방지 판단에만 사용됩니다.
-
-게이미피케이션 패널에서는 키보드 카운터와 보상 표시 방식을 조정할 수 있습니다.
-보상 드롭은 의도적으로 낮은 확률이며, 획득한 꾸미기만 상자 인벤토리에 나타나
-폰트 스타일, 테마형 키 카운터 테두리, 발바닥 타이핑 이펙트로 적용할 수 있습니다.
-
-실행 중인 helper는 설정 파일 변경을 자동으로 다시 읽습니다.
+표현 방식, 색상, 투명도, 펫 기준 위치와 간격, 포션 크기, hover readout 색상과
+글자 크기를 바꿀 수 있습니다. 실행 중인 helper는 설정 파일 변경을 자동으로
+다시 읽습니다.
 
 ## 개인정보
 
@@ -166,6 +166,12 @@ PowerShell:
 
 OpenAI API key는 필요하지 않습니다. pet 이미지, 스크린샷, 프롬프트, repository
 내용, spritesheet는 전송하지 않습니다.
+
+언어가 `자동 (IP 위치)`이면 앱은 `https://api.country.is/`에서 요청자의 국가
+코드만 조회합니다. 이 요청 과정에서 서비스는 공인 IP를 확인하지만, 앱은 IP를
+저장하지 않고 반환된 두 글자 국가 코드만 로컬에 24시간 캐시합니다. 한국어 또는
+영어를 직접 선택하면 이 조회를 건너뜁니다. 조회에 실패하면 Windows UI 언어를
+사용합니다.
 
 Live usage는 로컬 Codex access token을 아래 주소에만 사용합니다:
 
@@ -195,7 +201,7 @@ https://github.com/himomohi/Codexy-pet-usages-ring
 AI agent에게 아래 repository URL과 함께 Windows 설치를 요청하세요:
 
 ```text
-Install Codexy pet usages ring from:
+Install Codex Pet Limit Rings for Windows from:
 https://github.com/himomohi/Codexy-pet-usages-ring
 
 If the repository is not local, clone it first. Then run Install.bat from the

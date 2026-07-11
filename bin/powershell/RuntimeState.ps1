@@ -1,22 +1,12 @@
-$script:CodexPetProductName = "Codexy pet usages ring"
-$script:CodexPetLegacyProductNames = @("codex-pet-limit-rings-Win")
-$script:CodexPetInstallMarkerName = ".codexy-pet-usages-ring.install.json"
-$script:CodexPetLegacyInstallMarkerNames = @(".codex-pet-limit-rings-win.install.json")
-$script:CodexPetPidFileName = ".codexy-pet-usages-ring.pid"
-$script:CodexPetLegacyPidFileNames = @(".codex-pet-limit-rings.pid")
+$script:CodexPetProductName = "codex-pet-limit-rings-Win"
+$script:CodexPetInstallMarkerName = ".codex-pet-limit-rings-win.install.json"
+$script:CodexPetPidFileName = ".codex-pet-limit-rings.pid"
 
 function Get-CodexPetDefaultInstallDir {
   $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
   if ([string]::IsNullOrWhiteSpace($localAppData)) { $localAppData = $env:LOCALAPPDATA }
   if ([string]::IsNullOrWhiteSpace($localAppData)) { throw "LOCALAPPDATA was not found." }
-  return (Join-Path $localAppData "CodexyPetUsagesRing")
-}
-
-function Get-CodexPetLegacyInstallDirs {
-  $localAppData = [Environment]::GetFolderPath("LocalApplicationData")
-  if ([string]::IsNullOrWhiteSpace($localAppData)) { $localAppData = $env:LOCALAPPDATA }
-  if ([string]::IsNullOrWhiteSpace($localAppData)) { return @() }
-  return @((Join-Path $localAppData "CodexPetLimitRingsWin"))
+  return (Join-Path $localAppData "CodexPetLimitRingsWin")
 }
 
 function Get-CodexPetRuntimePaths {
@@ -25,14 +15,10 @@ function Get-CodexPetRuntimePaths {
   $src = Join-Path $root "src"
   return [PSCustomObject]@{
     ProjectRoot = $root
-    AppScript = Join-Path $src "CodexyPetUsagesRing.ps1"
-    WatchScript = Join-Path $src "WatchPetOverlay.ps1"
-    LegacyScript = Join-Path $src "CodexPetLimitRings.ps1"
-    LegacyScript2 = Join-Path $src "codex-pet-limit-rings-windows.ps1"
+    AppScript = Join-Path $src "CodexPetLimitRings.ps1"
+    LegacyScript = Join-Path $src "codex-pet-limit-rings-windows.ps1"
     PidFile = Join-Path $root $script:CodexPetPidFileName
-    LegacyPidFiles = @($script:CodexPetLegacyPidFileNames | ForEach-Object { Join-Path $root $_ })
     InstallMarker = Join-Path $root $script:CodexPetInstallMarkerName
-    LegacyInstallMarkers = @($script:CodexPetLegacyInstallMarkerNames | ForEach-Object { Join-Path $root $_ })
   }
 }
 
@@ -47,7 +33,16 @@ function Get-CodexPetRuntimeRoots {
   } else {
     $roots += $ScriptProjectRoot
     try { $roots += (Get-CodexPetDefaultInstallDir) } catch {}
-    $roots += @(Get-CodexPetLegacyInstallDirs)
+    foreach ($candidateRoot in @($roots)) {
+      try {
+        $marker = Get-CodexPetInstallMarker -ProjectRoot $candidateRoot
+        if ($null -ne $marker -and -not [string]::IsNullOrWhiteSpace([string]$marker.sourceRoot)) {
+          $roots += [string]$marker.sourceRoot
+        }
+      } catch {
+        # 유효한 설치 marker에서 확인한 소스 경로만 선택적으로 추가한다.
+      }
+    }
   }
 
   $seen = @{}
@@ -83,9 +78,7 @@ function Test-CodexPetRuntimeCommandLine {
   )
   return (
     (Test-CodexPetPathInCommandLine -CommandLine $CommandLine -Path $RuntimePaths.AppScript) -or
-    (Test-CodexPetPathInCommandLine -CommandLine $CommandLine -Path $RuntimePaths.WatchScript) -or
-    (Test-CodexPetPathInCommandLine -CommandLine $CommandLine -Path $RuntimePaths.LegacyScript) -or
-    (Test-CodexPetPathInCommandLine -CommandLine $CommandLine -Path $RuntimePaths.LegacyScript2)
+    (Test-CodexPetPathInCommandLine -CommandLine $CommandLine -Path $RuntimePaths.LegacyScript)
   )
 }
 
@@ -98,15 +91,14 @@ function Get-CodexPetRuntimeProcesses {
   foreach ($root in $ProjectRoots) {
     $paths = Get-CodexPetRuntimePaths -ProjectRoot $root
     $pidCandidates = @()
-    foreach ($pidFile in @($paths.PidFile) + @($paths.LegacyPidFiles)) {
-      if (-not (Test-Path -LiteralPath $pidFile)) { continue }
+    if (Test-Path -LiteralPath $paths.PidFile) {
       try {
-        $pidCandidates += @(Get-Content -LiteralPath $pidFile -ErrorAction Stop | ForEach-Object {
+        $pidCandidates = @(Get-Content -LiteralPath $paths.PidFile -ErrorAction Stop | ForEach-Object {
           $candidate = 0
           if ([int]::TryParse(([string]$_).Trim(), [ref]$candidate)) { $candidate }
         })
       } catch {
-        $pidCandidates += @()
+        $pidCandidates = @()
       }
     }
 
@@ -144,11 +136,6 @@ function Clear-CodexPetPidFile {
   if (Test-Path -LiteralPath $paths.PidFile) {
     Remove-Item -LiteralPath $paths.PidFile -Force -ErrorAction SilentlyContinue
   }
-  foreach ($pidFile in @($paths.LegacyPidFiles)) {
-    if (Test-Path -LiteralPath $pidFile) {
-      Remove-Item -LiteralPath $pidFile -Force -ErrorAction SilentlyContinue
-    }
-  }
 }
 
 function Write-CodexPetInstallMarker {
@@ -176,16 +163,21 @@ function Write-CodexPetInstallMarker {
 function Get-CodexPetInstallMarker {
   param([string]$ProjectRoot)
   $paths = Get-CodexPetRuntimePaths -ProjectRoot $ProjectRoot
-  $markerPaths = @($paths.InstallMarker) + @($paths.LegacyInstallMarkers)
-  $markerPath = $markerPaths | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
-  if (-not $markerPath) { return $null }
+  if (-not (Test-Path -LiteralPath $paths.InstallMarker)) { return $null }
   try {
-    $marker = [System.IO.File]::ReadAllText($markerPath, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
+    $marker = [System.IO.File]::ReadAllText($paths.InstallMarker, [System.Text.Encoding]::UTF8) | ConvertFrom-Json
   } catch {
     return $null
   }
-  if ($marker.name -ne $script:CodexPetProductName -and @($script:CodexPetLegacyProductNames) -notcontains $marker.name) { return $null }
+  if ($marker.name -ne $script:CodexPetProductName) { return $null }
   if ([int]$marker.markerVersion -lt 1) { return $null }
+  try {
+    $expectedRoot = [System.IO.Path]::GetFullPath($paths.ProjectRoot).TrimEnd("\")
+    $markedRoot = [System.IO.Path]::GetFullPath([string]$marker.installDir).TrimEnd("\")
+  } catch {
+    return $null
+  }
+  if ([string]::IsNullOrWhiteSpace($markedRoot) -or $markedRoot -ne $expectedRoot) { return $null }
   return $marker
 }
 

@@ -21,7 +21,7 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
   . $codexDiscoveryScript
 }
 
-Write-Output "Codexy pet usages ring diagnostics"
+Write-Output "Codex Pet Limit Rings for Windows diagnostics"
 Write-Output "PowerShell: $($PSVersionTable.PSVersion)"
 Write-Output "OS: $([Environment]::OSVersion.VersionString)"
 Write-Output "CodexHome: $CodexHome"
@@ -44,11 +44,10 @@ try {
   Write-Output "WPF/WinForms: unavailable - $($_.Exception.Message)"
 }
 
-$codexProcesses = Get-Process -Name Codex -ErrorAction SilentlyContinue
-Write-Output "Codex process count: $(@($codexProcesses).Count)"
 if (Get-Command Resolve-CodexDesktopApp -ErrorAction SilentlyContinue) {
   $codexDesktopProcess = Get-CodexDesktopProcess
   $codexApp = Resolve-CodexDesktopApp
+  Write-Output "Codex desktop process count: $(@($codexDesktopProcess).Count)"
   Write-Output "Codex desktop running: $([bool]$codexDesktopProcess)"
   Write-Output "Codex desktop detected: $($codexApp.Found) ($($codexApp.Source))"
   if (-not [string]::IsNullOrWhiteSpace($codexApp.ExecutablePath)) {

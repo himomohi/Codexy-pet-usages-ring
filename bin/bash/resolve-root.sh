@@ -23,11 +23,9 @@ resolve_codex_pet_root() {
       ;;
   esac
 
-  installed_root=$local_app_data/CodexyPetUsagesRing
+  installed_root=$local_app_data/CodexPetLimitRingsWin
   if [ -f "$installed_root/bin/powershell/$script_name" ]; then
     printf '%s\n' "$installed_root"
-  elif [ -f "$local_app_data/CodexPetLimitRingsWin/bin/powershell/$script_name" ]; then
-    printf '%s\n' "$local_app_data/CodexPetLimitRingsWin"
   else
     printf '%s\n' "$fallback_root"
   fi

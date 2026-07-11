@@ -6,7 +6,7 @@ param(
 $ErrorActionPreference = "Stop"
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-  throw "Codexy pet usages ring can only run on Windows."
+  throw "Codex Pet Limit Rings for Windows can only run on Windows."
 }
 
 $runtimeStateScript = Join-Path $PSScriptRoot "RuntimeState.ps1"
@@ -21,7 +21,7 @@ $processes = Get-CodexPetRuntimeProcesses -ProjectRoots $projectRoots
 
 if (-not $processes) {
   foreach ($root in $projectRoots) { Clear-CodexPetPidFile -ProjectRoot $root }
-  if (-not $Quiet) { Write-Output "Codexy pet usages ring is not running." }
+  if (-not $Quiet) { Write-Output "Codex Pet Limit Rings for Windows is not running." }
   exit 0
 }
 

@@ -1,15 +1,10 @@
-﻿<p align="center">
-  <img src="docs/assets/codexy-pet-usages-ring-titlebar.png" alt="Codexy pet usages ring GitHub title bar" width="100%">
+<p align="center">
+  <img src="docs/assets/codex-pet-limit-rings-win-titlebar.png" alt="Codex Pet Limit Rings for Windows GitHub title bar" width="100%">
 </p>
 
 <p align="center">
-  <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest">
-    <img alt="Download latest release" src="https://img.shields.io/badge/Download_latest_release-v0.1.18-3CEBBD?style=for-the-badge&logo=github">
-  </a>
-</p>
-
-<p align="center">
-  <a href="CHANGELOG.md#0118"><img alt="Version 0.1.18" src="https://img.shields.io/badge/version-0.1.18-3CEBBD?style=for-the-badge"></a>
+  <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest"><img alt="Download latest release" src="https://img.shields.io/badge/download-latest_release-3CEBBD?style=for-the-badge&logo=github"></a>
+  <a href="VERSION"><img alt="Version 0.1.19" src="https://img.shields.io/badge/version-0.1.19-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -17,71 +12,69 @@
 
 <p align="center">
   <a href="#quick-start">Quick Start</a>
+  · <a href="#download">Download</a>
   · <a href="#commands">Commands</a>
   · <a href="#privacy">Privacy</a>
-  · <span>English</span>
   · <a href="README.ko.md">한국어</a>
-  · <a href="README.ja.md">日本語</a>
-  · <a href="README.zh.md">中文</a>
 </p>
 
-I kept checking my Codex usage every few minutes.
-So I made the rings follow the pet instead.
-
-Codexy pet usages ring draws translucent usage-limit rings around
+Codex Pet Limit Rings for Windows draws translucent usage-limit rings around
 the Codex Desktop `/pet` avatar. It is a Windows companion implementation of
 [petergpt/codex-pet-limit-rings](https://github.com/petergpt/codex-pet-limit-rings)
 using PowerShell, WPF, and Win32 window positioning.
 
-<p align="center">
-  <a href="docs/assets/usage-rec.mp4">
-    <img src="docs/assets/usage-rec.gif" alt="Codexy pet usage rings demo" width="100%">
-  </a>
-</p>
-
-<p align="center">
-  Stop checking usage pages every few minutes.<br>
-  Let the pet tell you instead.
-</p>
-
-<!-- Features -->
-
 ## Features
 
-- Shows circular rings, compact battery bars, or badge chips around the current Codex `/pet` avatar.
-- Adds optional pet growth where today's XP fills from 5h usage progress, with weekly reset seasons and playful states.
-- Adds realtime typing-count gamification, rare reward drops, a clickable reward chest, and unlockable font/theme/effect cosmetics.
-- Displays 5h and weekly usage readouts on hover.
-- Localizes readouts, tray text, and settings UI for English, Korean, Japanese, and Chinese.
+- Offers rings, dual bars, side gauges, corner frames, and reference-matched pixel-art potion orbs.
+- Shows 5h and weekly remaining usage continuously or only on hover.
+- Adjusts position and spacing relative to the pet, including one-click centering.
+- Scales potion orbs from 70-140% while preserving pet-relative spacing.
+- Separates left 5h and right weekly hover readouts using Noto Sans KR.
+- Selects Korean for South Korean public IPs and English elsewhere when language is set to Auto.
 - Auto-detects and can start Codex Desktop.
-- Starts the companion helper only while `/pet` is visible, then stops it when `/pet` closes.
-- Keeps the Windows tray icon off by default so it does not look like a second Codex app.
+- Waits quietly until `/pet` is visible.
 - Uses a click-through WPF overlay, so it does not intercept mouse input.
-- Installs Windows Startup and Start Menu shortcuts.
+- Optionally installs a Windows Startup shortcut; the safer default only creates Start Menu shortcuts.
 - Provides root `.bat` launchers for double-click install, settings, status, start, stop, and uninstall.
-
-<!-- Requirements -->
 
 ## Requirements
 
 - Windows 10 or Windows 11.
 - Codex Desktop installed and signed in.
 - PowerShell 5.1 or newer.
-- The Codex `/pet` overlay must be open for rings to appear.
+- The Codex `/pet` overlay must be open for the usage HUD to appear.
 
 Python is optional and only used for the local SQLite log fallback.
 
-<!-- Quick Start -->
+## Download
+
+For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.19.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
+
+You can also download the repository source with GitHub's **Code → Download ZIP** button, extract it, and run the same installer. Developers can clone it instead:
+
+```powershell
+git clone https://github.com/himomohi/Codexy-pet-usages-ring.git
+cd Codexy-pet-usages-ring
+.\Install.bat
+```
 
 ## Quick Start
 
-1. Download or clone this repository.
-2. Open the repository folder.
-3. Double-click `Install.bat`.
-4. Open Codex Desktop and use `/pet`.
+Double-click `Manage.bat` for a single menu that installs, checks, configures,
+stops, or completely removes the companion.
 
-The installer copies files to `%LOCALAPPDATA%\CodexyPetUsagesRing`, starts the
-lightweight `/pet` watcher, and registers it for Windows startup.
+- `Install.bat` installs and starts the rings without Windows auto-start.
+- `Install-AutoStart.bat` installs, starts, and explicitly enables auto-start.
+- `Apply-Installed.bat` applies later source edits to the trusted current install, preserves settings, and restarts it only when it was running.
+- `Uninstall.bat` removes the running helper, shortcuts, and installed copy while keeping this source folder.
+
+Open `/pet` in Codex Desktop after installation. The left/outer display is the
+5-hour remaining allowance and the right/inner display is weekly remaining
+allowance. Hover a usage display for exact percentages, reset times, and a live countdown showing the remaining time.
+
+The installer copies files to `%LOCALAPPDATA%\CodexPetLimitRingsWin` and starts
+the helper. Auto-start is registered only through `Install-AutoStart.bat` or the
+explicit PowerShell `-Startup` option.
 
 PowerShell install:
 
@@ -89,28 +82,36 @@ PowerShell install:
 powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1
 ```
 
+Add `-Startup` when you explicitly want Windows auto-start registration.
+
 ## Commands
 
 Double-click launchers:
 
 ```text
+Manage.bat
 Install.bat
+Install-AutoStart.bat
+Apply-Installed.bat
 Start.bat
 Stop.bat
 Status.bat
-Diagnose.bat
 Settings.bat
+Diagnose.bat
 Uninstall.bat
 ```
 
 When an install exists, these launchers automatically use the installed helper
-under `%LOCALAPPDATA%\CodexyPetUsagesRing`.
+under `%LOCALAPPDATA%\CodexPetLimitRingsWin`.
+
+The source and installed folders include reciprocal shortcuts (`설치본 열기.lnk` and `원본 프로젝트 열기.lnk`) so either copy is easy to locate. Run `Apply-Installed.bat` after editing the source to update the installed copy without overwriting `settings.json`.
 
 PowerShell:
 
 ```powershell
 .\bin\powershell\Start.ps1
 .\bin\powershell\Stop.ps1
+.\tools\Sync-Installed.ps1
 .\bin\powershell\Status.ps1
 .\bin\powershell\Settings.ps1
 .\bin\powershell\Diagnose.ps1
@@ -121,6 +122,7 @@ Useful install options:
 
 ```powershell
 .\bin\powershell\Install.ps1 -NoStartCodex
+.\bin\powershell\Install.ps1 -Startup
 .\bin\powershell\Install.ps1 -NoStartup -NoStartMenu -NoStart
 .\bin\powershell\Install.ps1 -NoLiveUsage
 ```
@@ -145,21 +147,12 @@ Open `Settings.bat` or run:
 The settings UI saves to:
 
 ```text
-%LOCALAPPDATA%\CodexyPetUsagesRing\settings.json
+%LOCALAPPDATA%\CodexPetLimitRingsWin\settings.json
 ```
 
-You can switch between ring, battery, and badge display modes, then change
-colors, opacity, readout colors, and hover text size. Pet growth can be turned
-off at any time, and the growth mode chooses the 5h usage target for today's XP:
-Light 20%, Balanced 40%, or Focused 60%. Weekly usage is used for reset and
-depletion guard behavior, not as the normal XP gate.
-
-The gamification panel controls the keyboard counter and reward display mode.
-Reward drops are intentionally rare; acquired cosmetics appear in the chest
-inventory and can unlock font styles, themed key-counter borders, or paw-burst
-typing effects.
-
-The running helper reloads the settings file automatically.
+You can change visualization style, colors, opacity, pet-relative placement and
+spacing, potion size, and hover readout colors and typography. The running helper
+automatically reloads settings file changes.
 
 ## Privacy
 
@@ -171,6 +164,13 @@ The app reads these local Codex files:
 
 It does not require an OpenAI API key and does not send pet images,
 screenshots, prompts, repository contents, or spritesheets anywhere.
+
+When language is set to `Auto (IP location)`, the app requests the caller's
+country code from `https://api.country.is/`. The service necessarily receives
+the public IP for the request, but the app stores only the returned two-letter
+country code in a local 24-hour cache. Select Korean or English explicitly to
+skip this lookup. If the lookup fails, the app falls back to the Windows UI
+language.
 
 Live usage uses the local Codex access token only for:
 
@@ -201,7 +201,7 @@ Give an AI agent this repository URL and ask it to install the project on
 Windows:
 
 ```text
-Install Codexy pet usages ring from:
+Install Codex Pet Limit Rings for Windows from:
 https://github.com/himomohi/Codexy-pet-usages-ring
 
 If the repository is not local, clone it first. Then run Install.bat from the
@@ -233,13 +233,3 @@ Build a release zip:
 
 Feature and bug-fix releases should update `VERSION`, the README badge, and the
 top `CHANGELOG.md` section together.
-
-Run the project release harness:
-
-```powershell
-.\tools\Invoke-ReleaseHarness.ps1
-```
-
-The harness checks version metadata, runs smoke tests, rebuilds `배포용`,
-verifies release zip freshness, refreshes the installed helper, and can publish
-the tag plus GitHub Release when `-PublishGitHub` is supplied.

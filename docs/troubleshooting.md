@@ -1,4 +1,4 @@
-# Troubleshooting
+﻿# Troubleshooting
 
 ## I just want the easiest install
 
@@ -37,12 +37,13 @@ Run diagnostics:
 ```
 
 Confirm `CodexDesktopFound` is `True` in status output. The helper searches a
-running `Codex.exe`, the `OpenAI.Codex` AppX package, the Start Menu AppID, and
+running Codex Desktop process (`ChatGPT.exe` in current AppX builds or legacy
+`Codex.exe`), the `OpenAI.Codex` AppX package, the Start Menu AppID, and
 matching `WindowsApps` folders. If your PC uses a nonstandard install, provide
 one of these at install or start time:
 
 ```powershell
-.\bin\powershell\Install.ps1 -CodexAppPath "C:\Program Files\WindowsApps\OpenAI.Codex_...\app\Codex.exe"
+.\bin\powershell\Install.ps1 -CodexAppPath "C:\Program Files\WindowsApps\OpenAI.Codex_...\app\ChatGPT.exe"
 .\bin\powershell\Install.ps1 -CodexAppId "OpenAI.Codex_2p2nqsd0c76g0!App"
 ```
 
@@ -93,16 +94,16 @@ The app follows the coordinates saved by Codex Desktop in
 
 ## Startup registration did not work
 
-Run the installer again:
+Run the auto-start installer again:
 
 ```text
-Install.bat
+Install-AutoStart.bat
 ```
 
 Or from PowerShell:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1
+powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1 -Startup
 ```
 
 Then check:
@@ -114,7 +115,7 @@ Then check:
 The Startup shortcut should exist at:
 
 ```text
-%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Codexy pet usages ring.lnk
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup\Codex Pet Limit Rings.lnk
 ```
 
 ## CMD or Bash wrapper fails
@@ -159,7 +160,7 @@ Then run:
 ```
 
 Only remove a directory manually after confirming the path is really the
-Codexy pet usages ring install directory.
+Codex Pet Limit Rings install directory.
 
 ## Settings page says forbidden
 
@@ -184,7 +185,7 @@ be allowed to read or save settings.
 Logs are written to:
 
 ```text
-%LOCALAPPDATA%\CodexyPetUsagesRing\logs\codexy-pet-usages-ring.log
+%LOCALAPPDATA%\CodexPetLimitRingsWin\logs\rings.log
 ```
 
 Right-click the tray icon and choose `Open Logs`.

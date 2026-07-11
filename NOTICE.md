@@ -12,5 +12,5 @@ The Windows implementation in this repository keeps the same companion-overlay
 idea and replaces the macOS implementation with PowerShell, WPF, and Win32
 window positioning.
 
-The MIT license text and both the original copyright notice and the Codexy pet
-usages ring project copyright notice are preserved in `LICENSE`.
+The MIT license text and both the original copyright notice and the Windows
+project copyright notice are preserved in `LICENSE`.

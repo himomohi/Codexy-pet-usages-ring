@@ -1,12 +1,12 @@
 param(
-  [string]$InstallDir = "$env:LOCALAPPDATA\CodexyPetUsagesRing",
+  [string]$InstallDir = "$env:LOCALAPPDATA\CodexPetLimitRingsWin",
   [switch]$RemoveFiles
 )
 
 $ErrorActionPreference = "Stop"
 
 if ([Environment]::OSVersion.Platform -ne [PlatformID]::Win32NT) {
-  throw "Codexy pet usages ring can only run on Windows."
+  throw "Codex Pet Limit Rings for Windows can only run on Windows."
 }
 
 $projectRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
@@ -16,6 +16,21 @@ if (-not (Test-Path -LiteralPath $runtimeStateScript)) {
   throw "Missing runtime state helper: $runtimeStateScript"
 }
 . $runtimeStateScript
+
+function Test-FolderLinkTargetsPath {
+  param([string]$ShortcutPath, [string]$ExpectedPath)
+  if (-not (Test-Path -LiteralPath $ShortcutPath)) { return $false }
+  try {
+    $shell = New-Object -ComObject WScript.Shell
+    $shortcut = $shell.CreateShortcut($ShortcutPath)
+    $expected = [System.IO.Path]::GetFullPath($ExpectedPath).TrimEnd("\")
+    $argumentPath = ([string]$shortcut.Arguments).Trim().Trim('"')
+    if ([string]::IsNullOrWhiteSpace($argumentPath)) { return $false }
+    return ([System.IO.Path]::GetFullPath($argumentPath).TrimEnd("\") -eq $expected)
+  } catch {
+    return $false
+  }
+}
 
 function Test-ShortcutTargetsInstallDir {
   param(
@@ -52,38 +67,25 @@ if (Test-Path -LiteralPath $stopScript) {
 }
 
 $startup = [Environment]::GetFolderPath("Startup")
-$startupShortcuts = @(
-  (Join-Path $startup "Codexy pet usages ring.lnk"),
-  (Join-Path $startup "Codex Pet Limit Rings.lnk")
-)
-foreach ($startupShortcut in $startupShortcuts) {
-  if (Test-ShortcutTargetsInstallDir -ShortcutPath $startupShortcut -InstallRoot $targetRoot) {
-    Remove-Item -LiteralPath $startupShortcut -Force
-    Write-Output "Removed startup shortcut: $startupShortcut"
-  }
+$startupShortcut = Join-Path $startup "Codex Pet Limit Rings.lnk"
+if (Test-ShortcutTargetsInstallDir -ShortcutPath $startupShortcut -InstallRoot $targetRoot) {
+  Remove-Item -LiteralPath $startupShortcut -Force
+  Write-Output "Removed startup shortcut: $startupShortcut"
 }
 
-$programs = [Environment]::GetFolderPath("Programs")
-$programFolders = @(
-  (Join-Path $programs "Codexy pet usages ring"),
-  (Join-Path $programs "Codex Pet Limit Rings")
-)
-foreach ($programFolder in $programFolders) {
-  $programShortcuts = @(
-    (Join-Path $programFolder "Start Codexy pet usages ring.lnk"),
-    (Join-Path $programFolder "Settings Codexy pet usages ring.lnk"),
-    (Join-Path $programFolder "Start Codex Pet Limit Rings.lnk"),
-    (Join-Path $programFolder "Settings Codex Pet Limit Rings.lnk")
-  )
-  foreach ($shortcutPath in $programShortcuts) {
-    if (Test-ShortcutTargetsInstallDir -ShortcutPath $shortcutPath -InstallRoot $targetRoot) {
-      Remove-Item -LiteralPath $shortcutPath -Force
-      Write-Output "Removed Start Menu shortcut: $shortcutPath"
-    }
-  }
-  if ((Test-Path -LiteralPath $programFolder) -and -not (Get-ChildItem -LiteralPath $programFolder -Force)) {
-    Remove-Item -LiteralPath $programFolder -Force
-  }
+$programShortcut = Join-Path ([Environment]::GetFolderPath("Programs")) "Codex Pet Limit Rings\Start Codex Pet Limit Rings.lnk"
+if (Test-ShortcutTargetsInstallDir -ShortcutPath $programShortcut -InstallRoot $targetRoot) {
+  Remove-Item -LiteralPath $programShortcut -Force
+  Write-Output "Removed Start Menu shortcut: $programShortcut"
+}
+$settingsShortcut = Join-Path ([Environment]::GetFolderPath("Programs")) "Codex Pet Limit Rings\Settings Codex Pet Limit Rings.lnk"
+if (Test-ShortcutTargetsInstallDir -ShortcutPath $settingsShortcut -InstallRoot $targetRoot) {
+  Remove-Item -LiteralPath $settingsShortcut -Force
+  Write-Output "Removed settings shortcut: $settingsShortcut"
+}
+$programFolder = Split-Path -Parent $programShortcut
+if ((Test-Path -LiteralPath $programFolder) -and -not (Get-ChildItem -LiteralPath $programFolder -Force)) {
+  Remove-Item -LiteralPath $programFolder -Force
 }
 
 if ($RemoveFiles) {
@@ -91,14 +93,34 @@ if ($RemoveFiles) {
     if (-not (Test-CodexPetInstallMarker -ProjectRoot $targetRoot)) {
       throw "Refusing to remove '$targetRoot' because the install marker is missing or invalid. Run Install.ps1 once to mark this install, or remove the directory manually after verifying the path."
     }
+    foreach ($requiredInstallFile in @("VERSION", "bin\powershell\Uninstall.ps1", "src\CodexPetLimitRings.ps1")) {
+      if (-not (Test-Path -LiteralPath (Join-Path $targetRoot $requiredInstallFile))) {
+        throw "Refusing to remove '$targetRoot' because required installed file is missing: $requiredInstallFile"
+      }
+    }
+    $installMarker = Get-CodexPetInstallMarker -ProjectRoot $targetRoot
+    if ($null -ne $installMarker -and -not [string]::IsNullOrWhiteSpace([string]$installMarker.sourceRoot)) {
+      $sourceLink = Join-Path ([System.IO.Path]::GetFullPath([string]$installMarker.sourceRoot)) "설치본 열기.lnk"
+      if (Test-FolderLinkTargetsPath -ShortcutPath $sourceLink -ExpectedPath $targetRoot) {
+        Remove-Item -LiteralPath $sourceLink -Force
+        Write-Output "Removed source/install link: $sourceLink"
+      }
+    }
     $driveRoot = [System.IO.Path]::GetPathRoot($targetRoot).TrimEnd("\")
     if ($targetRoot.TrimEnd("\") -eq $driveRoot) {
       throw "Refusing to remove a drive root: $targetRoot"
     }
-    Set-Location -LiteralPath ([System.IO.Path]::GetTempPath())
-    Remove-Item -LiteralPath $targetRoot -Recurse -Force
+    $originalLocation = (Get-Location).Path
+    try {
+      Set-Location -LiteralPath ([System.IO.Path]::GetTempPath())
+      Remove-Item -LiteralPath $targetRoot -Recurse -Force
+    } finally {
+      if (Test-Path -LiteralPath $originalLocation) {
+        Set-Location -LiteralPath $originalLocation
+      }
+    }
     Write-Output "Removed install directory: $targetRoot"
   }
 }
 
-Write-Output "Uninstalled Codexy pet usages ring."
+Write-Output "Uninstalled Codex Pet Limit Rings for Windows."

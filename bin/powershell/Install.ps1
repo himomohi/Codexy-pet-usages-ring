@@ -1,12 +1,11 @@
 param(
-  [string]$InstallDir = "$env:LOCALAPPDATA\CodexyPetUsagesRing",
+  [string]$InstallDir = "$env:LOCALAPPDATA\CodexPetLimitRingsWin",
   [string]$CodexHome = "$env:USERPROFILE\.codex",
+  [switch]$Startup,
   [switch]$NoStartup,
   [switch]$NoStartMenu,
   [switch]$NoStart,
   [switch]$NoLiveUsage,
-  [switch]$ShowTrayIcon,
-  [switch]$NoExitWithCodex,
   [string]$CodexAppPath = "",
   [string]$CodexAppId = "",
   [switch]$NoStartCodex,
@@ -57,17 +56,25 @@ function Get-ProjectRelativePath {
 function Test-ProjectPathExcluded {
   param([string]$Path)
   $relativePath = Get-ProjectRelativePath -Path $Path
-  return (Test-CodexPetReleasePathExcluded -RelativePath $relativePath)
+  $leaf = Split-Path -Leaf $relativePath
+  if ($relativePath -in @(
+    ".gitignore",
+    "settings.json",
+    "docs/assets/current-pet-usage-capture.png",
+    "docs/assets/imagegen-hero-background.png"
+  )) { return $true }
+  if ($relativePath -like "dist/*" -or $relativePath -eq "dist") { return $true }
+  if ($relativePath -like "logs/*" -or $relativePath -eq "logs") { return $true }
+  if ($relativePath -like "qa/*" -or $relativePath -eq "qa") { return $true }
+  if ($relativePath -like "*.log" -or $relativePath -like "*.tmp" -or $relativePath -like "*.bak" -or $relativePath -like "*.zip") { return $true }
+  if ($leaf -eq ".DS_Store" -or $leaf -eq "Thumbs.db") { return $true }
+  return $false
 }
 
 function Remove-ObsoleteEntryPoints {
   foreach ($name in @(
     "scripts",
-    ".codex-pet-limit-rings.pid",
-    ".codex-pet-limit-rings-win.install.json",
     ".gitignore",
-    "src\CodexPetLimitRings.ps1",
-    "src\codex-pet-limit-rings-windows.ps1",
     "docs\assets\current-pet-usage-capture.png",
     "docs\assets\imagegen-hero-background.png",
     "dist",
@@ -82,30 +89,10 @@ function Remove-ObsoleteEntryPoints {
   }
 }
 
-function Assert-InstalledProjectFileMatches {
-  param([string]$Name)
-  $source = Join-Path $sourceRoot $Name
-  if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { return }
-  if (Test-ProjectPathExcluded -Path $source) { return }
-
-  $destination = Join-Path $targetRoot $Name
-  if (-not (Test-Path -LiteralPath $destination -PathType Leaf)) {
-    throw "Install verification failed: missing installed file '$Name'."
-  }
-
-  $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $source).Hash
-  $destinationHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $destination).Hash
-  if ($sourceHash -ne $destinationHash) {
-    throw "Install verification failed: installed '$Name' does not match the source file."
-  }
-}
-
 function Get-StartScriptShortcutArguments {
   param([string]$StartScript)
   $arguments = "-NoLogo -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -STA -File `"$StartScript`" -CodexHome `"$CodexHome`""
   if ($NoLiveUsage) { $arguments += " -NoLiveUsage" }
-  if ($ShowTrayIcon) { $arguments += " -ShowTrayIcon" }
-  if ($NoExitWithCodex) { $arguments += " -NoExitWithCodex" }
   if ($NoStartCodex) { $arguments += " -NoStartCodex" }
   if (-not [string]::IsNullOrWhiteSpace($CodexAppPath)) {
     $arguments += " -CodexAppPath `"$CodexAppPath`""
@@ -130,25 +117,43 @@ if (-not (Test-Path -LiteralPath $runtimeStateScript)) {
 . $runtimeStateScript
 
 $sourceRoot = [System.IO.Path]::GetFullPath((Join-Path $PSScriptRoot "..\.."))
-$releaseManifestScript = Join-Path $sourceRoot "tools\ReleaseManifest.ps1"
-if (-not (Test-Path -LiteralPath $releaseManifestScript)) {
-  throw "Missing release manifest: $releaseManifestScript"
-}
-. $releaseManifestScript
 if ([string]::IsNullOrWhiteSpace($InstallDir)) {
-  $InstallDir = Get-CodexPetDefaultInstallDir
+  $InstallDir = Join-Path ([Environment]::GetFolderPath("LocalApplicationData")) "CodexPetLimitRingsWin"
 }
 $targetRoot = [System.IO.Path]::GetFullPath($InstallDir)
 $versionFile = Join-Path $sourceRoot "VERSION"
 $version = if (Test-Path -LiteralPath $versionFile) { (Get-Content -Raw -LiteralPath $versionFile).Trim() } else { "" }
 
-if ((Test-Path -LiteralPath $targetRoot) -and -not $Force) {
-  Write-Output "Updating existing install: $targetRoot"
+if ((Test-Path -LiteralPath $targetRoot) -and $sourceRoot -ne $targetRoot) {
+  $existingEntries = @(Get-ChildItem -LiteralPath $targetRoot -Force -ErrorAction Stop)
+  if ($existingEntries.Count -gt 0 -and -not (Test-CodexPetInstallMarker -ProjectRoot $targetRoot)) {
+    if (-not $Force) {
+      throw "Refusing to install into non-empty unmarked directory '$targetRoot'. Choose an empty directory or pass -Force after verifying the target."
+    }
+    Write-Output "Force-installing into unmarked directory: $targetRoot"
+  } else {
+    Write-Output "Updating existing install: $targetRoot"
+  }
+}
+
+function New-FolderLinkShortcut {
+  param(
+    [Parameter(Mandatory = $true)][string]$ShortcutPath,
+    [Parameter(Mandatory = $true)][string]$FolderPath,
+    [Parameter(Mandatory = $true)][string]$Description
+  )
+  $shell = New-Object -ComObject WScript.Shell
+  $shortcut = $shell.CreateShortcut($ShortcutPath)
+  $shortcut.TargetPath = "$env:SystemRoot\explorer.exe"
+  $shortcut.Arguments = '"{0}"' -f ([System.IO.Path]::GetFullPath($FolderPath))
+  $shortcut.WorkingDirectory = [System.IO.Path]::GetFullPath($FolderPath)
+  $shortcut.Description = $Description
+  $shortcut.Save()
 }
 
 if ($sourceRoot -ne $targetRoot) {
   New-Item -ItemType Directory -Force -Path $targetRoot | Out-Null
-  foreach ($name in $script:CodexPetReleaseItems) {
+  foreach ($name in @("Manage.bat", "Install.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "Start.bat", "Stop.bat", "Status.bat", "Settings.bat", "Diagnose.bat", "Uninstall.bat", "assets", "bin", "src", "docs", "tools", "settings", "settings.defaults.json", "README.md", "README.ko.md", "LICENSE", "NOTICE.md", "CHANGELOG.md", "SECURITY.md", "VERSION")) {
     Copy-ProjectFile -Name $name
   }
 } else {
@@ -156,11 +161,12 @@ if ($sourceRoot -ne $targetRoot) {
 }
 if ($sourceRoot -ne $targetRoot) {
   Remove-ObsoleteEntryPoints
-  foreach ($name in $script:CodexPetRequiredFreshFiles) {
-    Assert-InstalledProjectFileMatches -Name ($name -replace '/', '\')
-  }
 }
-Write-CodexPetInstallMarker -ProjectRoot $targetRoot -SourceRoot $sourceRoot -Version $version
+if ($sourceRoot -ne $targetRoot) {
+  Write-CodexPetInstallMarker -ProjectRoot $targetRoot -SourceRoot $sourceRoot -Version $version
+} elseif (-not (Test-CodexPetInstallMarker -ProjectRoot $targetRoot)) {
+  Write-Output "Source and install directory are the same; no install marker was created."
+}
 
 $powerShell = Get-WindowsPowerShell
 $startScript = Join-Path $targetRoot "bin\powershell\Start.ps1"
@@ -186,74 +192,75 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
   }
 }
 
-if (-not $NoStartup) {
+if ($Startup -and -not $NoStartup) {
   $startup = [Environment]::GetFolderPath("Startup")
-  $legacyStartupShortcut = Join-Path $startup "Codex Pet Limit Rings.lnk"
-  if (Test-Path -LiteralPath $legacyStartupShortcut) {
-    Remove-Item -LiteralPath $legacyStartupShortcut -Force
-  }
-  $shortcutPath = Join-Path $startup "Codexy pet usages ring.lnk"
+  $shortcutPath = Join-Path $startup "Codex Pet Limit Rings.lnk"
   $shell = New-Object -ComObject WScript.Shell
   $shortcut = $shell.CreateShortcut($shortcutPath)
   $shortcut.TargetPath = $powerShell
   $shortcut.Arguments = Get-StartScriptShortcutArguments -StartScript $startScript
   $shortcut.WorkingDirectory = $targetRoot
   $shortcut.WindowStyle = 7
-  $shortcut.Description = "Start Codexy pet usages ring"
+  $shortcut.Description = "Start Codex Pet Limit Rings for Windows"
   $shortcut.Save()
   Write-Output "Startup shortcut: $shortcutPath"
 }
 
+# Keep a visible, bidirectional link between the editable source and installed copy.
+if ($targetRoot.TrimEnd("\") -ne $sourceRoot.TrimEnd("\")) {
+  $installedCopyShortcut = Join-Path $sourceRoot "설치본 열기.lnk"
+  New-FolderLinkShortcut `
+    -ShortcutPath $installedCopyShortcut `
+    -FolderPath $targetRoot `
+    -Description "Open the installed Codex Pet Limit Rings copy"
+  $sourceProjectShortcut = Join-Path $targetRoot "원본 프로젝트 열기.lnk"
+  New-FolderLinkShortcut `
+    -ShortcutPath $sourceProjectShortcut `
+    -FolderPath $sourceRoot `
+    -Description "Open the Codex Pet Limit Rings source project"
+  Write-Output "Source/install links: $installedCopyShortcut <-> $sourceProjectShortcut"
+}
+
 if (-not $NoStartMenu) {
   $programs = [Environment]::GetFolderPath("Programs")
-  $legacyProgramFolder = Join-Path $programs "Codex Pet Limit Rings"
-  if (Test-Path -LiteralPath $legacyProgramFolder) {
-    Remove-Item -LiteralPath $legacyProgramFolder -Recurse -Force
-  }
-  $programFolder = Join-Path $programs "Codexy pet usages ring"
+  $programFolder = Join-Path $programs "Codex Pet Limit Rings"
   New-Item -ItemType Directory -Force -Path $programFolder | Out-Null
-  $programShortcut = Join-Path $programFolder "Start Codexy pet usages ring.lnk"
+  $programShortcut = Join-Path $programFolder "Start Codex Pet Limit Rings.lnk"
   $shell = New-Object -ComObject WScript.Shell
   $shortcut = $shell.CreateShortcut($programShortcut)
   $shortcut.TargetPath = $powerShell
   $shortcut.Arguments = Get-StartScriptShortcutArguments -StartScript $startScript
   $shortcut.WorkingDirectory = $targetRoot
   $shortcut.WindowStyle = 7
-  $shortcut.Description = "Start Codexy pet usages ring"
+  $shortcut.Description = "Start Codex Pet Limit Rings for Windows"
   $shortcut.Save()
   Write-Output "Start Menu shortcut: $programShortcut"
 
   $settingsScript = Join-Path $targetRoot "bin\powershell\Settings.ps1"
   if (Test-Path -LiteralPath $settingsScript) {
-    $settingsShortcut = Join-Path $programFolder "Settings Codexy pet usages ring.lnk"
+    $settingsShortcut = Join-Path $programFolder "Settings Codex Pet Limit Rings.lnk"
     $shortcut = $shell.CreateShortcut($settingsShortcut)
     $shortcut.TargetPath = $powerShell
     $shortcut.Arguments = "-NoLogo -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$settingsScript`""
     $shortcut.WorkingDirectory = $targetRoot
     $shortcut.WindowStyle = 7
-    $shortcut.Description = "Open Codexy pet usages ring settings"
+    $shortcut.Description = "Open Codex Pet Limit Rings settings"
     $shortcut.Save()
     Write-Output "Settings shortcut: $settingsShortcut"
   }
 }
 
 if (-not $NoStart) {
-  $stopScript = Join-Path $targetRoot "bin\powershell\Stop.ps1"
-  if (Test-Path -LiteralPath $stopScript) {
-    & $stopScript -Quiet
-  }
   $startParams = @{
     CodexHome = $CodexHome
     CodexStartWaitSeconds = $CodexStartWaitSeconds
   }
   if ($NoLiveUsage) { $startParams.NoLiveUsage = $true }
-  if ($ShowTrayIcon) { $startParams.ShowTrayIcon = $true }
-  if ($NoExitWithCodex) { $startParams.NoExitWithCodex = $true }
   if ($NoStartCodex) { $startParams.NoStartCodex = $true }
   if (-not [string]::IsNullOrWhiteSpace($CodexAppPath)) { $startParams.CodexAppPath = $CodexAppPath }
   if (-not [string]::IsNullOrWhiteSpace($CodexAppId)) { $startParams.CodexAppId = $CodexAppId }
   & $startScript @startParams
 }
 
-Write-Output "Installed Codexy pet usages ring."
+Write-Output "Installed Codex Pet Limit Rings for Windows."
 Write-Output "Install directory: $targetRoot"

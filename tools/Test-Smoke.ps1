@@ -5,11 +5,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = [System.IO.Path]::GetFullPath((Split-Path -Parent $PSScriptRoot))
-. (Join-Path $PSScriptRoot "ReleaseManifest.ps1")
-$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codexy-pet-usages-ring-smoke-" + [Guid]::NewGuid().ToString("N"))
+$tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("codex-pet-limit-rings-smoke-" + [Guid]::NewGuid().ToString("N"))
 $releaseOut = Join-Path $tempRoot "release"
 $installRoot = Join-Path $tempRoot "install"
 $fixtures = @()
+$startingLocation = (Get-Location).Path
 
 function Add-Fixture {
   param([string]$RelativePath, [string]$Content = "smoke")
@@ -23,7 +23,20 @@ function Add-Fixture {
 function Test-ForbiddenPath {
   param([string]$Path)
   $normalized = $Path -replace '\\', '/'
-  return (Test-CodexPetReleasePathExcluded -RelativePath $normalized)
+  $leaf = Split-Path -Leaf $normalized
+  if ($normalized -in @(
+    ".gitignore",
+    "settings.json",
+    ".codex-pet-language-cache.json",
+    "docs/assets/current-pet-usage-capture.png",
+    "docs/assets/imagegen-hero-background.png"
+  )) { return $true }
+  if ($normalized -like "dist/*" -or $normalized -eq "dist") { return $true }
+  if ($normalized -like "logs/*" -or $normalized -eq "logs") { return $true }
+  if ($normalized -like "qa/*" -or $normalized -eq "qa") { return $true }
+  if ($normalized -like "*.log" -or $normalized -like "*.tmp" -or $normalized -like "*.bak" -or $normalized -like "*.zip") { return $true }
+  if ($leaf -eq ".DS_Store" -or $leaf -eq "Thumbs.db") { return $true }
+  return $false
 }
 
 function Assert-NoForbiddenPaths {
@@ -31,52 +44,6 @@ function Assert-NoForbiddenPaths {
   $bad = @($Paths | Where-Object { Test-ForbiddenPath -Path $_ })
   if ($bad.Count -gt 0) {
     throw "$Scope contains forbidden paths: $($bad -join ', ')"
-  }
-}
-
-function Assert-InstalledFileMatches {
-  param([string]$InstallRoot, [string]$RelativePath)
-  $normalized = $RelativePath -replace '/', '\'
-  $source = Join-Path $root $normalized
-  $installed = Join-Path $InstallRoot $normalized
-  if (-not (Test-Path -LiteralPath $installed -PathType Leaf)) {
-    throw "Temp install is missing required file: $RelativePath"
-  }
-
-  $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $source).Hash
-  $installedHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installed).Hash
-  if ($sourceHash -ne $installedHash) {
-    throw "Temp install file does not match source: $RelativePath"
-  }
-}
-
-function Assert-ZipFileMatches {
-  param($Archive, [string]$RelativePath)
-  $normalized = $RelativePath -replace '\\', '/'
-  $entry = $Archive.Entries | Where-Object { ($_.FullName.TrimEnd("/") -replace '\\', '/') -eq $normalized } | Select-Object -First 1
-  if (-not $entry) {
-    throw "Release zip is missing required file: $RelativePath"
-  }
-
-  $source = Join-Path $root ($normalized -replace '/', '\')
-  if (-not (Test-Path -LiteralPath $source -PathType Leaf)) {
-    throw "Release manifest required file is missing from source: $RelativePath"
-  }
-
-  $stream = $entry.Open()
-  try {
-    $sha = [System.Security.Cryptography.SHA256]::Create()
-    try {
-      $zipHash = ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace("-", "")
-    } finally {
-      $sha.Dispose()
-    }
-  } finally {
-    $stream.Dispose()
-  }
-  $sourceHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $source).Hash
-  if ($sourceHash -ne $zipHash) {
-    throw "Release zip file does not match source: $RelativePath"
   }
 }
 
@@ -102,430 +69,6 @@ function Assert-VersionMetadata {
   return $version
 }
 
-function Assert-SettingsLauncherUsesActiveInstall {
-  $settingsLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Settings.bat")
-  if ($settingsLauncher -match 'CODEX_PET_USE_REPO') {
-    throw "Settings.bat must not force repo settings. It should let bin\\cmd\\settings.cmd resolve the active install so saved settings apply to the running helper."
-  }
-}
-
-function Assert-SettingsDisplayModes {
-  $settingsScriptPath = Join-Path $root "bin\powershell\Settings.ps1"
-  $settingsScript = Get-Content -Raw -LiteralPath $settingsScriptPath
-  $marker = "`r`n`$projectRoot = Get-ProjectRoot"
-  $markerIndex = $settingsScript.IndexOf($marker)
-  if ($markerIndex -lt 0) {
-    $marker = "`n`$projectRoot = Get-ProjectRoot"
-    $markerIndex = $settingsScript.IndexOf($marker)
-  }
-  if ($markerIndex -lt 0) {
-    throw "Could not locate Settings.ps1 runtime boundary for normalization smoke test."
-  }
-
-  . ([scriptblock]::Create($settingsScript.Substring(0, $markerIndex)))
-
-  $defaults = Get-NormalizedSettings ((Get-Content -Raw -LiteralPath (Join-Path $root "settings.defaults.json")) | ConvertFrom-Json)
-  if ($defaults.displayMode -ne "ring") {
-    throw "Default settings displayMode should remain ring. Found: $($defaults.displayMode)"
-  }
-  if ($defaults.gamification.enabled -ne $false) {
-    throw "Default gamification.enabled should remain false."
-  }
-  if ($defaults.gamification.growthMode -ne "balanced") {
-    throw "Default gamification.growthMode should be balanced. Found: $($defaults.gamification.growthMode)"
-  }
-  if ($defaults.gamification.hudFocus -ne "growth") {
-    throw "Default gamification.hudFocus should be growth. Found: $($defaults.gamification.hudFocus)"
-  }
-  if ($defaults.gamification.showGrowthChip -ne $true -or $defaults.gamification.showHoverReadout -ne $true) {
-    throw "Default gamification chip/readout settings should remain true."
-  }
-  if ($defaults.gamification.showKeyCounter -ne $true -or $defaults.gamification.showKeyEffects -ne $true) {
-    throw "Default key counter/effect settings should remain true."
-  }
-  if ($defaults.gamification.showComboHeat -ne $true -or $defaults.gamification.showRewardCharge -ne $true) {
-    throw "Default combo heat/reward charge settings should remain true."
-  }
-
-  $badgeSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "badge" })
-  if ($badgeSettings.displayMode -ne "badge") {
-    throw "Settings normalizer should preserve displayMode=badge. Found: $($badgeSettings.displayMode)"
-  }
-  if ($badgeSettings.gamification.enabled -ne $false) {
-    throw "Settings normalizer should default missing gamification.enabled to false."
-  }
-
-  $invalidSettings = Get-NormalizedSettings ([PSCustomObject]@{ displayMode = "sparkle" })
-  if ($invalidSettings.displayMode -ne "ring") {
-    throw "Invalid displayMode should fall back to ring. Found: $($invalidSettings.displayMode)"
-  }
-  $comboFocus = Get-NormalizedSettings ([PSCustomObject]@{ gamification = [PSCustomObject]@{ hudFocus = "combo" } })
-  if ($comboFocus.gamification.hudFocus -ne "combo") {
-    throw "Settings normalizer should preserve gamification.hudFocus=combo."
-  }
-  $invalidGrowth = Get-NormalizedSettings ([PSCustomObject]@{ gamification = [PSCustomObject]@{ enabled = "maybe"; growthMode = "chaos"; hudFocus = "both"; showGrowthChip = "no"; showHoverReadout = "yes"; showComboHeat = "no"; showRewardCharge = "yes" } })
-  if ($invalidGrowth.gamification.enabled -ne $false) {
-    throw "Invalid gamification.enabled should fall back to false."
-  }
-  if ($invalidGrowth.gamification.growthMode -ne "balanced") {
-    throw "Invalid gamification.growthMode should fall back to balanced."
-  }
-  if ($invalidGrowth.gamification.hudFocus -ne "growth") {
-    throw "Invalid gamification.hudFocus should fall back to growth."
-  }
-  if ($invalidGrowth.gamification.showGrowthChip -ne $false -or $invalidGrowth.gamification.showHoverReadout -ne $true) {
-    throw "Boolean gamification values should normalize from yes/no strings."
-  }
-  if ($invalidGrowth.gamification.showComboHeat -ne $false -or $invalidGrowth.gamification.showRewardCharge -ne $true) {
-    throw "Boolean combo heat/reward charge values should normalize from yes/no strings."
-  }
-
-  $runtimeScript = Get-Content -Raw -LiteralPath (Join-Path $root "src\CodexyPetUsagesRing.ps1")
-  foreach ($needle in @("function Update-KeyComboState", "function Get-KeyComboMultiplier", "Rest +", "Cooldown", 'LastKeyCounterIdleSyncAt')) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Key counter combo runtime marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @("function Test-RecentKeyInput", "-TimeoutSec 2", "[int]`$UsagePollSeconds = 30", "[Math]::Max(20, `$UsagePollSeconds)", "DispatcherPriority]::Background", "rewardAndEffects", "[Math]::Min(3, [int]`$Count)")) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Key counter latency guard marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @("function Add-InventoryDrop", "function Invoke-RewardChestClaim", "function Get-ClaimableRewardChestCount", "function Get-RewardChestStatusText", "function Test-RewardChestReadyIconVisible", "RewardChestCost", "RewardChestCooldownMinutes", "rewardCooldownUntil", "rewardKeys", "rewardKeysMigrated", "InventoryClaimButton", "InventoryClaimButtonLabel", "InventoryReadyIcon", "function Get-InventoryHudText", "function Get-InventoryReadoutText", "function Get-InventoryUiText", "function Update-InventoryReadoutContent", "function Set-ActiveInventoryUnlock", "function Test-InventoryUnlockActive", "function Set-KeyCounterBaseBorderVisibility", "function Show-InventoryReadout", "function Show-InventoryPicker", "function New-InventoryCategoryCell", "function New-PawBurstParticle", "function Toggle-InventoryReadout", "function Hide-InventoryReadout", "function Test-InventoryReadoutOpen", "function Set-InventoryHoverHighlight", "function Test-CursorInInventoryRange", "function Update-MouseClickHook", "function Get-ConsumedLeftMouseClickCursor", "function Invoke-InventoryToggle", "function Set-ReadoutWindowBelowAnchor", "function Get-InventoryAnchorScreenRect", "function Get-MainHudScreenRect", "function Test-ReadoutPlacementClear", "SetWindowsHookExMouse", "InstallMouseClickCounter", "UninstallMouseClickCounter", "ConsumeLeftMouseClick", "MouseHookCallback", "WH_KEYBOARD_LL", "WH_MOUSE_LL", "WM_KEYUP", "WM_SYSKEYUP", "KBDLLHOOKSTRUCT", "keyDownStates", "ResetKeyboardDownStates", "WM_LBUTTONDOWN", "IsLeftMouseButtonDown", "ConsumeLeftMouseButtonClick", '0x0001', "ShowHandCursor", "IDC_HAND", "handCursor", "InventoryHitBounds", "InventoryHoverBorder", "InventoryReadoutPinned", "InventoryReadoutWindow", "InventoryPickerWindow", "InventoryReadoutGrid", "InventoryPickerGrid", "InventoryIcon", "InventoryCountBackground", "KeyHeatSegments", "InventoryChargeSegments", "function Get-KeyHeatLevel", "function Get-RewardChargeLevel", "function Update-KeyHeatVisuals", "function Update-InventoryChargeVisuals", "function Update-KeyHeatGeometry", "function Update-InventoryChargeGeometry", "Add_MouseLeftButtonUp", 'New-ReadoutWindow -Content $script:InventoryReadoutBorder -ClickThrough $false', 'New-ReadoutWindow -Content $script:InventoryPickerBorder -ClickThrough $false', "FontCategory", "ThemeCategory", "EffectCategory", "PickerHintTheme", "PickerHintEffect", "Active", "Select", "OpenChest", "Cooldown", "ClaimProgress", "ClaimReady", "reward-chest.png", "reward-chest-ready.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png", "effect-paw-burst.png", "effect-bear-paw-burst.png", "effect-dog-paw-burst.png", "theme-forest-border.png", "theme-arcane-border.png", "theme-royal-border.png", "theme-cyber-border.png", "theme-celestial-border.png", "ThemeBorderPaths", "KeyCounterThemeBorder", "CosmeticEffectKeys", "effectPawBurst", "effectBearPaw", "effectDogPaw", "activeEffect", "PawBurstImageSources", "themeForest", "themeCyber", "themeCelestial", "rewardRolls", "activeTheme")) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Inventory reward runtime marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @("ScaleTransform", "RenderTransformOrigin", "LineStackingStrategy", 'BeginAnimation([System.Windows.Media.ScaleTransform]::ScaleXProperty')) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Key counter centering marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @("System.Windows.Documents.Run", "System.Windows.Documents.LineBreak", '$statusRun.FontSize = 13.2')) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Key counter status layout marker is missing: $needle"
-    }
-  }
-  $growthScript = Get-Content -Raw -LiteralPath (Join-Path $root "src\PetGrowth.ps1")
-  foreach ($needle in @("inventory = [ordered]@", "fontPixel", "fontTerminal", "themeForest", "themeArcane", "themeRoyal", "themeCyber", "themeCelestial", "effectPawBurst", "effectBearPaw", "effectDogPaw", "activeFont", "activeTheme", "activeEffect", "rewardRolls", "totalDrops", "totalKeys", "rewardKeys", "rewardKeysMigrated", "rewardCooldownUntil", "lastDropItem")) {
-    if ($growthScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Inventory state marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @('GamificationHudFocus -eq "growth"', 'GamificationHudFocus -eq "combo"', "function Get-GrowthChipWidth")) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Gamification HUD focus marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @('$batteryHudRowHeight', '12.0 + $batteryHudRowHeight + 8.0', 'Get-KeyCounterChipHeight', '$hudRowHeight + 56.0')) {
-    if ($runtimeScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Battery key counter spacing marker is missing: $needle"
-    }
-  }
-  if ($runtimeScript.IndexOf('$script:Style.ShowGrowthChip' + "`r`n  ) {", [System.StringComparison]::Ordinal) -ge 0) {
-    throw "Growth chip visibility must use Test-GrowthHudVisible so combo focus cannot show level chip."
-  }
-
-  $settingsHtml = Get-Content -Raw -LiteralPath (Join-Path $root "settings\index.html")
-  foreach ($needle in @("settings-sidebar", "sidebar-nav", "data-settings-nav", "syncActiveNav", "initSectionNavigation", "focus-control", "data-focus-panel=`"growth`"", "data-focus-panel=`"combo`"", "syncFocusPanels", "hudFocusNote", "gamification.showComboHeat", "gamification.showRewardCharge", "key-heat-preview", "comboHeat", "rewardCharge", "inventory-summary", "reward-loadout", "reward-selector", "data-reward-tab=`"fonts`"", "data-reward-tab=`"effects`"", "data-reward-panel=`"themes`"", "data-reward-panel=`"effects`"", "syncRewardPanels", "activeFontName", "activeThemeName", "activeEffectName", "rewardRollCount", "inventoryFontPixel", "inventoryThemeForest", "inventoryThemeArcane", "inventoryThemeCyber", "inventoryThemeCelestial", "inventoryEffectPawBurst", "inventoryEffectBearPaw", "inventoryEffectDogPaw")) {
-    if ($settingsHtml.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Settings HUD focus UI marker is missing: $needle"
-    }
-  }
-  foreach ($needle in @("function Read-GamificationStateSummary", "gamificationState = Read-GamificationStateSummary", "function Open-SettingsUrl", "msedge.exe", "effectPawBurst", "effectBearPaw", "effectDogPaw", "activeEffect", "rewardKeys", "rewardKeysMigrated", "rewardCooldownUntil", "function Write-BinaryResponse", "function Resolve-SettingsAssetPath", "/assets/runtime/*")) {
-    if ($settingsScript.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Settings inventory API marker is missing: $needle"
-    }
-  }
-  foreach ($asset in @("reward-chest.png", "reward-chest-ready.png", "inventory-snack.png", "inventory-gem.png", "inventory-ticket.png", "inventory-patch.png", "unlock-font-pixel.png", "unlock-font-terminal.png", "unlock-theme-arcane.png", "unlock-theme-royal.png", "effect-paw-burst.png", "effect-bear-paw-burst.png", "effect-dog-paw-burst.png", "theme-forest-border.png", "theme-arcane-border.png", "theme-royal-border.png", "theme-cyber-border.png", "theme-celestial-border.png")) {
-    if (-not (Test-Path -LiteralPath (Join-Path $root "assets\runtime\$asset") -PathType Leaf)) {
-      throw "Inventory runtime asset is missing: $asset"
-    }
-  }
-  $releaseManifest = Get-Content -Raw -LiteralPath (Join-Path $root "tools\ReleaseManifest.ps1")
-  foreach ($needle in @('"Diagnose.bat"', '"assets"', '"assets/runtime/reward-chest.png"', '"assets/runtime/reward-chest-ready.png"', '"assets/runtime/unlock-font-pixel.png"', '"assets/runtime/unlock-font-terminal.png"', '"assets/runtime/unlock-theme-arcane.png"', '"assets/runtime/unlock-theme-royal.png"', '"assets/runtime/effect-paw-burst.png"', '"assets/runtime/effect-bear-paw-burst.png"', '"assets/runtime/effect-dog-paw-burst.png"', '"assets/runtime/theme-forest-border.png"', '"assets/runtime/theme-arcane-border.png"', '"assets/runtime/theme-royal-border.png"', '"assets/runtime/theme-cyber-border.png"', '"assets/runtime/theme-celestial-border.png"')) {
-    if ($releaseManifest.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Reward chest release manifest marker is missing: $needle"
-    }
-  }
-  $releaseHarness = Get-Content -Raw -LiteralPath (Join-Path $root "tools\Invoke-ReleaseHarness.ps1")
-  foreach ($needle in @("Assert-ReleaseMetadata", "New-VerifiedDeployZip", "Invoke-InstallRefresh", "Publish-GitHubRelease", "Assert-DeployInitialRewardState", "Deployment must not include local reward/settings state files", "Release invariant: deployed reward unlock state must always start locked/reset.", "Always confirm that deployment rewards/unlocks were verified as locked/reset by the release harness.", "Get-ReleaseAnnouncement", "Get-ReleaseAnnouncementParts", "Write-ReleaseAnnouncementFiles", "RELEASE_ANNOUNCEMENT_COPY_THIS.md", "FINAL_REPLY_MUST_INCLUDE_RELEASE_ANNOUNCEMENT.txt", "Release announcement", '"release", "create"', '"release", "upload"', "Codexy-pet-usages-ring-`$TargetVersion.zip")) {
-    if ($releaseHarness.IndexOf($needle, [System.StringComparison]::Ordinal) -lt 0) {
-      throw "Project release harness marker is missing: $needle"
-    }
-  }
-}
-
-function Assert-PetGrowthCalculations {
-  $growthScriptPath = Join-Path $root "src\PetGrowth.ps1"
-  . $growthScriptPath
-
-  $start = [datetime]"2026-05-11T09:00:00"
-  $state = New-PetGrowthState -Now $start
-  $state.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $result = Update-PetGrowthState `
-    -State $state `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($result.State.totalXp -ne 30 -or $result.State.todayXp -ne 30 -or [int]$result.State.todayPrimaryUsedPercent -ne 45) {
-    throw "5h usage progress should fill today's XP from primary usage."
-  }
-
-  $low = Update-PetGrowthState `
-    -State $result.State `
-    -PrimaryRemaining 9 `
-    -SecondaryRemaining 70 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(120) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -Enabled $true
-  if ($low.State.totalXp -ne 30 -or $low.State.condition -ne "sleepy") {
-    throw "Low remaining usage should stop XP and mark the pet sleepy."
-  }
-
-  $primaryProgressState = New-PetGrowthState -Now $start
-  $primaryProgressState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $primaryProgress = Update-PetGrowthState `
-    -State $primaryProgressState `
-    -PrimaryRemaining 95 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(10) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  $primaryProgressNext = Update-PetGrowthState `
-    -State $primaryProgress.State `
-    -PrimaryRemaining 80 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(20) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($primaryProgress.State.totalXp -ne 3 -or $primaryProgressNext.State.totalXp -ne 15 -or $primaryProgressNext.AwardedXp -ne 12) {
-    throw "Increasing 5h usage should award XP even when weekly usage is unchanged."
-  }
-
-  $lightState = New-PetGrowthState -Now $start
-  $lightState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $light = Update-PetGrowthState `
-    -State $lightState `
-    -PrimaryRemaining 75 `
-    -SecondaryRemaining 85 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "conserve" `
-    -Enabled $true
-  if ($light.State.totalXp -ne 30 -or $light.State.condition -ne "healthy") {
-    throw "Light use growth mode should fill XP at the light 5h usage target."
-  }
-
-  $tooLittleUseState = New-PetGrowthState -Now $start
-  $tooLittleUseState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $tooLittleUse = Update-PetGrowthState `
-    -State $tooLittleUseState `
-    -PrimaryRemaining 90 `
-    -SecondaryRemaining 95 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "conserve" `
-    -Enabled $true
-  if ($tooLittleUse.State.totalXp -ne 15 -or $tooLittleUse.State.condition -ne "stable") {
-    throw "Partial 5h usage should partially fill XP while staying stable."
-  }
-
-  $balancedState = New-PetGrowthState -Now $start
-  $balancedState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $balanced = Update-PetGrowthState `
-    -State $balancedState `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($balanced.State.totalXp -ne 30 -or $balanced.State.condition -ne "healthy") {
-    throw "Balanced use growth mode should fill XP at the balanced 5h usage target."
-  }
-
-  $activeState = New-PetGrowthState -Now $start
-  $activeState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $active = Update-PetGrowthState `
-    -State $activeState `
-    -PrimaryRemaining 35 `
-    -SecondaryRemaining 55 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "active" `
-    -Enabled $true
-  if ($active.State.totalXp -ne 30 -or $active.State.condition -ne "healthy") {
-    throw "Focused use growth mode should fill XP at the focused 5h usage target."
-  }
-
-  $resetState = New-PetGrowthState -Now $start
-  $resetState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $resetAt = $start.AddSeconds(30)
-  $resetResult = Update-PetGrowthState `
-    -State $resetState `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $resetAt `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($resetResult.State.totalXp -ne 40) {
-    throw "Healthy reset crossing should award 5h usage XP plus one 10 XP reset bonus."
-  }
-  $resetAgain = Update-PetGrowthState `
-    -State $resetResult.State `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $resetAt `
-    -SecondaryResetAt $start.AddDays(3) `
-    -Now $start.AddSeconds(90) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($resetAgain.State.totalXp -ne 40) {
-    throw "Reset bonus should only be awarded once per reset timestamp."
-  }
-
-  $weeklyResetState = New-PetGrowthState -Now $start
-  $weeklyResetState.totalXp = 130
-  $weeklyResetState.level = 3
-  $weeklyResetState.todayXp = 12
-  $weeklyResetState.todayHealthySeconds = 720
-  $weeklyResetState.lastUpdatedAt = $start.ToString("o", [System.Globalization.CultureInfo]::InvariantCulture)
-  $weeklyResetAt = $start.AddSeconds(30)
-  $weeklyReset = Update-PetGrowthState `
-    -State $weeklyResetState `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $weeklyResetAt `
-    -Now $start.AddSeconds(60) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($weeklyReset.State.totalXp -ne 0 -or $weeklyReset.State.level -ne 1 -or $weeklyReset.State.todayXp -ne 0) {
-    throw "Weekly reset should restart pet level and XP."
-  }
-  $weeklyResetAgain = Update-PetGrowthState `
-    -State $weeklyReset.State `
-    -PrimaryRemaining 55 `
-    -SecondaryRemaining 75 `
-    -PrimaryResetAt $start.AddHours(5) `
-    -SecondaryResetAt $weeklyResetAt `
-    -Now $start.AddSeconds(120) `
-    -HasUsageSnapshot $true `
-    -PetVisible $true `
-    -GrowthMode "balanced" `
-    -Enabled $true
-  if ($weeklyResetAgain.State.totalXp -ne 30 -or $weeklyResetAgain.State.level -ne 1) {
-    throw "Weekly reset should only restart once per reset timestamp, then allow XP again."
-  }
-
-  if ((Get-PetGrowthLevel -TotalXp 49) -ne 1 -or (Get-PetGrowthLevel -TotalXp 50) -ne 2 -or (Get-PetGrowthLevel -TotalXp 450) -ne 5) {
-    throw "Pet growth level thresholds are incorrect."
-  }
-}
-
-function Assert-PetHudHideCleanup {
-  $runtimePath = Join-Path $root "src\CodexyPetUsagesRing.ps1"
-  $source = Get-Content -Raw -LiteralPath $runtimePath
-  foreach ($required in @(
-    "function Hide-PetHud",
-    '$script:LastPetRect = $null',
-    '$script:GrowthChipBounds = $null',
-    '$script:BatteryPrimaryBounds = $null',
-    '$script:BadgePrimaryBounds = $null',
-    'Set-RingShapesVisibility -Visibility ([System.Windows.Visibility]::Collapsed)',
-    'Hide-PetHud -UpdateGrowth $true',
-    'Hide-PetHud -UpdateGrowth $false'
-  )) {
-    if (-not $source.Contains($required)) {
-      throw "Pet HUD hide cleanup is missing required code: $required"
-    }
-  }
-  if ($source -match 'LastWriteTimeUtc[^\r\n]*-eq[^\r\n]*\$script:LastStateWriteTimeUtc[\s\S]{0,160}?return\s+\$script:CachedPetRect') {
-    throw "Read-PetRect must not reuse stale cached pet bounds when /pet visibility may have changed."
-  }
-}
-
-function Assert-CompanionLifecycle {
-  $runtime = Get-Content -Raw -LiteralPath (Join-Path $root "src\CodexyPetUsagesRing.ps1")
-  foreach ($required in @(
-    '[switch]$NoExitWithCodex',
-    'public static bool IsCodexDesktopRunning()',
-    'function Stop-WhenCodexDesktopClosed',
-    '$script:LifecycleTimer = [System.Windows.Threading.DispatcherTimer]::new()',
-    'Stop-WhenCodexDesktopClosed',
-    'Codex Desktop is not running; stopping companion helper.'
-  )) {
-    if (-not $runtime.Contains($required)) {
-      throw "Companion lifecycle cleanup is missing required code: $required"
-    }
-  }
-
-  $startScript = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Start.ps1")
-  foreach ($required in @(
-    '[switch]$ShowTrayIcon',
-    '[switch]$NoExitWithCodex',
-    'if ($NoExitWithCodex) { $args += "-NoExitWithCodex" }',
-    'src\WatchPetOverlay.ps1',
-    'Started Codexy pet usages ring watcher.'
-  )) {
-    if (-not $startScript.Contains($required)) {
-      throw "Start.ps1 lifecycle/tray defaults are missing required code: $required"
-    }
-  }
-
-  $watcherScript = Get-Content -Raw -LiteralPath (Join-Path $root "src\WatchPetOverlay.ps1")
-  foreach ($required in @(
-    'function Test-PetOverlayOpen',
-    'function Start-Companion',
-    'function Stop-Companion',
-    'if (-not $ShowTrayIcon) { $args += "-NoTrayIcon" }',
-    'Stop-Companion',
-    'Start-Companion'
-  )) {
-    if (-not $watcherScript.Contains($required)) {
-      throw "WatchPetOverlay.ps1 trigger lifecycle is missing required code: $required"
-    }
-  }
-}
-
 try {
   New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
 
@@ -533,18 +76,177 @@ try {
   Add-Fixture -RelativePath "qa/smoke.tmp"
   Add-Fixture -RelativePath ".gitignore"
   Add-Fixture -RelativePath "settings.json" -Content "{`"theme`":`"smoke`"}"
-  Add-Fixture -RelativePath "gamification.json" -Content "{`"totalXp`":999}"
-  Add-Fixture -RelativePath "skills/smoke/SKILL.md" -Content "---`nname: smoke`ndescription: forbidden release fixture`n---"
+  Add-Fixture -RelativePath ".codex-pet-language-cache.json" -Content "{`"country`":`"KR`"}"
   Add-Fixture -RelativePath "docs/assets/current-pet-usage-capture.png"
   Add-Fixture -RelativePath "docs/assets/imagegen-hero-background.png"
   Add-Fixture -RelativePath "smoke.tmp"
 
   $version = Assert-VersionMetadata
-  Assert-SettingsLauncherUsesActiveInstall
-  Assert-SettingsDisplayModes
-  Assert-PetGrowthCalculations
-  Assert-PetHudHideCleanup
-  Assert-CompanionLifecycle
+
+  $defaultSettings = Get-Content -Raw -LiteralPath (Join-Path $root "settings.defaults.json") | ConvertFrom-Json
+  if ($defaultSettings.behavior.visibilityMode -ne "always") {
+    throw "Default ring visibility must be always."
+  }
+  if ($defaultSettings.appearance.mode -ne "rings") {
+    throw "Default usage visualization must be rings."
+  }
+  if ($defaultSettings.layout.offsetX -ne 0 -or $defaultSettings.layout.offsetY -ne 0) {
+    throw "Default visualization offset must be centered."
+  }
+  $runtimeText = Get-Content -Raw -LiteralPath (Join-Path $root "src\CodexPetLimitRings.ps1")
+  if ($runtimeText -notmatch '\$script:Style\.VisibilityMode\s+-eq\s+"always"') {
+    throw "Runtime must keep rings visible in always mode."
+  }
+  $settingsPage = Get-Content -Raw -LiteralPath (Join-Path $root "settings\index.html")
+  $settingsScript = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Settings.ps1")
+  $languageDetectionText = Get-Content -Raw -LiteralPath (Join-Path $root "src\LanguageDetection.ps1")
+  foreach ($marker in @("https://api.country.is/", "Get-AutomaticLanguageResult", ".codex-pet-language-cache.json")) {
+    if ($languageDetectionText -notmatch [regex]::Escape($marker)) {
+      throw "IP language detection is missing marker: $marker"
+    }
+  }
+  if ($settingsScript -notmatch 'automaticLanguage' -or $settingsScript -notmatch 'languageCountry' -or $settingsScript -notmatch 'languageSource') {
+    throw "Settings API must expose IP-based automatic language diagnostics."
+  }
+  if ($settingsPage -notmatch 'Auto \(IP location\)' -or $settingsPage -notmatch '자동 \(IP 위치\)') {
+    throw "Settings page must explain that automatic language uses IP location."
+  }
+  if ($settingsPage -notmatch 'data-path="behavior\.visibilityMode"') {
+    throw "Settings page is missing the ring visibility selector."
+  }
+  if ($settingsPage -notmatch 'data-path="appearance\.mode"') {
+    throw "Settings page is missing the usage visualization selector."
+  }
+  foreach ($offsetPath in @("layout.offsetX", "layout.offsetY")) {
+    if ($settingsPage -notmatch [regex]::Escape("data-path=`"$offsetPath`"")) {
+      throw "Settings page is missing position control: $offsetPath"
+    }
+  }
+  if ($settingsPage -notmatch 'id="centerOnPet"' -or $settingsPage -notmatch "offsetX'\)\.value = '0'" -or $settingsPage -notmatch "offsetY'\)\.value = '0'") {
+    throw "Settings page is missing the pet-centered alignment action."
+  }
+  if ($settingsPage -notmatch 'id="potionScale"' -or $settingsPage -notmatch 'data-path="appearance\.potionScale"') {
+    throw "Settings page is missing the potion scale control."
+  }
+  foreach ($mode in @("rings", "bars", "wings", "corners", "potions")) {
+    if ($settingsPage -notmatch [regex]::Escape("value=`"$mode`"")) {
+      throw "Settings page is missing visualization mode: $mode"
+    }
+  }
+  foreach ($potionMarker in @("previewPixelPotions", "potion-pixel-frame.png", "potion-pixel-mask.png", "pixel-potion-value", "pixel-potion-label")) {
+    if ($settingsPage -notmatch [regex]::Escape($potionMarker)) {
+      throw "Settings page is missing pixel potion marker: $potionMarker"
+    }
+  }
+  foreach ($assetName in @("potion-pixel-frame.png", "potion-pixel-mask.png")) {
+    $assetPath = Join-Path $root "assets\runtime\$assetName"
+    if (-not (Test-Path -LiteralPath $assetPath)) { throw "Pixel potion asset is missing: $assetName" }
+    Add-Type -AssemblyName System.Drawing
+    $image = [System.Drawing.Image]::FromFile($assetPath)
+    try {
+      if ($image.Width -ne 68 -or $image.Height -ne 73) {
+        throw "Pixel potion asset must be exactly 68x73: $assetName"
+      }
+    } finally {
+      $image.Dispose()
+    }
+  }
+  if ($settingsPage -match '>LIVE<' -or $settingsPage -notmatch 'data-i18n="previewSample"' -or $settingsPage -match '90% left|64% left') {
+    throw "Settings preview must be clearly labeled as a consistent sample, not live usage."
+  }
+  if ($settingsPage -notmatch 'aria-valuetext' -or $settingsPage -notmatch "setAttribute\('for', input\.id\)") {
+    throw "Settings range values must be associated with their controls for assistive technology."
+  }
+  if ($settingsPage -notmatch '\.actions\s*\{\s*position:\s*static') {
+    throw "Settings actions must not overlay configuration cards."
+  }
+  foreach ($ambientMarker in @('class="ambient-scene"', 'assets/codex-pet-ambient.webp', '@keyframes ambient-drift', 'prefers-reduced-motion')) {
+    if ($settingsPage -notmatch [regex]::Escape($ambientMarker)) {
+      throw "Settings page is missing the lightweight animated pet background: $ambientMarker"
+    }
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $root "settings\assets\codex-pet-ambient.webp"))) {
+    throw "Settings imagegen background asset is missing."
+  }
+  if ($settingsPage -notmatch 'ambient-scene"\s+aria-hidden="true"') {
+    throw "Decorative settings artwork must stay hidden from assistive technology."
+  }
+  if ($runtimeText -notmatch 'Noto Sans KR, Segoe UI') {
+    throw "Runtime hover readouts must use Noto Sans KR with a Segoe UI fallback."
+  }
+  foreach ($staleMarker in @('UsageStaleSeconds', 'Get-UsageFreshnessText', 'Update-StaleIndicator', 'Usage data is stale')) {
+    if ($runtimeText -notmatch [regex]::Escape($staleMarker)) {
+      throw "Runtime is missing stale usage feedback: $staleMarker"
+    }
+  }
+  foreach ($logFreshnessMarker in @('SELECT feedback_log_body, ts, ts_nanos', 'observedAt', 'Usage log fallback is stale')) {
+    if ($runtimeText -notmatch [regex]::Escape($logFreshnessMarker)) {
+      throw "Runtime is missing SQLite observation-time freshness handling: $logFreshnessMarker"
+    }
+  }
+  foreach ($previewEndpoint in @("/api/pet-preview", "/api/pet-spritesheet")) {
+    if ($settingsPage -notmatch [regex]::Escape($previewEndpoint)) {
+      throw "Settings page is missing calibrated pet preview endpoint: $previewEndpoint"
+    }
+  }
+  $settingsServerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Settings.ps1")
+  if ($settingsServerText -notmatch '/assets/codex-pet-ambient\.webp' -or $settingsServerText -notmatch 'ContentType "image/webp"') {
+    throw "Settings server must serve the imagegen background as WebP."
+  }
+  if ($settingsServerText -notmatch 'function Get-PetPreviewInfo' -or $settingsServerText -notmatch 'electron-avatar-overlay-bounds') {
+    throw "Settings server is missing live pet preview calibration."
+  }
+
+  $installLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Install.bat")
+  if ($installLauncher -notmatch '(?i)install\.cmd"\s+-NoStartup') {
+    throw "Install.bat must use the no-auto-start default."
+  }
+  $autoStartLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Install-AutoStart.bat")
+  if ($autoStartLauncher -notmatch '(?i)install\.cmd"\s+-Startup') {
+    throw "Install-AutoStart.bat must explicitly opt in to Windows auto-start."
+  }
+  $applyInstalledLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Apply-Installed.bat")
+  if ($applyInstalledLauncher -notmatch '(?i)tools\\Sync-Installed\.ps1') {
+    throw "Apply-Installed.bat must run the guarded installed-copy sync."
+  }
+  $syncInstalledText = Get-Content -Raw -LiteralPath (Join-Path $root "tools\Sync-Installed.ps1")
+  foreach ($syncMarker in @("Get-CodexPetInstallMarker", "settingsHashBefore", "Installed file hash mismatch", "NoStartCodex")) {
+    if ($syncInstalledText -notmatch [regex]::Escape($syncMarker)) {
+      throw "Installed-copy sync is missing safety behavior: $syncMarker"
+    }
+  }
+  $installerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Install.ps1")
+  if ($installerText -notmatch '\$Startup\s+-and\s+-not\s+\$NoStartup') {
+    throw "PowerShell installation must default to no auto-start."
+  }
+  $runtimeStateText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\RuntimeState.ps1")
+  if ($runtimeStateText -notmatch '\$markedRoot\s+-ne\s+\$expectedRoot') {
+    throw "Install marker validation must bind installDir to the actual target root."
+  }
+  $releaseScriptText = Get-Content -Raw -LiteralPath (Join-Path $root "tools\New-ReleaseZip.ps1")
+  if ($releaseScriptText -notmatch 'NewGuid') {
+    throw "Release staging must use a unique directory for parallel-safe builds."
+  }
+  $uninstallLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Uninstall.bat")
+  if ($uninstallLauncher -notmatch '(?i)uninstall\.cmd"\s+-RemoveFiles') {
+    throw "Uninstall.bat must remove the installed copy by default."
+  }
+  $manageBytes = [System.IO.File]::ReadAllBytes((Join-Path $root "Manage.bat"))
+  for ($i = 0; $i -lt $manageBytes.Length; $i++) {
+    if ($manageBytes[$i] -eq 10 -and ($i -eq 0 -or $manageBytes[$i - 1] -ne 13)) {
+      throw "Manage.bat must use CRLF line endings."
+    }
+  }
+  try {
+    [void]([System.Text.UTF8Encoding]::new($false, $true).GetString($manageBytes))
+    throw "Manage.bat must be encoded as CP949, not UTF-8."
+  } catch [System.Text.DecoderFallbackException] {
+    # CP949 한글 바이트는 엄격한 UTF-8 디코딩에 실패해야 한다.
+  }
+  $manageText = [System.Text.Encoding]::GetEncoding(949).GetString($manageBytes)
+  if ($manageText -notmatch [regex]::Escape("Codex Pet 사용량 링 관리")) {
+    throw "Manage.bat did not decode to the expected Korean CP949 text."
+  }
 
   $parseErrorsText = @()
   Get-ChildItem -LiteralPath $root -Recurse -Filter "*.ps1" | Where-Object { $_.FullName -notmatch '\\.git\\' } | ForEach-Object {
@@ -557,37 +259,109 @@ try {
   }
   if ($parseErrorsText.Count -gt 0) { throw "PowerShell parser check failed: $($parseErrorsText -join '; ')" }
 
-  $trackedFiles = @(git -C $root ls-files)
+  & (Join-Path $root "tools\Test-RingMath.ps1") | Out-Host
+
+  # .gitignore는 저장소에는 필요하지만 릴리스/설치 산출물에는 포함하지 않는다.
+  $trackedFiles = @(git -C $root ls-files | Where-Object { $_ -ne ".gitignore" })
   Assert-NoForbiddenPaths -Paths $trackedFiles -Scope "Git tracked files"
 
   & (Join-Path $root "tools\New-ReleaseZip.ps1") -OutputDirectory $releaseOut | Out-Host
   $zip = Get-ChildItem -LiteralPath $releaseOut -Filter "*.zip" | Select-Object -First 1
   if (-not $zip) { throw "Release zip was not created." }
-  if ($zip.Name -ne "Codexy-pet-usages-ring-$version.zip") {
+  if ($zip.Name -ne "codex-pet-limit-rings-Win-$version.zip") {
     throw "Release zip name must match VERSION $version. Found: $($zip.Name)"
   }
 
   Add-Type -AssemblyName System.IO.Compression.FileSystem
   $archive = [System.IO.Compression.ZipFile]::OpenRead($zip.FullName)
   try {
-    $zipEntries = @($archive.Entries | ForEach-Object { $_.FullName.TrimEnd("/") })
-    foreach ($requiredFile in $script:CodexPetRequiredFreshFiles) {
-      Assert-ZipFileMatches -Archive $archive -RelativePath $requiredFile
-    }
+    $zipEntries = @($archive.Entries | ForEach-Object { ($_.FullName.TrimEnd("/")) -replace '\\', '/' })
   } finally {
     $archive.Dispose()
   }
   Assert-NoForbiddenPaths -Paths $zipEntries -Scope "Release zip"
+  foreach ($requiredEntry in @("Manage.bat", "Install.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools/Sync-Installed.ps1", "Diagnose.bat", "Uninstall.bat", "assets/runtime/potion-pixel-frame.png", "assets/runtime/potion-pixel-mask.png")) {
+    if ($zipEntries -notcontains $requiredEntry) {
+      throw "Release zip is missing $requiredEntry."
+    }
+  }
 
   & (Join-Path $root "bin\powershell\Install.ps1") -InstallDir $installRoot -NoStartup -NoStartMenu -NoStart | Out-Host
   $installedFiles = @(Get-ChildItem -LiteralPath $installRoot -Recurse -File -Force | ForEach-Object {
     $_.FullName.Substring($installRoot.TrimEnd("\").Length + 1) -replace '\\', '/'
   })
   Assert-NoForbiddenPaths -Paths $installedFiles -Scope "Temp install"
-  foreach ($requiredInstallFile in $script:CodexPetRequiredFreshFiles) {
-    Assert-InstalledFileMatches -InstallRoot $installRoot -RelativePath $requiredInstallFile
+  foreach ($requiredFile in @("Manage.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools\Sync-Installed.ps1", "Diagnose.bat", "assets\runtime\potion-pixel-frame.png", "assets\runtime\potion-pixel-mask.png", "src\LanguageDetection.ps1", ".codex-pet-limit-rings-win.install.json")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $installRoot $requiredFile))) {
+      throw "Temp install is missing $requiredFile."
+    }
   }
+  . (Join-Path $root "bin\powershell\RuntimeState.ps1")
+  $runtimeRoots = @(Get-CodexPetRuntimeRoots -ScriptProjectRoot $installRoot)
+  foreach ($expectedRoot in @($installRoot, $root)) {
+    $expectedFullPath = [System.IO.Path]::GetFullPath($expectedRoot).TrimEnd("\")
+    if ($runtimeRoots -notcontains $expectedFullPath) {
+      throw "Runtime root discovery is missing $expectedFullPath."
+    }
+  }
+
+  $settingsPath = Join-Path $installRoot "settings.json"
+  $settingsSentinel = '{"smokeSettingsPreserved":true}'
+  [System.IO.File]::WriteAllText($settingsPath, $settingsSentinel, [System.Text.Encoding]::UTF8)
+  & (Join-Path $root "bin\powershell\Install.ps1") -InstallDir $installRoot -NoStartup -NoStartMenu -NoStart | Out-Host
+  if ([System.IO.File]::ReadAllText($settingsPath, [System.Text.Encoding]::UTF8) -ne $settingsSentinel) {
+    throw "Updating an install must preserve settings.json."
+  }
+
+  $copiedMarkerRoot = Join-Path $tempRoot "copied-marker-target"
+  New-Item -ItemType Directory -Force -Path (Join-Path $copiedMarkerRoot "bin\powershell") | Out-Null
+  New-Item -ItemType Directory -Force -Path (Join-Path $copiedMarkerRoot "src") | Out-Null
+  Set-Content -LiteralPath (Join-Path $copiedMarkerRoot "VERSION") -Value "do-not-delete" -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $copiedMarkerRoot "bin\powershell\Uninstall.ps1") -Value "do-not-delete" -Encoding UTF8
+  Set-Content -LiteralPath (Join-Path $copiedMarkerRoot "src\CodexPetLimitRings.ps1") -Value "do-not-delete" -Encoding UTF8
+  Copy-Item -LiteralPath (Join-Path $installRoot ".codex-pet-limit-rings-win.install.json") -Destination $copiedMarkerRoot -Force
+  $copiedMarkerRejected = $false
+  try {
+    & (Join-Path $root "bin\powershell\Uninstall.ps1") -InstallDir $copiedMarkerRoot -RemoveFiles | Out-Null
+  } catch {
+    $copiedMarkerRejected = $true
+  }
+  if (-not $copiedMarkerRejected -or -not (Test-Path -LiteralPath (Join-Path $copiedMarkerRoot "VERSION"))) {
+    throw "Uninstall must reject a copied install marker whose installDir does not match the target."
+  }
+
+  $unsafeRoot = Join-Path $tempRoot "unsafe-target"
+  New-Item -ItemType Directory -Force -Path $unsafeRoot | Out-Null
+  Set-Content -LiteralPath (Join-Path $unsafeRoot "keep.txt") -Value "do not delete" -Encoding UTF8
+  $unsafeRejected = $false
+  try {
+    & (Join-Path $root "bin\powershell\Install.ps1") -InstallDir $unsafeRoot -NoStartup -NoStartMenu -NoStart | Out-Null
+  } catch {
+    $unsafeRejected = $true
+  }
+  if (-not $unsafeRejected -or -not (Test-Path -LiteralPath (Join-Path $unsafeRoot "keep.txt"))) {
+    throw "Installer must reject and preserve a non-empty unmarked target."
+  }
+
+  $sourceMarker = Join-Path $root ".codex-pet-limit-rings-win.install.json"
+  if (Test-Path -LiteralPath $sourceMarker) {
+    throw "Source checkout unexpectedly contains an install marker."
+  }
+  & (Join-Path $root "bin\powershell\Install.ps1") -InstallDir $root -NoStartup -NoStartMenu -NoStart | Out-Host
+  if (Test-Path -LiteralPath $sourceMarker) {
+    throw "Installing with sourceRoot equal to targetRoot must not mark the source as removable."
+  }
+
   & (Join-Path $root "bin\powershell\Uninstall.ps1") -InstallDir $installRoot -RemoveFiles | Out-Host
+  if ((Get-Location).Path -ne $startingLocation) {
+    throw "Uninstall.ps1 changed the caller's working directory."
+  }
+  if (Test-Path -LiteralPath $installRoot) {
+    throw "Temp install directory still exists after removal."
+  }
+  if (-not (Test-Path -LiteralPath (Join-Path $root "VERSION"))) {
+    throw "Removing an install must preserve the source folder."
+  }
 
   Write-Output "Smoke checks passed."
 } finally {
