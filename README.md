@@ -36,6 +36,7 @@ using PowerShell, WPF, and Win32 window positioning.
 - Uses a click-through WPF overlay, so it does not intercept mouse input.
 - Optionally installs a Windows Startup shortcut; the safer default only creates Start Menu shortcuts.
 - Provides root `.bat` launchers for double-click install, settings, status, start, stop, and uninstall.
+- Provides a cute cat-face icon in the Windows taskbar notification area; right-click it to open Settings, refresh usage, open logs, or quit.
 
 ## Requirements
 
@@ -143,6 +144,8 @@ Open `Settings.bat` or run:
 ```powershell
 .\bin\powershell\Settings.ps1
 ```
+
+While the companion is running, find the orange cat-face icon in the notification area at the right side of the Windows taskbar. If it is folded away, open **Show hidden icons**, right-click the cat icon, and choose **Settings**.
 
 The settings UI saves to:
 

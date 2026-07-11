@@ -413,6 +413,7 @@
     .pixel-potion { position: absolute; image-rendering: pixelated; }
     .pixel-potion-layer, .pixel-potion-frame { position: absolute; inset: 0; width: 100%; height: 100%; }
     .pixel-potion-layer { background: #131414; -webkit-mask: url('/assets/potion-pixel-mask.png?v=019') center / 100% 100% no-repeat; mask: url('/assets/potion-pixel-mask.png?v=019') center / 100% 100% no-repeat; }
+    .pixel-potion.heart-potion .pixel-potion-layer { -webkit-mask-image: url('/assets/heart-potion-pixel-mask.png?v=020'); mask-image: url('/assets/heart-potion-pixel-mask.png?v=020'); }
     .pixel-potion-frame { image-rendering: pixelated; }
     .pixel-potion-value, .pixel-potion-label { position: absolute; left: 0; z-index: 2; width: 100%; color: #fff; text-align: center; white-space: nowrap; font-family: "Arial Black", Arial, sans-serif; font-weight: 900; font-variant-numeric: tabular-nums; text-rendering: geometricPrecision; }
     .pixel-potion-value { top: 42.5%; text-shadow: -1px 0 #000, 1px 0 #000, 0 -1px #000, 0 1px #000; }
@@ -618,7 +619,7 @@
           <div class="section-grid">
             <div class="field"><label for="language" data-i18n="language">Language</label><select id="language" data-path="language"><option value="auto" data-i18n="languageAuto">Auto (IP location)</option><option value="ko" data-i18n="languageKo">Korean</option><option value="en" data-i18n="languageEn">English</option></select><output></output></div>
             <div class="field"><label for="visibilityMode" data-i18n="visibilityMode">Ring Display</label><select id="visibilityMode" data-path="behavior.visibilityMode"><option value="always" data-i18n="visibilityAlways">Always</option><option value="hover" data-i18n="visibilityHover">On Hover</option></select><output></output></div>
-            <div class="field"><label for="appearanceMode" data-i18n="appearanceMode">Display Style</label><select id="appearanceMode" data-path="appearance.mode"><option value="rings" data-i18n="appearanceRings">Rings</option><option value="bars" data-i18n="appearanceBars">Dual Bars</option><option value="wings" data-i18n="appearanceWings">Side Gauges</option><option value="corners" data-i18n="appearanceCorners">Corner Frame</option><option value="potions" data-i18n="appearancePotions">Potion Orbs</option></select><output></output></div>
+            <div class="field"><label for="appearanceMode" data-i18n="appearanceMode">Display Style</label><select id="appearanceMode" data-path="appearance.mode"><option value="rings" data-i18n="appearanceRings">Rings</option><option value="bars" data-i18n="appearanceBars">Dual Bars</option><option value="wings" data-i18n="appearanceWings">Side Gauges</option><option value="corners" data-i18n="appearanceCorners">Corner Frame</option><option value="potions" data-i18n="appearancePotions">Potion Orbs</option><option value="heart_potions" data-i18n="appearanceHeartPotions">Heart Potions</option></select><output></output></div>
             <div class="field" id="potionScaleField"><label for="potionScale" data-i18n="potionScale">Potion Size</label><input id="potionScale" type="range" min="70" max="140" step="5" data-path="appearance.potionScale" data-unit="%"><output></output></div>
             <div class="field"><label for="offsetX" data-i18n="offsetX">Horizontal Position</label><input id="offsetX" type="range" min="-240" max="240" step="1" data-path="layout.offsetX" data-unit="px"><output></output></div>
             <div class="field"><label for="offsetY" data-i18n="offsetY">Vertical Position</label><input id="offsetY" type="range" min="-240" max="240" step="1" data-path="layout.offsetY" data-unit="px"><output></output></div>
@@ -686,6 +687,7 @@
     let automaticLanguage = '';
     let petPreview = { petId: '', spriteVersion: 'none', width: 113, height: 122, columns: 8, rows: 11, spriteAvailable: false };
     let petPreviewTimer = null;
+    let previewFrame = null;
 
     const translations = {
       en: {
@@ -724,6 +726,7 @@
         appearanceWings: 'Side Gauges',
         appearanceCorners: 'Corner Frame',
         appearancePotions: 'Potion Orbs',
+        appearanceHeartPotions: 'Heart Potions',
         potionScale: 'Potion Size',
         sectionRingColors: 'Colors & Readout',
         outer5h: 'Outer 5h',
@@ -794,6 +797,7 @@
         appearanceWings: '사이드 게이지',
         appearanceCorners: '코너 프레임',
         appearancePotions: '포션 오브',
+        appearanceHeartPotions: '하트 포션',
         potionScale: '포션 크기',
         sectionRingColors: '색상 및 상세 표시',
         outer5h: '바깥 5h',
@@ -953,8 +957,16 @@
       for (const input of inputs) {
         updateValueOutput(input, get(settings, input.dataset.path));
       }
-      updatePreview();
+      schedulePreviewUpdate();
       updateDirtyState();
+    }
+
+    function schedulePreviewUpdate() {
+      if (previewFrame != null) cancelAnimationFrame(previewFrame);
+      previewFrame = requestAnimationFrame(() => {
+        previewFrame = null;
+        updatePreview();
+      });
     }
 
     function updatePreview() {
@@ -985,7 +997,8 @@
       const petHeightActual = Math.max(32, Number(petPreview.height) || 122);
       const petMaxActual = Math.max(petWidthActual, petHeightActual);
       const appearanceMode = valueFor('appearance.mode') || 'rings';
-      const potionMode = appearanceMode === 'potions';
+      const potionMode = appearanceMode === 'potions' || appearanceMode === 'heart_potions';
+      const heartPotionMode = appearanceMode === 'heart_potions';
       const potionScale = Math.max(0.7, Math.min(1.4, Number(valueFor('appearance.potionScale') || 100) / 100));
       document.getElementById('potionScaleField').hidden = !potionMode;
       const ringGapActual = Number(valueFor('layout.ringGap') || 0);
@@ -1058,15 +1071,21 @@
       const potionOffset = potionOffsetActual * previewScale;
       const leftPotionX = center - potionOffset;
       const rightPotionX = center + potionOffset;
-      const potionSpriteScale = potionRadius / 34;
-      const potionWidth = 68 * potionSpriteScale;
-      const potionHeight = 73 * potionSpriteScale;
-      const potionTop = center - 37 * potionSpriteScale;
+      const potionBaseWidth = heartPotionMode ? 76 : 68;
+      const potionBaseHeight = heartPotionMode ? 80 : 73;
+      const potionSpriteScale = potionRadius / (potionBaseWidth / 2);
+      const potionWidth = potionBaseWidth * potionSpriteScale;
+      const potionHeight = potionBaseHeight * potionSpriteScale;
+      const potionTop = center - potionBaseHeight * .51 * potionSpriteScale;
       const positionPotion = (element, centerX) => {
+        element.classList.toggle('heart-potion', heartPotionMode);
+        element.querySelector('.pixel-potion-frame').src = heartPotionMode ? '/assets/heart-potion-pixel-frame.png?v=020' : '/assets/potion-pixel-frame.png?v=019';
         element.style.left = `${(centerX - potionWidth / 2) / 220 * 100}%`;
         element.style.top = `${potionTop / 220 * 100}%`;
         element.style.width = `${potionWidth / 220 * 100}%`;
         element.style.height = `${potionHeight / 220 * 100}%`;
+        element.querySelector('.pixel-potion-value').style.top = heartPotionMode ? '43%' : '42.5%';
+        element.querySelector('.pixel-potion-label').style.top = heartPotionMode ? '84%' : '80.8%';
         element.querySelector('.pixel-potion-value').style.fontSize = `${11.5 * potionSpriteScale * previewCssScale}px`;
         element.querySelector('.pixel-potion-value').style.lineHeight = `${16 * potionSpriteScale * previewCssScale}px`;
         element.querySelector('.pixel-potion-label').style.fontSize = `${7.5 * potionSpriteScale * previewCssScale}px`;
@@ -1104,12 +1123,13 @@
       altInner.style.strokeWidth = `${innerStroke}px`;
       altInner.style.strokeDasharray = '58 100';
       const setPotionFill = (element, ratio, color, opacity) => {
-        const chamberTop = 17;
-        const chamberBottom = 57;
+        const chamberTop = heartPotionMode ? 20 : 17;
+        const chamberBottom = heartPotionMode ? 69 : 57;
+        const chamberHeight = heartPotionMode ? 80 : 73;
         const fillTop = chamberBottom - (chamberBottom - chamberTop) * ratio;
         const liquid = element.querySelector('.pixel-potion-liquid');
         liquid.style.background = rgba(color, opacity);
-        liquid.style.clipPath = `inset(${fillTop / 73 * 100}% 0 ${(73 - chamberBottom) / 73 * 100}% 0)`;
+        liquid.style.clipPath = `inset(${fillTop / chamberHeight * 100}% 0 ${(chamberHeight - chamberBottom) / chamberHeight * 100}% 0)`;
       };
       setPotionFill(potionLeft, .74, settings.colors.primary, settings.opacity.primary);
       setPotionFill(potionRight, .58, settings.colors.secondary, settings.opacity.secondary);
@@ -1180,7 +1200,7 @@
           next.width !== petPreview.width || next.height !== petPreview.height;
         if (!changed) return;
         petPreview = next;
-        renderPreview();
+        schedulePreviewUpdate();
       } catch {}
     }
 

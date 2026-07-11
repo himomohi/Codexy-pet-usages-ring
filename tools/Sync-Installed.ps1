@@ -90,7 +90,10 @@ $verificationFiles = @(
   "src\CodexPetLimitRings.ps1",
   "settings\index.html",
   "assets\runtime\potion-pixel-frame.png",
-  "assets\runtime\potion-pixel-mask.png"
+  "assets\runtime\potion-pixel-mask.png",
+  "assets\runtime\heart-potion-pixel-frame.png",
+  "assets\runtime\heart-potion-pixel-mask.png",
+  "assets\runtime\tray-cat-icon.ico"
 )
 foreach ($relativePath in $verificationFiles) {
   $sourcePath = Join-Path $sourceRoot $relativePath

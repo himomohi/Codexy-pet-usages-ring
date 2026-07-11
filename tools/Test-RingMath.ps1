@@ -202,7 +202,7 @@ if ((Convert-ResetValue -ResetAt $null -ResetAfterSeconds 3600 -ObservedAt $obse
   throw "Log reset-after value must be anchored to the log observation time."
 }
 
-foreach ($mode in @("rings", "bars", "wings", "corners", "potions")) {
+foreach ($mode in @("rings", "bars", "wings", "corners", "potions", "heart_potions")) {
   $normalized = Get-NormalizedSettings ([pscustomobject]@{ appearance = [pscustomobject]@{ mode = $mode } })
   $roundTrip = ($normalized | ConvertTo-Json -Depth 10) | ConvertFrom-Json
   if ($roundTrip.appearance.mode -ne $mode) { throw "Appearance mode round-trip failed: $mode" }

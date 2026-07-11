@@ -5,12 +5,16 @@
 ### Added
 
 - Added five lightweight usage display styles, including reference-matched pixel-art potion orbs with adjustable size and placement.
+- Added a selectable high-quality pixel-art heart potion style with independent runtime and settings-preview assets.
+- Added a cute multi-resolution cat-face Windows notification-area icon with direct access to Settings and runtime actions.
 - Added Korean/English automatic language selection, live settings preview, safe installed-copy synchronization, and visible source/install folder links.
 - Added hover readouts that show the exact reset moment and continuously updated remaining time for both the 5-hour and weekly limits.
 
 ### Changed
 
 - Streamlined the companion around usage visualization and removed the previous keyboard counter, pet-growth, reward, theme, and watcher subsystems.
+- Made settings controls update the display preview immediately before saving, including style, size, position, color, and opacity changes.
+- Documented how to open Settings from the Windows taskbar notification area.
 - Reworked installation around `%LOCALAPPDATA%\CodexPetLimitRingsWin`, with explicit optional auto-start and settings-preserving updates through `Apply-Installed.bat`.
 - Updated the settings UI, documentation, diagnostics, runtime naming, and release packaging for the streamlined Windows companion.
 

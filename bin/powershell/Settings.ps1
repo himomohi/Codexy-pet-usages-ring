@@ -72,7 +72,7 @@ function Normalize-VisibilityMode {
 function Normalize-AppearanceMode {
   param($Value)
   $mode = if ($null -eq $Value) { "rings" } else { ([string]$Value).Trim().ToLowerInvariant() }
-  if ($mode -in @("rings", "bars", "wings", "corners", "potions")) { return $mode }
+  if ($mode -in @("rings", "bars", "wings", "corners", "potions", "heart_potions")) { return $mode }
   return "rings"
 }
 
@@ -349,6 +349,8 @@ $settingsHtml = Join-Path $projectRoot "settings\index.html"
 $ambientBackground = Join-Path $projectRoot "settings\assets\codex-pet-ambient.webp"
 $potionPixelFrame = Join-Path $projectRoot "assets\runtime\potion-pixel-frame.png"
 $potionPixelMask = Join-Path $projectRoot "assets\runtime\potion-pixel-mask.png"
+$heartPotionPixelFrame = Join-Path $projectRoot "assets\runtime\heart-potion-pixel-frame.png"
+$heartPotionPixelMask = Join-Path $projectRoot "assets\runtime\heart-potion-pixel-mask.png"
 $languageDetectionScript = Join-Path $projectRoot "src\LanguageDetection.ps1"
 if ([string]::IsNullOrWhiteSpace($SettingsPath)) {
   $SettingsPath = Join-Path $projectRoot "settings.json"
@@ -413,6 +415,18 @@ try {
           Write-TextResponse -Context $context -Text "Pixel potion mask not found." -StatusCode 404
         } else {
           Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($potionPixelMask)) -ContentType "image/png"
+        }
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/assets/heart-potion-pixel-frame.png") {
+        if (-not (Test-Path -LiteralPath $heartPotionPixelFrame)) {
+          Write-TextResponse -Context $context -Text "Heart potion frame not found." -StatusCode 404
+        } else {
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($heartPotionPixelFrame)) -ContentType "image/png"
+        }
+      } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/assets/heart-potion-pixel-mask.png") {
+        if (-not (Test-Path -LiteralPath $heartPotionPixelMask)) {
+          Write-TextResponse -Context $context -Text "Heart potion mask not found." -StatusCode 404
+        } else {
+          Write-BinaryResponse -Context $context -Bytes ([System.IO.File]::ReadAllBytes($heartPotionPixelMask)) -ContentType "image/png"
         }
       } elseif ($context.Request.HttpMethod -eq "GET" -and $path -eq "/api/settings") {
         Write-JsonResponse -Context $context -Value @{

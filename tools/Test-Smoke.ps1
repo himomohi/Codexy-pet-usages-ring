@@ -94,6 +94,11 @@ try {
     throw "Default visualization offset must be centered."
   }
   $runtimeText = Get-Content -Raw -LiteralPath (Join-Path $root "src\CodexPetLimitRings.ps1")
+  foreach ($trayIconMarker in @('tray-cat-icon.ico', '[System.Drawing.Icon]::new', 'NotifyIcon.Icon')) {
+    if ($runtimeText -notmatch [regex]::Escape($trayIconMarker)) {
+      throw "Runtime is missing cat tray icon integration: $trayIconMarker"
+    }
+  }
   if ($runtimeText -notmatch '\$script:Style\.VisibilityMode\s+-eq\s+"always"') {
     throw "Runtime must keep rings visible in always mode."
   }
@@ -128,7 +133,7 @@ try {
   if ($settingsPage -notmatch 'id="potionScale"' -or $settingsPage -notmatch 'data-path="appearance\.potionScale"') {
     throw "Settings page is missing the potion scale control."
   }
-  foreach ($mode in @("rings", "bars", "wings", "corners", "potions")) {
+  foreach ($mode in @("rings", "bars", "wings", "corners", "potions", "heart_potions")) {
     if ($settingsPage -notmatch [regex]::Escape("value=`"$mode`"")) {
       throw "Settings page is missing visualization mode: $mode"
     }
@@ -138,17 +143,28 @@ try {
       throw "Settings page is missing pixel potion marker: $potionMarker"
     }
   }
-  foreach ($assetName in @("potion-pixel-frame.png", "potion-pixel-mask.png")) {
+  foreach ($heartPotionMarker in @("heart_potions", "heart-potion-pixel-frame.png", "heart-potion-pixel-mask.png", "appearanceHeartPotions")) {
+    if ($settingsPage -notmatch [regex]::Escape($heartPotionMarker)) {
+      throw "Settings page is missing heart-potion option support: $heartPotionMarker"
+    }
+  }
+  foreach ($assetName in @("potion-pixel-frame.png", "potion-pixel-mask.png", "heart-potion-pixel-frame.png", "heart-potion-pixel-mask.png")) {
     $assetPath = Join-Path $root "assets\runtime\$assetName"
     if (-not (Test-Path -LiteralPath $assetPath)) { throw "Pixel potion asset is missing: $assetName" }
     Add-Type -AssemblyName System.Drawing
     $image = [System.Drawing.Image]::FromFile($assetPath)
     try {
-      if ($image.Width -ne 68 -or $image.Height -ne 73) {
-        throw "Pixel potion asset must be exactly 68x73: $assetName"
+      $expectedSize = if ($assetName -like "heart-*") { @(76, 80) } else { @(68, 73) }
+      if ($image.Width -ne $expectedSize[0] -or $image.Height -ne $expectedSize[1]) {
+        throw "Pixel potion asset has an unexpected size: $assetName"
       }
     } finally {
       $image.Dispose()
+    }
+  }
+  foreach ($trayAsset in @("tray-cat-icon.png", "tray-cat-icon.ico")) {
+    if (-not (Test-Path -LiteralPath (Join-Path $root "assets\runtime\$trayAsset"))) {
+      throw "Cat tray icon asset is missing: $trayAsset"
     }
   }
   if ($settingsPage -match '>LIVE<' -or $settingsPage -notmatch 'data-i18n="previewSample"' -or $settingsPage -match '90% left|64% left') {
@@ -192,6 +208,11 @@ try {
   foreach ($syncMarker in @("refreshPetPreview", "spriteVersion", "cache: 'no-store'")) {
     if ($settingsPage -notmatch [regex]::Escape($syncMarker)) {
       throw "Settings page is missing current-pet preview synchronization: $syncMarker"
+    }
+  }
+  foreach ($livePreviewMarker in @("schedulePreviewUpdate", "requestAnimationFrame", "input.addEventListener('input', collect)", "input.addEventListener('change', collect)")) {
+    if ($settingsPage -notmatch [regex]::Escape($livePreviewMarker)) {
+      throw "Settings page is missing real-time preview updates: $livePreviewMarker"
     }
   }
   $settingsServerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Settings.ps1")
@@ -290,7 +311,7 @@ try {
     $archive.Dispose()
   }
   Assert-NoForbiddenPaths -Paths $zipEntries -Scope "Release zip"
-  foreach ($requiredEntry in @("Manage.bat", "Install.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools/Sync-Installed.ps1", "Diagnose.bat", "Uninstall.bat", "assets/runtime/potion-pixel-frame.png", "assets/runtime/potion-pixel-mask.png")) {
+  foreach ($requiredEntry in @("Manage.bat", "Install.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools/Sync-Installed.ps1", "Diagnose.bat", "Uninstall.bat", "assets/runtime/potion-pixel-frame.png", "assets/runtime/potion-pixel-mask.png", "assets/runtime/heart-potion-pixel-frame.png", "assets/runtime/heart-potion-pixel-mask.png", "assets/runtime/tray-cat-icon.ico")) {
     if ($zipEntries -notcontains $requiredEntry) {
       throw "Release zip is missing $requiredEntry."
     }
@@ -301,7 +322,7 @@ try {
     $_.FullName.Substring($installRoot.TrimEnd("\").Length + 1) -replace '\\', '/'
   })
   Assert-NoForbiddenPaths -Paths $installedFiles -Scope "Temp install"
-  foreach ($requiredFile in @("Manage.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools\Sync-Installed.ps1", "Diagnose.bat", "assets\runtime\potion-pixel-frame.png", "assets\runtime\potion-pixel-mask.png", "src\LanguageDetection.ps1", ".codex-pet-limit-rings-win.install.json")) {
+  foreach ($requiredFile in @("Manage.bat", "Install-AutoStart.bat", "Apply-Installed.bat", "tools\Sync-Installed.ps1", "Diagnose.bat", "assets\runtime\potion-pixel-frame.png", "assets\runtime\potion-pixel-mask.png", "assets\runtime\heart-potion-pixel-frame.png", "assets\runtime\heart-potion-pixel-mask.png", "assets\runtime\tray-cat-icon.ico", "src\LanguageDetection.ps1", ".codex-pet-limit-rings-win.install.json")) {
     if (-not (Test-Path -LiteralPath (Join-Path $installRoot $requiredFile))) {
       throw "Temp install is missing $requiredFile."
     }

@@ -235,6 +235,9 @@ $SettingsPath = [System.IO.Path]::GetFullPath($SettingsPath)
 $SettingsDefaultsPath = Join-Path $ProjectRoot "settings.defaults.json"
 $PotionPixelFramePath = Join-Path $ProjectRoot "assets\runtime\potion-pixel-frame.png"
 $PotionPixelMaskPath = Join-Path $ProjectRoot "assets\runtime\potion-pixel-mask.png"
+$HeartPotionPixelFramePath = Join-Path $ProjectRoot "assets\runtime\heart-potion-pixel-frame.png"
+$HeartPotionPixelMaskPath = Join-Path $ProjectRoot "assets\runtime\heart-potion-pixel-mask.png"
+$TrayCatIconPath = Join-Path $ProjectRoot "assets\runtime\tray-cat-icon.ico"
 $LanguageDetectionScript = Join-Path $ProjectRoot "src\LanguageDetection.ps1"
 if (-not (Test-Path -LiteralPath $LanguageDetectionScript)) {
   throw "Missing language detection module: $LanguageDetectionScript"
@@ -447,7 +450,7 @@ function Update-StyleFromSettings {
     if ($language -notin @("auto", "ko", "en")) { $language = "auto" }
     $script:Style.Language = $language
     $appearanceMode = ([string](Get-PropertyValue $appearance "mode" "rings")).Trim().ToLowerInvariant()
-    if ($appearanceMode -notin @("rings", "bars", "wings", "corners", "potions")) { $appearanceMode = "rings" }
+    if ($appearanceMode -notin @("rings", "bars", "wings", "corners", "potions", "heart_potions")) { $appearanceMode = "rings" }
     $script:Style.AppearanceMode = $appearanceMode
     $script:Style.PotionScale = Convert-SettingNumber (Get-PropertyValue $appearance "potionScale" $null) 100 70 140
     $script:Style.PrimaryRgb = Convert-HexColor (Get-PropertyValue $colors "primary" $null) @(60, 235, 189)
@@ -510,7 +513,7 @@ function Apply-StyleSettings {
       $potionBackdrop.Stroke = New-StyleBrush 180 @(239, 183, 87)
     }
   }
-  foreach ($pixelPotion in @($script:OuterPixelPotion, $script:InnerPixelPotion)) {
+  foreach ($pixelPotion in @($script:OuterPixelPotion, $script:InnerPixelPotion, $script:OuterHeartPotion, $script:InnerHeartPotion)) {
     if ($null -ne $pixelPotion) {
       $pixelPotion.Backdrop.Fill = New-StyleBrush 238 @(19, 20, 20)
     }
@@ -1298,43 +1301,56 @@ function New-PixelPotionTextBlock {
 }
 
 function New-PixelPotionVisual {
-  param([Parameter(Mandatory = $true)][string]$Label)
+  param(
+    [Parameter(Mandatory = $true)][string]$Label,
+    [double]$Width = 68.0,
+    [double]$Height = 73.0,
+    $FrameBitmap = $script:PotionPixelFrameBitmap,
+    $MaskBrush = $script:PotionPixelMaskBrush,
+    [double]$ValueTop = 31.0,
+    [double]$LabelTop = 59.0,
+    [double]$ChamberTop = 17.0,
+    [double]$ChamberBottom = 57.0
+  )
 
   $canvas = [System.Windows.Controls.Canvas]::new()
-  $canvas.Width = 68.0
-  $canvas.Height = 73.0
+  $canvas.Width = $Width
+  $canvas.Height = $Height
   $canvas.SnapsToDevicePixels = $true
   $canvas.UseLayoutRounding = $true
   $canvas.IsHitTestVisible = $false
 
   $backdrop = [System.Windows.Shapes.Rectangle]::new()
-  $backdrop.Width = 68.0
-  $backdrop.Height = 73.0
+  $backdrop.Width = $Width
+  $backdrop.Height = $Height
   $backdrop.Fill = New-StyleBrush 238 @(19, 20, 20)
-  $backdrop.OpacityMask = $script:PotionPixelMaskBrush
+  $backdrop.OpacityMask = $MaskBrush
 
   $liquid = [System.Windows.Shapes.Rectangle]::new()
-  $liquid.Width = 68.0
-  $liquid.Height = 73.0
-  $liquid.OpacityMask = $script:PotionPixelMaskBrush
+  $liquid.Width = $Width
+  $liquid.Height = $Height
+  $liquid.OpacityMask = $MaskBrush
 
   $frame = [System.Windows.Controls.Image]::new()
-  $frame.Width = 68.0
-  $frame.Height = 73.0
-  $frame.Source = $script:PotionPixelFrameBitmap
+  $frame.Width = $Width
+  $frame.Height = $Height
+  $frame.Source = $FrameBitmap
   $frame.Stretch = [System.Windows.Media.Stretch]::Fill
   $frame.SnapsToDevicePixels = $true
   [System.Windows.Media.RenderOptions]::SetBitmapScalingMode($frame, [System.Windows.Media.BitmapScalingMode]::NearestNeighbor)
 
   $shadowBrush = New-StyleBrush 255 @(0, 0, 0)
   $valueShadows = @(
-    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top 31.0 -Left -1.0),
-    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top 31.0 -Left 1.0),
-    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top 30.0),
-    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top 32.0)
+    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top $ValueTop -Left -1.0),
+    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top $ValueTop -Left 1.0),
+    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top ($ValueTop - 1.0)),
+    (New-PixelPotionTextBlock -FontSize 11.5 -Foreground $shadowBrush -Top ($ValueTop + 1.0))
   )
-  $valueText = New-PixelPotionTextBlock -FontSize 11.5 -Foreground (New-StyleBrush 255 @(255, 255, 255)) -Top 31.0
-  $labelText = New-PixelPotionTextBlock -FontSize 7.5 -Foreground (New-StyleBrush 255 @(255, 255, 255)) -Top 59.0
+  foreach ($textBlock in $valueShadows) { $textBlock.Width = $Width }
+  $valueText = New-PixelPotionTextBlock -FontSize 11.5 -Foreground (New-StyleBrush 255 @(255, 255, 255)) -Top $ValueTop
+  $labelText = New-PixelPotionTextBlock -FontSize 7.5 -Foreground (New-StyleBrush 255 @(255, 255, 255)) -Top $LabelTop
+  $valueText.Width = $Width
+  $labelText.Width = $Width
   $labelText.Text = $Label
 
   $canvas.Children.Add($backdrop) | Out-Null
@@ -1352,6 +1368,10 @@ function New-PixelPotionVisual {
     ValueShadows = $valueShadows
     ValueText = $valueText
     LabelText = $labelText
+    Width = $Width
+    Height = $Height
+    ChamberTop = $ChamberTop
+    ChamberBottom = $ChamberBottom
   }
 }
 
@@ -1366,11 +1386,11 @@ function Set-PixelPotionVisual {
   )
   if ($null -eq $Visual) { return }
   $ratio = [Math]::Max(0.0, [Math]::Min(1.0, $Remaining / 100.0))
-  $chamberTop = 17.0
-  $chamberBottom = 57.0
+  $chamberTop = [double]$Visual.ChamberTop
+  $chamberBottom = [double]$Visual.ChamberBottom
   $fillTop = $chamberBottom - ($chamberBottom - $chamberTop) * $ratio
   $clip = [System.Windows.Media.RectangleGeometry]::new(
-    [System.Windows.Rect]::new(0.0, $fillTop, 68.0, $chamberBottom - $fillTop)
+    [System.Windows.Rect]::new(0.0, $fillTop, [double]$Visual.Width, $chamberBottom - $fillTop)
   )
   $clip.Freeze()
   $Visual.Liquid.Clip = $clip
@@ -1491,7 +1511,7 @@ function Get-PotionReadoutText {
 
 function Get-RingReadoutText {
   param([ValidateSet("Outer", "Inner")][string]$Ring)
-  if ($script:Style.AppearanceMode -eq "potions") {
+  if ($script:Style.AppearanceMode -in @("potions", "heart_potions")) {
     return Get-PotionReadoutText -Ring $Ring
   }
   $ko = Test-KoreanLanguage
@@ -1652,7 +1672,11 @@ function Set-RingShapesVisibility {
     $script:OuterPixelPotion.Container,
     $script:InnerPixelPotion.Container
   )
-  foreach ($shape in @($ringShapes + $alternativeShapes + $potionShapes)) {
+  $heartPotionShapes = @(
+    $script:OuterHeartPotion.Container,
+    $script:InnerHeartPotion.Container
+  )
+  foreach ($shape in @($ringShapes + $alternativeShapes + $potionShapes + $heartPotionShapes)) {
     if ($null -ne $shape) {
       $shape.Visibility = [System.Windows.Visibility]::Collapsed
     }
@@ -1664,6 +1688,7 @@ function Set-RingShapesVisibility {
   $activeShapes = switch ($script:Style.AppearanceMode) {
     "rings" { $ringShapes }
     "potions" { $potionShapes }
+    "heart_potions" { $heartPotionShapes }
     default { $alternativeShapes }
   }
   foreach ($shape in $activeShapes) {
@@ -1909,7 +1934,7 @@ function Show-RingReadout {
     }
     $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
     $script:OuterReadoutBorder.Visibility = [System.Windows.Visibility]::Visible
-    if ($script:Style.AppearanceMode -eq "potions") {
+    if ($script:Style.AppearanceMode -in @("potions", "heart_potions")) {
       Set-PotionReadoutWindow -Ring "Outer" -Window $script:OuterReadoutWindow -Border $script:OuterReadoutBorder
     } else {
       Set-ReadoutWindowNearPoint -Window $script:OuterReadoutWindow -Border $script:OuterReadoutBorder -ScreenX $screenX -ScreenY $screenY
@@ -1923,7 +1948,7 @@ function Show-RingReadout {
   }
   $script:OuterReadoutBorder.Visibility = [System.Windows.Visibility]::Collapsed
   $script:InnerReadoutBorder.Visibility = [System.Windows.Visibility]::Visible
-  if ($script:Style.AppearanceMode -eq "potions") {
+  if ($script:Style.AppearanceMode -in @("potions", "heart_potions")) {
     Set-PotionReadoutWindow -Ring "Inner" -Window $script:InnerReadoutWindow -Border $script:InnerReadoutBorder
   } else {
     Set-ReadoutWindowNearPoint -Window $script:InnerReadoutWindow -Border $script:InnerReadoutBorder -ScreenX $screenX -ScreenY $screenY
@@ -2064,6 +2089,8 @@ function Update-RingGeometry {
     $script:InnerAltValue.Stroke = Get-CapacityBrush -Remaining $secondaryRemaining -Secondary
   }
   if ($null -ne $script:OuterPixelPotion) {
+    $outerPotionVisual = if ($script:Style.AppearanceMode -eq "heart_potions") { $script:OuterHeartPotion } else { $script:OuterPixelPotion }
+    $innerPotionVisual = if ($script:Style.AppearanceMode -eq "heart_potions") { $script:InnerHeartPotion } else { $script:InnerPixelPotion }
     $potionScale = [double]$script:Style.PotionScale / 100.0
     $potionPadding = [Math]::Max(128.0 + [Math]::Max(0.0, $potionScale - 1.0) * 80.0, [double]$script:Style.RingGap + 16.0)
     $potionPetHalf = [Math]::Max(24.0, $outerRadius - ($potionPadding - 16.0))
@@ -2072,21 +2099,21 @@ function Update-RingGeometry {
     $potionOffset = [Math]::Min($outerRadius - $potionRadius - 10.0, $potionPetHalf + $potionRadius + 10.0)
     $leftPotionX = $center - $potionOffset
     $rightPotionX = $center + $potionOffset
-    $spriteScale = $potionRadius / 34.0
-    $spriteWidth = 68.0 * $spriteScale
-    $spriteHeight = 73.0 * $spriteScale
+    $spriteScale = $potionRadius / ([double]$outerPotionVisual.Width / 2.0)
+    $spriteWidth = [double]$outerPotionVisual.Width * $spriteScale
+    $spriteHeight = [double]$outerPotionVisual.Height * $spriteScale
     $outerLeft = $leftPotionX - $spriteWidth / 2.0
     $innerLeft = $rightPotionX - $spriteWidth / 2.0
-    $spriteTop = $center - 37.0 * $spriteScale
+    $spriteTop = $center - ([double]$outerPotionVisual.Height * 0.51) * $spriteScale
     Set-PixelPotionVisual `
-      -Visual $script:OuterPixelPotion `
+      -Visual $outerPotionVisual `
       -Remaining $primaryRemaining `
       -LiquidBrush (Get-CapacityBrush -Remaining $primaryRemaining) `
       -Scale $spriteScale `
       -Left $outerLeft `
       -Top $spriteTop
     Set-PixelPotionVisual `
-      -Visual $script:InnerPixelPotion `
+      -Visual $innerPotionVisual `
       -Remaining $secondaryRemaining `
       -LiquidBrush (Get-CapacityBrush -Remaining $secondaryRemaining -Secondary) `
       -Scale $spriteScale `
@@ -2158,7 +2185,7 @@ function Update-PetFrame {
 
   Set-PetAutoDetectState -Visible $true
   $ringPadding = [double]$script:Style.RingGap + 16.0
-  if ($script:Style.AppearanceMode -eq "potions") {
+  if ($script:Style.AppearanceMode -in @("potions", "heart_potions")) {
     $potionScale = [double]$script:Style.PotionScale / 100.0
     $ringPadding = [Math]::Max(128.0 + [Math]::Max(0.0, $potionScale - 1.0) * 80.0, $ringPadding)
   }
@@ -2210,7 +2237,7 @@ function Update-HoverReadout {
   }
   if ($script:Style.AppearanceMode -ne "rings") {
     $point = [System.Windows.Point]::new($localX, $localY)
-    if ($script:Style.AppearanceMode -eq "potions") {
+    if ($script:Style.AppearanceMode -in @("potions", "heart_potions")) {
       $outerHit = $null -ne $script:OuterPotionBackdrop.Data -and $script:OuterPotionBackdrop.Data.FillContains($point)
       $innerHit = $null -ne $script:InnerPotionBackdrop.Data -and $script:InnerPotionBackdrop.Data.FillContains($point)
     } else {
@@ -2297,6 +2324,10 @@ function Stop-RingsApp {
   if ($null -ne $script:NotifyIcon) {
     $script:NotifyIcon.Visible = $false
     $script:NotifyIcon.Dispose()
+  }
+  if ($null -ne $script:TrayCatIcon) {
+    $script:TrayCatIcon.Dispose()
+    $script:TrayCatIcon = $null
   }
   [System.Windows.Application]::Current.Shutdown()
 }
@@ -2422,6 +2453,13 @@ $script:PotionPixelMaskBrush.Stretch = [System.Windows.Media.Stretch]::Fill
 $script:PotionPixelMaskBrush.Freeze()
 $script:OuterPixelPotion = New-PixelPotionVisual -Label "5H"
 $script:InnerPixelPotion = New-PixelPotionVisual -Label "WK"
+$script:HeartPotionPixelFrameBitmap = New-FrozenBitmapImage -Path $HeartPotionPixelFramePath
+$script:HeartPotionPixelMaskBitmap = New-FrozenBitmapImage -Path $HeartPotionPixelMaskPath
+$script:HeartPotionPixelMaskBrush = [System.Windows.Media.ImageBrush]::new($script:HeartPotionPixelMaskBitmap)
+$script:HeartPotionPixelMaskBrush.Stretch = [System.Windows.Media.Stretch]::Fill
+$script:HeartPotionPixelMaskBrush.Freeze()
+$script:OuterHeartPotion = New-PixelPotionVisual -Label "5H" -Width 76 -Height 80 -FrameBitmap $script:HeartPotionPixelFrameBitmap -MaskBrush $script:HeartPotionPixelMaskBrush -ValueTop 34 -LabelTop 67 -ChamberTop 20 -ChamberBottom 69
+$script:InnerHeartPotion = New-PixelPotionVisual -Label "WK" -Width 76 -Height 80 -FrameBitmap $script:HeartPotionPixelFrameBitmap -MaskBrush $script:HeartPotionPixelMaskBrush -ValueTop 34 -LabelTop 67 -ChamberTop 20 -ChamberBottom 69
 
 $script:StaleBadgeText = [System.Windows.Controls.TextBlock]::new()
 $script:StaleBadgeText.Foreground = New-StyleBrush 255 @(253, 224, 71)
@@ -2479,6 +2517,8 @@ $script:Canvas.Children.Add($script:OuterAltValue) | Out-Null
 $script:Canvas.Children.Add($script:InnerAltValue) | Out-Null
 $script:Canvas.Children.Add($script:OuterPixelPotion.Container) | Out-Null
 $script:Canvas.Children.Add($script:InnerPixelPotion.Container) | Out-Null
+$script:Canvas.Children.Add($script:OuterHeartPotion.Container) | Out-Null
+$script:Canvas.Children.Add($script:InnerHeartPotion.Container) | Out-Null
 $script:Canvas.Children.Add($script:StaleBadgeBorder) | Out-Null
 Set-RingVisualsVisible -Visible $false
 
@@ -2489,7 +2529,12 @@ $script:Window.Add_SourceInitialized({
 
 if (-not $NoTrayIcon) {
   $script:NotifyIcon = [System.Windows.Forms.NotifyIcon]::new()
-  $script:NotifyIcon.Icon = [System.Drawing.SystemIcons]::Information
+  if (Test-Path -LiteralPath $TrayCatIconPath) {
+    $script:TrayCatIcon = [System.Drawing.Icon]::new($TrayCatIconPath)
+    $script:NotifyIcon.Icon = $script:TrayCatIcon
+  } else {
+    $script:NotifyIcon.Icon = [System.Drawing.SystemIcons]::Information
+  }
   $script:NotifyIcon.Text = Get-UiText "TrayTitle"
   $script:NotifyIcon.Visible = $true
   $menu = [System.Windows.Forms.ContextMenuStrip]::new()
@@ -2611,6 +2656,10 @@ $script:App.Add_Exit({
   if ($null -ne $script:NotifyIcon) {
     $script:NotifyIcon.Visible = $false
     $script:NotifyIcon.Dispose()
+  }
+  if ($null -ne $script:TrayCatIcon) {
+    $script:TrayCatIcon.Dispose()
+    $script:TrayCatIcon = $null
   }
 })
 
