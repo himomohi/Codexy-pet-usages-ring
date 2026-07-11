@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.1.20
+
+### Added
+
+- Added a generated Windows notification-area guide image showing the cat tray icon and its Settings, refresh, logs, and quit actions.
+- Added illustrated Korean and English README guidance for opening Settings from the Windows taskbar notification area.
+
+### Changed
+
+- Updated release badges, download filenames, documentation, installed-copy verification, and packaging for version 0.1.20.
+
+### Fixed
+
+- Made heart-potion previews follow horizontal and vertical position sliders immediately, matching the live behavior already used by rings, bars, gauges, and corner frames.
+- Stabilized frame-scheduled preview updates so style, size, position, color, opacity, and current-pet changes render before saving.
+
 ## 0.1.19
 
 ### Added

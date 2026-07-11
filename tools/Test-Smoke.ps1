@@ -64,6 +64,13 @@ function Assert-VersionMetadata {
     if ($readme -notmatch [regex]::Escape("Version $version") -or $readme -notmatch [regex]::Escape("version-$version-")) {
       throw "$readmeName version badge must match VERSION $version."
     }
+    if ($readme -notmatch [regex]::Escape("codex-pet-limit-rings-Win-$version.zip") -or $readme -notmatch 'docs/assets/windows-tray-settings-guide\.png') {
+      throw "$readmeName must include the current release download and tray settings guide."
+    }
+  }
+
+  if (-not (Test-Path -LiteralPath (Join-Path $root "docs\assets\windows-tray-settings-guide.png"))) {
+    throw "Windows tray settings guide image is missing."
   }
 
   return $version
@@ -214,6 +221,9 @@ try {
     if ($settingsPage -notmatch [regex]::Escape($livePreviewMarker)) {
       throw "Settings page is missing real-time preview updates: $livePreviewMarker"
     }
+  }
+  if ($settingsPage -notmatch 'potionGroup\.style\.transform\s*=\s*`translate\(') {
+    throw "Potion preview must follow live horizontal and vertical position controls."
   }
   $settingsServerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Settings.ps1")
   if ($settingsServerText -notmatch '/assets/codex-pet-ambient\.webp' -or $settingsServerText -notmatch 'ContentType "image/webp"') {
