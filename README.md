@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest"><img alt="Download latest release" src="https://img.shields.io/badge/download-latest_release-3CEBBD?style=for-the-badge&logo=github"></a>
-  <a href="VERSION"><img alt="Version 0.1.20" src="https://img.shields.io/badge/version-0.1.20-3CEBBD?style=for-the-badge"></a>
+  <a href="VERSION"><img alt="Version 0.1.21" src="https://img.shields.io/badge/version-0.1.21-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -34,7 +34,7 @@ using PowerShell, WPF, and Win32 window positioning.
 - Auto-detects and can start Codex Desktop.
 - Waits quietly until `/pet` is visible.
 - Uses a click-through WPF overlay, so it does not intercept mouse input.
-- Optionally installs a Windows Startup shortcut; the safer default only creates Start Menu shortcuts.
+- Installs a Windows Startup shortcut by default, so the helper waits quietly after login and shows the HUD as soon as `/pet` appears.
 - Provides root `.bat` launchers for double-click install, settings, status, start, stop, and uninstall.
 - Provides a cute cat-face icon in the Windows taskbar notification area; right-click it to open Settings, refresh usage, open logs, or quit.
 
@@ -49,7 +49,7 @@ Python is optional and only used for the local SQLite log fallback.
 
 ## Download
 
-For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.20.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
+For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.21.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
 
 You can also download the repository source with GitHub's **Code → Download ZIP** button, extract it, and run the same installer. Developers can clone it instead:
 
@@ -64,8 +64,8 @@ cd Codexy-pet-usages-ring
 Double-click `Manage.bat` for a single menu that installs, checks, configures,
 stops, or completely removes the companion.
 
-- `Install.bat` installs and starts the rings without Windows auto-start.
-- `Install-AutoStart.bat` installs, starts, and explicitly enables auto-start.
+- `Install.bat` installs, starts, and enables reboot-safe Windows auto-start.
+- `Install-AutoStart.bat` provides the same persistent setup as an explicit compatibility entry point.
 - `Apply-Installed.bat` applies later source edits to the trusted current install, preserves settings, and restarts it only when it was running.
 - `Uninstall.bat` removes the running helper, shortcuts, and installed copy while keeping this source folder.
 
@@ -73,9 +73,10 @@ Open `/pet` in Codex Desktop after installation. The left/outer display is the
 5-hour remaining allowance and the right/inner display is weekly remaining
 allowance. Hover a usage display for exact percentages, reset times, and a live countdown showing the remaining time.
 
-The installer copies files to `%LOCALAPPDATA%\CodexPetLimitRingsWin` and starts
-the helper. Auto-start is registered only through `Install-AutoStart.bat` or the
-explicit PowerShell `-Startup` option.
+The installer copies files to `%LOCALAPPDATA%\CodexPetLimitRingsWin`, starts
+the helper, and registers it at Windows login. The login task does not launch
+Codex Desktop; it waits quietly and displays the HUD when the Codex `/pet`
+overlay appears. Pass `-NoStartup` to the PowerShell installer to opt out.
 
 PowerShell install:
 
@@ -83,7 +84,8 @@ PowerShell install:
 powershell -ExecutionPolicy Bypass -File .\bin\powershell\Install.ps1
 ```
 
-Add `-Startup` when you explicitly want Windows auto-start registration.
+Direct PowerShell installs remain explicit: add `-Startup` for Windows auto-start,
+or use `Install.bat` for the recommended reboot-safe setup.
 
 ## Commands
 

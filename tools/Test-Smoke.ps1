@@ -239,8 +239,8 @@ try {
   }
 
   $installLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Install.bat")
-  if ($installLauncher -notmatch '(?i)install\.cmd"\s+-NoStartup') {
-    throw "Install.bat must use the no-auto-start default."
+  if ($installLauncher -notmatch '(?i)install\.cmd"\s+-Startup') {
+    throw "Install.bat must enable reboot-safe Windows auto-start."
   }
   $autoStartLauncher = Get-Content -Raw -LiteralPath (Join-Path $root "Install-AutoStart.bat")
   if ($autoStartLauncher -notmatch '(?i)install\.cmd"\s+-Startup') {
@@ -258,7 +258,14 @@ try {
   }
   $installerText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\Install.ps1")
   if ($installerText -notmatch '\$Startup\s+-and\s+-not\s+\$NoStartup') {
-    throw "PowerShell installation must default to no auto-start."
+    throw "PowerShell installation must honor explicit startup registration."
+  }
+  if ($installerText -match '(?im)^\s*\$startup\s*=') {
+    throw "Installer startup-folder variables must not collide with the -Startup switch."
+  }
+  if ($installerText -notmatch 'Get-StartScriptShortcutArguments\s+-StartScript\s+\$startScript\s+-ForStartup' -or
+      $installerText -notmatch '\$ForStartup\s+-or\s+\$NoStartCodex') {
+    throw "Windows startup must arm the companion without launching Codex Desktop."
   }
   $runtimeStateText = Get-Content -Raw -LiteralPath (Join-Path $root "bin\powershell\RuntimeState.ps1")
   if ($runtimeStateText -notmatch '\$markedRoot\s+-ne\s+\$expectedRoot') {

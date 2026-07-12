@@ -90,10 +90,15 @@ function Remove-ObsoleteEntryPoints {
 }
 
 function Get-StartScriptShortcutArguments {
-  param([string]$StartScript)
+  param(
+    [string]$StartScript,
+    [switch]$ForStartup
+  )
   $arguments = "-NoLogo -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -STA -File `"$StartScript`" -CodexHome `"$CodexHome`""
   if ($NoLiveUsage) { $arguments += " -NoLiveUsage" }
-  if ($NoStartCodex) { $arguments += " -NoStartCodex" }
+  # Login startup must only arm the companion. It should not open Codex itself;
+  # the runtime waits quietly and shows the HUD when the existing /pet appears.
+  if ($ForStartup -or $NoStartCodex) { $arguments += " -NoStartCodex" }
   if (-not [string]::IsNullOrWhiteSpace($CodexAppPath)) {
     $arguments += " -CodexAppPath `"$CodexAppPath`""
   }
@@ -193,12 +198,12 @@ if (Test-Path -LiteralPath $codexDiscoveryScript) {
 }
 
 if ($Startup -and -not $NoStartup) {
-  $startup = [Environment]::GetFolderPath("Startup")
-  $shortcutPath = Join-Path $startup "Codex Pet Limit Rings.lnk"
+  $startupFolder = [Environment]::GetFolderPath("Startup")
+  $shortcutPath = Join-Path $startupFolder "Codex Pet Limit Rings.lnk"
   $shell = New-Object -ComObject WScript.Shell
   $shortcut = $shell.CreateShortcut($shortcutPath)
   $shortcut.TargetPath = $powerShell
-  $shortcut.Arguments = Get-StartScriptShortcutArguments -StartScript $startScript
+  $shortcut.Arguments = Get-StartScriptShortcutArguments -StartScript $startScript -ForStartup
   $shortcut.WorkingDirectory = $targetRoot
   $shortcut.WindowStyle = 7
   $shortcut.Description = "Start Codex Pet Limit Rings for Windows"

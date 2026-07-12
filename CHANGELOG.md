@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.21
+
+### Changed
+
+- Made the recommended `Install.bat` flow register the helper at Windows login so the HUD remains available after a reboot.
+- Updated Korean and English installation guidance for reboot-safe startup and the `-NoStartup` opt-out.
+
+### Fixed
+
+- Fixed the `-Startup` switch/folder-variable collision that prevented the Startup shortcut from being created.
+- Prevented the login shortcut from launching Codex Desktop; the helper now waits quietly and shows the HUD when an existing `/pet` overlay appears.
+
 ## 0.1.20
 
 ### Added
