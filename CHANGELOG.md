@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.22
+
+### Changed
+
+- Made the Codex `/pet` open state the authoritative trigger for showing the companion usage overlay.
+
+### Fixed
+
+- Prevented stale saved pet bounds from leaving the companion overlay visible after the Codex pet is closed.
+- Added a regression check requiring an explicit `electron-avatar-overlay-open=true` state before rendering around the pet.
+
 ## 0.1.21
 
 ### Changed

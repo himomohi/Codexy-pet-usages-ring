@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest"><img alt="Download latest release" src="https://img.shields.io/badge/download-latest_release-3CEBBD?style=for-the-badge&logo=github"></a>
-  <a href="VERSION"><img alt="Version 0.1.21" src="https://img.shields.io/badge/version-0.1.21-3CEBBD?style=for-the-badge"></a>
+  <a href="VERSION"><img alt="Version 0.1.22" src="https://img.shields.io/badge/version-0.1.22-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -49,7 +49,7 @@ Python is optional and only used for the local SQLite log fallback.
 
 ## Download
 
-For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.21.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
+For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.22.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
 
 You can also download the repository source with GitHub's **Code → Download ZIP** button, extract it, and run the same installer. Developers can clone it instead:
 

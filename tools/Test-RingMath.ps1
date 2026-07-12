@@ -226,6 +226,10 @@ $frameText = Get-RuntimeFunctionText "Update-PetFrame"
 if ($frameText -notmatch 'Style\.OffsetX' -or $frameText -notmatch 'Style\.OffsetY') {
   throw "Runtime pet-relative positioning is missing."
 }
+$petRectText = Get-RuntimeFunctionText "Read-PetRect"
+if ($petRectText -notmatch "electron-avatar-overlay-open' -isnot \[bool\]") {
+  throw "The companion overlay must require an explicit pet open=true trigger."
+}
 $visibilityText = Get-RuntimeFunctionText "Set-RingVisualsVisible"
 if ($visibilityText -notmatch 'Update-StaleIndicator') {
   throw "Stale usage indicator must refresh after the overlay window becomes visible."

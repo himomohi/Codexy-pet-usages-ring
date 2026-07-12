@@ -947,7 +947,10 @@ function Read-PetRect {
     }
     $script:LastStateWriteTimeUtc = $stateItem.LastWriteTimeUtc
     $root = Read-Utf8Text -Path $StatePath | ConvertFrom-Json
-    if ($root.'electron-avatar-overlay-open' -is [bool] -and -not $root.'electron-avatar-overlay-open') {
+    # The pet is the source of truth. Stale bounds can remain in state.json after
+    # the pet (or Codex itself) closes, so only an explicit open=true may drive
+    # the companion overlay.
+    if ($root.'electron-avatar-overlay-open' -isnot [bool] -or -not $root.'electron-avatar-overlay-open') {
       $script:CachedPetRect = $null
       return $null
     }
