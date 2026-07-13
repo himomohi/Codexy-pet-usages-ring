@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.23
+
+### Changed
+
+- Matched 5-hour and weekly usage slots by their window duration instead of relying only on the API bucket position.
+
+### Fixed
+
+- Kept weekly usage visible when an event temporarily removes the 5-hour limit and returns the weekly bucket as the primary window.
+- Displayed a missing 5-hour limit as `-` and cleared any previously animated 5-hour value immediately.
+
 ## 0.1.22
 
 ### Changed

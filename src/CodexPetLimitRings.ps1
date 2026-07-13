@@ -634,6 +634,22 @@ function Get-BucketWindowSeconds {
   return $null
 }
 
+function Resolve-UsageBuckets {
+  param($Primary, $Secondary)
+  $primaryWindow = Get-BucketWindowSeconds $Primary
+  $secondaryWindow = Get-BucketWindowSeconds $Secondary
+
+  # During events the short window can disappear and the weekly bucket may be
+  # returned as primary. Keep the UI slots tied to duration, not API position.
+  $primaryLooksWeekly = $null -ne $primaryWindow -and [double]$primaryWindow -ge 86400.0
+  $secondaryLooksShort = $null -ne $secondaryWindow -and [double]$secondaryWindow -lt 86400.0
+  if ($primaryLooksWeekly -and ($null -eq $Secondary -or $secondaryLooksShort)) {
+    return [PSCustomObject]@{ Primary = $Secondary; Secondary = $Primary }
+  }
+
+  return [PSCustomObject]@{ Primary = $Primary; Secondary = $Secondary }
+}
+
 function Convert-ResetValue {
   param($ResetAt, $ResetAfterSeconds, $ObservedAt = $null)
   if ($null -ne $ResetAt) {
@@ -681,8 +697,11 @@ function Convert-UsagePayload {
   $rate = if ($Payload.rate_limit) { $Payload.rate_limit } elseif ($Payload.rate_limits) { $Payload.rate_limits } else { $null }
   if ($null -eq $rate) { return $null }
 
-  $primary = if ($rate.primary) { $rate.primary } elseif ($rate.primary_window) { $rate.primary_window } else { $null }
-  $secondary = if ($rate.secondary) { $rate.secondary } elseif ($rate.secondary_window) { $rate.secondary_window } else { $null }
+  $rawPrimary = if ($rate.primary) { $rate.primary } elseif ($rate.primary_window) { $rate.primary_window } else { $null }
+  $rawSecondary = if ($rate.secondary) { $rate.secondary } elseif ($rate.secondary_window) { $rate.secondary_window } else { $null }
+  $resolved = Resolve-UsageBuckets -Primary $rawPrimary -Secondary $rawSecondary
+  $primary = $resolved.Primary
+  $secondary = $resolved.Secondary
   $primaryRemaining = Get-BucketRemaining $primary
   $secondaryRemaining = Get-BucketRemaining $secondary
   if ($null -eq $primaryRemaining -and $null -eq $secondaryRemaining) { return $null }
@@ -1078,7 +1097,7 @@ function Optimize-ProcessFootprint {
 
 function Format-Percent {
   param($Value)
-  if ($null -eq $Value) { return "--" }
+  if ($null -eq $Value) { return "-" }
   return ("{0:N0}%" -f [double]$Value)
 }
 
@@ -1968,7 +1987,7 @@ function Get-RingRemaining {
 
 function Step-UsageValue {
   param($Current, $Target)
-  if ($null -eq $Target) { return $Current }
+  if ($null -eq $Target) { return $null }
   if ($null -eq $Current) { return [double]$Target }
 
   $currentValue = [double]$Current

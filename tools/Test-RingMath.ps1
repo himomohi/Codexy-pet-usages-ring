@@ -54,12 +54,18 @@ Invoke-Expression (Get-RuntimeFunctionText "Expand-UnicodeText")
 Invoke-Expression (Get-RuntimeFunctionText "Format-Percent")
 Invoke-Expression (Get-RuntimeFunctionText "Format-Duration")
 Invoke-Expression (Get-RuntimeFunctionText "Convert-ResetValue")
+Invoke-Expression (Get-RuntimeFunctionText "Get-BucketRemaining")
+Invoke-Expression (Get-RuntimeFunctionText "Get-BucketWindowSeconds")
+Invoke-Expression (Get-RuntimeFunctionText "Get-BucketResetAt")
+Invoke-Expression (Get-RuntimeFunctionText "Resolve-UsageBuckets")
+Invoke-Expression (Get-RuntimeFunctionText "Convert-UsagePayload")
 Invoke-Expression (Get-RuntimeFunctionText "Format-PotionResetMoment")
 Invoke-Expression (Get-RuntimeFunctionText "Format-PotionRemainingTime")
 Invoke-Expression (Get-RuntimeFunctionText "Get-PotionReadoutText")
 Invoke-Expression (Get-RuntimeFunctionText "Get-UsageFreshnessText")
 Invoke-Expression (Get-RuntimeFunctionText "Update-UsageState")
 Invoke-Expression (Get-RuntimeFunctionText "Test-UsageTransitionStable")
+Invoke-Expression (Get-RuntimeFunctionText "Step-UsageValue")
 foreach ($functionName in @(
   "Get-PropertyValue",
   "Normalize-Hex",
@@ -151,6 +157,20 @@ $potionReadoutText = Get-RuntimeFunctionText "Get-PotionReadoutText"
 if ($potionReadoutText -notmatch 'PrimaryRemaining' -or $potionReadoutText -notmatch 'SecondaryRemaining') {
   throw "Potion readouts must keep 5h and weekly values separated."
 }
+$weeklyOnlyPayload = [PSCustomObject]@{
+  plan_type = "event"
+  rate_limit = [PSCustomObject]@{
+    primary = [PSCustomObject]@{
+      remaining_percent = 64
+      limit_window_seconds = 604800
+      reset_after_seconds = 86400
+    }
+  }
+}
+$weeklyOnlyUsage = Convert-UsagePayload -Payload $weeklyOnlyPayload -Source "test"
+if ($null -ne $weeklyOnlyUsage.PrimaryRemaining -or $weeklyOnlyUsage.SecondaryRemaining -ne 64) {
+  throw "A weekly-only primary bucket must leave the 5h slot empty and populate the weekly slot."
+}
 $krAutomatic = Get-AutomaticLanguageResult -CountryCodeOverride "KR"
 $usAutomatic = Get-AutomaticLanguageResult -CountryCodeOverride "US"
 if ($krAutomatic.Language -ne "ko" -or $usAutomatic.Language -ne "en") {
@@ -194,6 +214,11 @@ $outerPotionText = Get-PotionReadoutText -Ring "Outer"
 $innerPotionText = Get-PotionReadoutText -Ring "Inner"
 if ($outerPotionText -notmatch '^5h  83% 남음\r?\n초기화 16:45\r?\n남은 시간 .+$') { throw "Unexpected left potion readout: $outerPotionText" }
 if ($innerPotionText -notmatch '^주간  58% 남음\r?\n초기화 7월 17일 09:30\r?\n남은 시간 .+$') { throw "Unexpected right potion readout: $innerPotionText" }
+$script:UsageState.PrimaryRemaining = $null
+$script:UsageState.PrimaryResetAt = $null
+if ((Get-PotionReadoutText -Ring "Outer") -notmatch '^5h  - 남음') {
+  throw "A missing 5h limit must be displayed as a single dash."
+}
 $script:UsageIsStale = $true
 $script:LastUsageSuccessAt = [datetime]"2026-07-10T14:35:20"
 if ((Get-UsageFreshnessText) -ne "오프라인 · 마지막 갱신 14:35:20") { throw "Stale usage timestamp text mismatch." }
@@ -236,7 +261,7 @@ if ($visibilityText -notmatch 'Update-StaleIndicator') {
 }
 
 function Write-AppLog { param([string]$Message) }
-function Format-Percent { param($Value) if ($null -eq $Value) { return "--" }; return ("{0:N0}%" -f [double]$Value) }
+function Format-Percent { param($Value) if ($null -eq $Value) { return "-" }; return ("{0:N0}%" -f [double]$Value) }
 function Format-ResetAt { param($Value) if ($null -eq $Value) { return "--" }; return ([datetime]$Value).ToString("yyyy-MM-dd HH:mm") }
 function Get-LiveUsage { return $null }
 function Get-LogUsage { return $script:TestLogUsage }
@@ -306,6 +331,9 @@ $stable = [PSCustomObject]@{
 }
 if (-not (Test-UsageTransitionStable -Next $stable -Signature "stable")) {
   throw "Normal usage decrease must be accepted immediately."
+}
+if ($null -ne (Step-UsageValue -Current 83.0 -Target $null)) {
+  throw "A removed usage bucket must clear its displayed value immediately."
 }
 
 Write-Output "Visualization math checks passed: rings, bars, wings, corners, potions, hover hits, and usage stabilization."
