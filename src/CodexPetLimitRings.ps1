@@ -108,10 +108,16 @@ public static class CodexPetLimitRingNative {
     private static extern bool IsWindowVisible(IntPtr hWnd);
 
     [DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
+
+    [DllImport("user32.dll")]
     private static extern bool GetWindowRect(IntPtr hWnd, out RECT rect);
 
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmGetWindowAttribute(IntPtr hWnd, int attribute, out int value, int valueSize);
 
     [DllImport("user32.dll")]
     private static extern bool SetWindowPos(
@@ -163,6 +169,53 @@ public static class CodexPetLimitRingNative {
         } catch {
             return false;
         }
+    }
+
+    private static bool IsActuallyVisible(IntPtr hWnd) {
+        if (!IsWindowVisible(hWnd) || IsIconic(hWnd)) {
+            return false;
+        }
+
+        const int DWMWA_CLOAKED = 14;
+        int cloaked;
+        return DwmGetWindowAttribute(hWnd, DWMWA_CLOAKED, out cloaked, sizeof(int)) != 0 || cloaked == 0;
+    }
+
+    public static int[] FindVisibleCodexPetWindow(
+        int expectedLeft,
+        int expectedTop,
+        int expectedWidth,
+        int expectedHeight
+    ) {
+        int[] found = null;
+        long bestScore = long.MaxValue;
+        EnumWindows((hWnd, lParam) => {
+            if (!IsActuallyVisible(hWnd) || !IsCodexWindow(hWnd)) {
+                return true;
+            }
+
+            RECT rect;
+            if (!GetWindowRect(hWnd, out rect)) {
+                return true;
+            }
+
+            int width = rect.Right - rect.Left;
+            int height = rect.Bottom - rect.Top;
+            int widthDelta = Math.Abs(width - expectedWidth);
+            int heightDelta = Math.Abs(height - expectedHeight);
+            if (widthDelta > 48 || heightDelta > 48) {
+                return true;
+            }
+
+            long positionDelta = Math.Abs((long)rect.Left - expectedLeft) + Math.Abs((long)rect.Top - expectedTop);
+            long score = (long)(widthDelta + heightDelta) * 10000L + positionDelta;
+            if (score < bestScore) {
+                bestScore = score;
+                found = new[] { rect.Left, rect.Top, width, height };
+            }
+            return true;
+        }, IntPtr.Zero);
+        return found;
     }
 
     public static IntPtr FindOverlappingCodexWindow(
@@ -283,6 +336,7 @@ $script:LastPetFrameSignature = ""
 $script:LastZOrderAt = [datetime]::MinValue
 $script:LastStateWriteTimeUtc = [datetime]::MinValue
 $script:CachedPetRect = $null
+$script:CachedPetState = $null
 $script:RingOuterRadius = $null
 $script:RingInnerRadius = $null
 $script:LastReadoutRefreshAt = [datetime]::MinValue
@@ -957,42 +1011,66 @@ function Read-PetRect {
   if (-not (Test-Path -LiteralPath $StatePath)) {
     $script:LastStateWriteTimeUtc = [datetime]::MinValue
     $script:CachedPetRect = $null
+    $script:CachedPetState = $null
     return $null
   }
   try {
     $stateItem = Get-Item -LiteralPath $StatePath -ErrorAction Stop
-    if ($stateItem.LastWriteTimeUtc -eq $script:LastStateWriteTimeUtc) {
-      return $script:CachedPetRect
+    if ($stateItem.LastWriteTimeUtc -ne $script:LastStateWriteTimeUtc) {
+      $script:LastStateWriteTimeUtc = $stateItem.LastWriteTimeUtc
+      $root = Read-Utf8Text -Path $StatePath | ConvertFrom-Json
+      # Persistent state is only a candidate. The real, visible Codex Pet window
+      # is the source of truth because open=true and old bounds can survive a reboot.
+      if ($root.'electron-avatar-overlay-open' -isnot [bool] -or -not $root.'electron-avatar-overlay-open') {
+        $script:CachedPetState = $null
+      } else {
+        $bounds = $root.'electron-avatar-overlay-bounds'
+        $mascot = if ($null -ne $bounds -and $bounds.mascot) { $bounds.mascot } elseif ($null -ne $bounds -and $bounds.anchor) { $bounds.anchor } else { $null }
+        if ($null -eq $bounds -or $null -eq $mascot) {
+          $script:CachedPetState = $null
+        } else {
+          $script:CachedPetState = [PSCustomObject]@{
+            WindowX = [int][Math]::Round([double]$bounds.x)
+            WindowY = [int][Math]::Round([double]$bounds.y)
+            WindowWidth = [int][Math]::Round([double]$bounds.width)
+            WindowHeight = [int][Math]::Round([double]$bounds.height)
+            MascotLeft = [double]$mascot.left
+            MascotTop = [double]$mascot.top
+            MascotWidth = [double]$mascot.width
+            MascotHeight = [double]$mascot.height
+          }
+        }
+      }
     }
-    $script:LastStateWriteTimeUtc = $stateItem.LastWriteTimeUtc
-    $root = Read-Utf8Text -Path $StatePath | ConvertFrom-Json
-    # The pet is the source of truth. Stale bounds can remain in state.json after
-    # the pet (or Codex itself) closes, so only an explicit open=true may drive
-    # the companion overlay.
-    if ($root.'electron-avatar-overlay-open' -isnot [bool] -or -not $root.'electron-avatar-overlay-open') {
+
+    if ($null -eq $script:CachedPetState) {
       $script:CachedPetRect = $null
       return $null
     }
-    $bounds = $root.'electron-avatar-overlay-bounds'
-    if ($null -eq $bounds) {
+
+    $candidate = $script:CachedPetState
+    $liveWindow = [CodexPetLimitRingNative]::FindVisibleCodexPetWindow(
+      $candidate.WindowX,
+      $candidate.WindowY,
+      $candidate.WindowWidth,
+      $candidate.WindowHeight
+    )
+    if ($null -eq $liveWindow -or $liveWindow.Length -lt 4) {
       $script:CachedPetRect = $null
       return $null
     }
-    $mascot = if ($bounds.mascot) { $bounds.mascot } elseif ($bounds.anchor) { $bounds.anchor } else { $null }
-    if ($null -eq $mascot) {
-      $script:CachedPetRect = $null
-      return $null
-    }
+
     $script:CachedPetRect = [PSCustomObject]@{
-      X = [double]$bounds.x + [double]$mascot.left
-      Y = [double]$bounds.y + [double]$mascot.top
-      Width = [double]$mascot.width
-      Height = [double]$mascot.height
+      X = [double]$liveWindow[0] + [double]$candidate.MascotLeft
+      Y = [double]$liveWindow[1] + [double]$candidate.MascotTop
+      Width = [double]$candidate.MascotWidth
+      Height = [double]$candidate.MascotHeight
     }
     return $script:CachedPetRect
   } catch {
     $script:LastStateWriteTimeUtc = [datetime]::MinValue
     $script:CachedPetRect = $null
+    $script:CachedPetState = $null
     Write-AppLog "Pet bounds lookup failed: $($_.Exception.Message)"
     return $null
   }

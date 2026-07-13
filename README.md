@@ -4,7 +4,7 @@
 
 <p align="center">
   <a href="https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest"><img alt="Download latest release" src="https://img.shields.io/badge/download-latest_release-3CEBBD?style=for-the-badge&logo=github"></a>
-  <a href="VERSION"><img alt="Version 0.1.23" src="https://img.shields.io/badge/version-0.1.23-3CEBBD?style=for-the-badge"></a>
+  <a href="VERSION"><img alt="Version 0.1.24" src="https://img.shields.io/badge/version-0.1.24-3CEBBD?style=for-the-badge"></a>
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-56B2FF?style=for-the-badge"></a>
   <img alt="Windows 10 and 11" src="https://img.shields.io/badge/Windows-10%20%2F%2011-0078D4?style=for-the-badge">
   <img alt="PowerShell 5.1+" src="https://img.shields.io/badge/PowerShell-5.1%2B-3CEBBD?style=for-the-badge">
@@ -33,7 +33,8 @@ using PowerShell, WPF, and Win32 window positioning.
 - Separates left 5h and right weekly hover readouts using Noto Sans KR.
 - Selects Korean for South Korean public IPs and English elsewhere when language is set to Auto.
 - Auto-detects and can start Codex Desktop.
-- Waits quietly until `/pet` is visible.
+- Requires a real, visible Codex Pet window instead of trusting persisted open state or stale bounds after reboot.
+- Waits quietly until `/pet` is visible, then anchors both usage indicators to the pet's current live position.
 - Uses a click-through WPF overlay, so it does not intercept mouse input.
 - Installs a Windows Startup shortcut by default, so the helper waits quietly after login and shows the HUD as soon as `/pet` appears.
 - Provides root `.bat` launchers for double-click install, settings, status, start, stop, and uninstall.
@@ -50,7 +51,7 @@ Python is optional and only used for the local SQLite log fallback.
 
 ## Download
 
-For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.23.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
+For the easiest installation, open the [latest GitHub release](https://github.com/himomohi/Codexy-pet-usages-ring/releases/latest), download `codex-pet-limit-rings-Win-0.1.24.zip`, and extract the ZIP to a normal folder. Then double-click `Install.bat` or `Manage.bat`.
 
 You can also download the repository source with GitHub's **Code → Download ZIP** button, extract it, and run the same installer. Developers can clone it instead:
 

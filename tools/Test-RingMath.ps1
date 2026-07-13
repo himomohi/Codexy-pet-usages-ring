@@ -255,6 +255,15 @@ $petRectText = Get-RuntimeFunctionText "Read-PetRect"
 if ($petRectText -notmatch "electron-avatar-overlay-open' -isnot \[bool\]") {
   throw "The companion overlay must require an explicit pet open=true trigger."
 }
+if ($petRectText -notmatch 'FindVisibleCodexPetWindow' -or $petRectText -notmatch '(?s)\$liveWindow\[0\].+MascotLeft') {
+  throw "The companion overlay must require a live Codex Pet window and position from its current bounds."
+}
+$runtimeText = Get-Content -Raw -LiteralPath $runtimePath
+foreach ($marker in @('IsActuallyVisible', 'IsIconic', 'DWMWA_CLOAKED', 'FindVisibleCodexPetWindow')) {
+  if ($runtimeText -notmatch [regex]::Escape($marker)) {
+    throw "Live Codex Pet window detection is missing: $marker"
+  }
+}
 $visibilityText = Get-RuntimeFunctionText "Set-RingVisualsVisible"
 if ($visibilityText -notmatch 'Update-StaleIndicator') {
   throw "Stale usage indicator must refresh after the overlay window becomes visible."

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.24
+
+### Changed
+
+- Anchored both usage indicators to the current bounds of the real Codex Pet window instead of relying on persisted overlay coordinates.
+
+### Fixed
+
+- Prevented the companion overlay from appearing by itself after reboot when `electron-avatar-overlay-open=true` remains in saved state but no visible Codex Pet window exists.
+- Hid the companion immediately when the Pet window is hidden, minimized, or cloaked, and restored it automatically at the Pet's live position when the window returns.
+
 ## 0.1.23
 
 ### Changed
